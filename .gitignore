@@ -1,0 +1,65 @@
+# Xcode / DerivedData
+/DerivedData/
+/build/
+/*.xcworkspace/
+/*.xcuserstate
+*.xcuserdatad
+*.xccheckout
+*.moved-aside
+*.ipa
+*.dSYM*
+*.hmap
+project.yml
+
+# SwiftPM
+.build
+
+# Rust
+/target/
+**/*.rs.bk
+
+# Generated artifacts
+Radroots/radroots.git.xcconfig
+RadrootsKit/Artifacts/
+RadrootsKit/Sources/RadrootsKit/Generated/
+Radroots/Frameworks/RadrootsFFI.xcframework/
+
+# Local overrides
+Radroots/radroots.local.xcconfig
+
+# Logs
+logs/
+*.log
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+.local*
+justfile
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+*.pem
+*.crt
+*.key
+
+# Testing
+test*.json
+
+# Editors
+.vscode/
+.idea/
+*.iml
+
+# Notes
+notes*.txt
+notes*.md
+notes*.json
+tree*.txt
+diff*.txt
+prompt*.txt
