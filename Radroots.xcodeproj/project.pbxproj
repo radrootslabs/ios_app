@@ -7,10 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		009A19C0FBB0BA98FFAB539B /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD48C5F6B21222517F1CD77B /* RootView.swift */; };
+		1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0274A0260D1C04F40C71AF /* HomeView.swift */; };
+		275D4D574BF3B3C1DD746CE7 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C71A93F98C7B93188748B99B /* ProfileView.swift */; };
 		2B3886FD26434A54F3726591 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8D19AA8D515FC8F5D2407378 /* Localizable.strings */; };
 		2B6ACA26689B355CECBFFB57 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A7641E5C643B4B36CFEDA8 /* SetupView.swift */; };
 		7FD8FB018DA09568303194B2 /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADE61264E2C98E73828E8680 /* Strings.swift */; };
+		AAB91B301EF4BDC34E1E509D /* AppRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDE71B38C31DC432181E11AF /* AppRoot.swift */; };
 		C22DB0F3EB2E69A34DF941E0 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2818363B157125491FB84A1E /* App.swift */; };
 		C512BD267A3E2B8F10FABB3B /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FE790CA1CD31208947913B9 /* Logger.swift */; };
 		C8AB3389F7430A5C79AD7DF8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */; };
@@ -20,6 +22,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0A0274A0260D1C04F40C71AF /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		138AA7BAA021EE13E829390B /* Bundle+Build.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Bundle+Build.swift"; sourceTree = "<group>"; };
 		16A7641E5C643B4B36CFEDA8 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
 		2818363B157125491FB84A1E /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
@@ -31,9 +34,10 @@
 		93AA285819DD1269C3EAD80A /* Radroots.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Radroots.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		93D729E070C32490545FA837 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		ADE61264E2C98E73828E8680 /* Strings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Strings.swift; sourceTree = "<group>"; };
+		C71A93F98C7B93188748B99B /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		CCF0F7B3C57D8D770F178329 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		FD48C5F6B21222517F1CD77B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		FDE71B38C31DC432181E11AF /* AppRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRoot.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				2818363B157125491FB84A1E /* App.swift */,
+				FDE71B38C31DC432181E11AF /* AppRoot.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -115,7 +120,8 @@
 		BD0E20D32DF34D9E7C3EBCD2 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				FD48C5F6B21222517F1CD77B /* RootView.swift */,
+				0A0274A0260D1C04F40C71AF /* HomeView.swift */,
+				C71A93F98C7B93188748B99B /* ProfileView.swift */,
 				E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */,
 				16A7641E5C643B4B36CFEDA8 /* SetupView.swift */,
 			);
@@ -228,9 +234,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				C22DB0F3EB2E69A34DF941E0 /* App.swift in Sources */,
+				AAB91B301EF4BDC34E1E509D /* AppRoot.swift in Sources */,
 				E3864E34D67BAD0744B93180 /* Bundle+Build.swift in Sources */,
+				1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */,
 				C512BD267A3E2B8F10FABB3B /* Logger.swift in Sources */,
-				009A19C0FBB0BA98FFAB539B /* RootView.swift in Sources */,
+				275D4D574BF3B3C1DD746CE7 /* ProfileView.swift in Sources */,
 				C8AB3389F7430A5C79AD7DF8 /* SettingsView.swift in Sources */,
 				2B6ACA26689B355CECBFFB57 /* SetupView.swift in Sources */,
 				7FD8FB018DA09568303194B2 /* Strings.swift in Sources */,

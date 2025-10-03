@@ -18,11 +18,15 @@ public final class AppState: ObservableObject {
     public let radroots: Radroots
     public let keys: RadrootsKeys
 
-    private var statusTimer: Timer?
+    private var statusTask: Task<Void, Never>?
 
     public init(radroots: Radroots = Radroots(), keys: RadrootsKeys = RadrootsKeys()) {
         self.radroots = radroots
         self.keys = keys
+    }
+
+    deinit {
+        statusTask?.cancel()
     }
 
     public func start() throws {
@@ -47,10 +51,11 @@ public final class AppState: ObservableObject {
     }
 
     private func startPollingStatus() {
-        statusTimer?.invalidate()
-        statusTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.updateStatus()
+        statusTask?.cancel()
+        statusTask = Task { [weak self] in
+            while !Task.isCancelled {
+                await MainActor.run { self?.updateStatus() }
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
         }
     }

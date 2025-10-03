@@ -2,11 +2,11 @@ import SwiftUI
 import RadrootsKit
 
 @main
-struct MyApp: App {
+struct RadrootsApp: App {
     var body: some Scene {
         WindowGroup {
             RadrootsProvider {
-                RootView() 
+                AppRootView()
             }
         }
     }

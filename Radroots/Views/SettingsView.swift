@@ -3,55 +3,56 @@ import RadrootsKit
 
 struct SettingsView: View {
     @EnvironmentObject private var app: AppState
+    @EnvironmentObject private var radroots: Radroots
+    @EnvironmentObject private var keys: RadrootsKeys
+    @State private var exportError: String?
 
     var body: some View {
-        Form {
-            Section("Runtime Info") {
-                TextEditor(text: .constant(app.infoJSONString))
-                    .font(.system(.body, design: .monospaced))
-                    .frame(minHeight: 200)
-                    .disabled(true)
-            }
-
-            Section("Keys") {
-                if app.hasKey {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Key loaded")
-                            .font(.headline)
-                        if let npub = app.npub {
-                            Text(npub)
-                                .textSelection(.enabled)
-                                .font(.system(.footnote, design: .monospaced))
-                        }
+        List {
+            Section("Account") {
+                if let npub = app.npub {
+                    HStack {
+                        Text("npub")
+                        Spacer()
+                        Text(npub)
+                            .font(.callout.monospaced())
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
                     }
                 } else {
-                    Text("No key loaded")
-                }
-            }
-
-            Section("Relays") {
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(color(for: app.relayLight))
-                        .frame(width: 10, height: 10)
-                    Text("Connected \(app.relayConnectedCount) • Connecting \(app.relayConnectingCount)")
-                }
-                if let err = app.relayLastError {
-                    Text(err)
-                        .font(.footnote)
+                    Text("No key configured")
                         .foregroundStyle(.secondary)
                 }
             }
+
+            if app.hasKey {
+                Section {
+                    Button(role: .none) {
+                        exportSecretHex()
+                    } label: {
+                        Label("Export Secret Hex (Danger)", systemImage: "square.and.arrow.up")
+                    }
+                } footer: {
+                    if let exportError {
+                        Text(exportError).foregroundStyle(.red)
+                    } else {
+                        Text("Keep your secret key safe. Anyone with it controls your identity.")
+                    }
+                }
+            }
         }
-        .navigationTitle("Settings")
-        .onAppear { app.refresh() }
+        .listStyle(.insetGrouped)
     }
 
-    private func color(for light: AppState.RelayLight) -> Color {
-        switch light {
-        case .green:  return .green
-        case .yellow: return .yellow
-        case .red:    return .red
+    private func exportSecretHex() {
+        guard let rt = radroots.runtime else { return }
+        exportError = nil
+        do {
+            let hex = try rt.keysExportSecretHex()
+            UIPasteboard.general.string = hex
+        } catch {
+            exportError = String(describing: error)
         }
     }
 }
