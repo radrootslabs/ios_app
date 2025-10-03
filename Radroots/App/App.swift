@@ -1,13 +1,13 @@
 import SwiftUI
+import RadrootsKit
 
 @main
-struct RadrootsApp: App {
-    @StateObject private var appState = AppState()
-
+struct MyApp: App {
     var body: some Scene {
         WindowGroup {
-            HomeView()
-                .environmentObject(appState)
+            RadrootsProvider {
+                RootView() 
+            }
         }
     }
 }

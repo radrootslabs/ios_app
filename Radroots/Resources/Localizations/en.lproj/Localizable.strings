@@ -1,1 +1,4 @@
 "app_name" = "Radroots";
+"settings" = "Settings";
+"setup_greeting_header" = "Welcome to Radroots!";
+"setup_greeting_header_sub" = "Your device will be configured by the setup wizard";
