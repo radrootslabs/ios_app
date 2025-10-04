@@ -32,6 +32,7 @@ struct RelaysView: View {
                 }
             }
         }
+        .listStyle(.insetGrouped)
         .inlineNavigationTitle("Relays")
     }
 }

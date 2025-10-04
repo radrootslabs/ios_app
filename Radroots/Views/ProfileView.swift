@@ -23,7 +23,8 @@ public struct ProfileView: View {
     public var body: some View {
         Form {
             Section(header: Text("Profile")) {
-                LabeledContent("name") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("name").font(.footnote).foregroundStyle(.secondary)
                     TextField("name", text: $name)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -32,7 +33,8 @@ public struct ProfileView: View {
                         .onSubmit { focusedField = .displayName }
                 }
 
-                LabeledContent("display_name") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("display_name").font(.footnote).foregroundStyle(.secondary)
                     TextField("display name", text: $displayName)
                         .textInputAutocapitalization(.words)
                         .autocorrectionDisabled()
@@ -41,7 +43,8 @@ public struct ProfileView: View {
                         .onSubmit { focusedField = .nip05 }
                 }
 
-                LabeledContent("nip05") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("nip05").font(.footnote).foregroundStyle(.secondary)
                     TextField("user@example.com", text: $nip05)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
@@ -51,7 +54,8 @@ public struct ProfileView: View {
                         .onSubmit { focusedField = .about }
                 }
 
-                LabeledContent("about") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("about").font(.footnote).foregroundStyle(.secondary)
                     TextEditor(text: $about)
                         .frame(minHeight: 120)
                         .focused($focusedField, equals: .about)
@@ -74,16 +78,16 @@ public struct ProfileView: View {
                 }
             }
         }
+        .listStyle(.insetGrouped)
+        .scrollDismissesKeyboard(.interactively)
         .inlineNavigationTitle("Profile")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 if isLoading || isPosting { ProgressView() }
             }
-            ToolbarItem(placement: .keyboard) {
-                HStack {
-                    Spacer()
-                    Button("Done") { focusedField = nil }
-                }
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { focusedField = nil }
             }
         }
         .onAppear { loadProfile() }

@@ -10,15 +10,15 @@ public struct AppEntry<Main: View>: View {
     }
 
     public var body: some View {
-        NavigationStack {
-            Group {
-                switch appState.bootstrapPhase {
-                case .idle, .starting:
-                    SplashView()
-                case .ready:
-                    if appState.canShowAppContent {
-                        main()
-                    } else {
+        Group {
+            switch appState.bootstrapPhase {
+            case .idle, .starting:
+                SplashView()
+            case .ready:
+                if appState.canShowAppContent {
+                    main()
+                } else {
+                    NavigationStack {
                         SetupView()
                     }
                 }

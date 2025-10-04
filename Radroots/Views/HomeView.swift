@@ -11,13 +11,17 @@ struct HomeView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            HomeDashboardView()
-                .tabItem { Label("Home", systemImage: "house.fill") }
-                .tag(HomeTab.home)
+            NavigationStack {
+                HomeDashboardView()
+            }
+            .tabItem { Label("Home", systemImage: "house.fill") }
+            .tag(HomeTab.home)
 
-            SettingsView()
-                .tabItem { Label("Settings", systemImage: "gearshape.fill") }
-                .tag(HomeTab.settings)
+            NavigationStack {
+                SettingsView()
+            }
+            .tabItem { Label("Settings", systemImage: "gearshape.fill") }
+            .tag(HomeTab.settings)
         }
     }
 }
@@ -59,6 +63,7 @@ private struct HomeDashboardView: View {
                 }
             }
         }
+        .listStyle(.insetGrouped)
         .inlineNavigationTitle("Home")
     }
 }
