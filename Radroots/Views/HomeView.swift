@@ -31,6 +31,14 @@ private struct HomeDashboardView: View {
 
     var body: some View {
         List {
+            Section("Compose") {
+                NavigationLink {
+                    PostView()
+                } label: {
+                    Label("New Post", systemImage: "square.and.pencil")
+                }
+            }
+
             Section("Your Identity") {
                 NavigationLink {
                     ProfileView()
