@@ -12,55 +12,53 @@ struct SetupView: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                Image(systemName: "key.fill")
-                    .font(.system(size: 60, weight: .bold))
-                Text("Set up your Nostr Identity")
-                    .font(.title2.weight(.semibold))
+        VStack(spacing: 24) {
+            Image(systemName: "key.fill")
+                .font(.system(size: 60, weight: .bold))
+            Text("Set up your Nostr Identity")
+                .font(.title2.weight(.semibold))
 
-                if let errorMessage {
-                    Text(errorMessage)
-                        .foregroundStyle(.red)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-
-                VStack(spacing: 12) {
-                    Button {
-                        generateKey()
-                    } label: {
-                        HStack {
-                            if isWorking { ProgressView().padding(.trailing, 8) }
-                            Text("Generate New Key")
-                                .fontWeight(.semibold)
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isWorking)
-
-                    Button {
-                        importFromClipboard()
-                    } label: {
-                        Text("Import Secret Hex from Clipboard")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(isWorking)
-                }
-                .padding(.top, 8)
-
-                Spacer()
-
-                Text("Your private key is stored securely in the iOS Keychain.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+            if let errorMessage {
+                Text(errorMessage)
+                    .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal)
             }
-            .padding()
-            .navigationTitle("Setup")
+
+            VStack(spacing: 12) {
+                Button {
+                    generateKey()
+                } label: {
+                    HStack {
+                        if isWorking { ProgressView().padding(.trailing, 8) }
+                        Text("Generate New Key")
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isWorking)
+
+                Button {
+                    importFromClipboard()
+                } label: {
+                    Text("Import Secret Hex from Clipboard")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .disabled(isWorking)
+            }
+            .padding(.top, 8)
+
+            Spacer()
+
+            Text("Your private key is stored securely in the iOS Keychain.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
+        .padding()
+        .inlineNavigationTitle("Setup")
     }
 
     private func generateKey() {
@@ -95,12 +93,7 @@ struct SetupView: View {
                 guard let hex = paste, !hex.isEmpty else {
                     throw NSError(domain: "Setup", code: -1, userInfo: [NSLocalizedDescriptionKey: "Clipboard is empty."])
                 }
-                try rt.keysLoadHex32(hex: hex)
-                let exported = try rt.keysExportSecretHex()
-                let account = rt.keysNpub() ?? "profile-\(Int(Date().timeIntervalSince1970))"
-                KeychainBridge.save(account: account, hex: exported)
-                KeychainBridge.setActiveAccount(account: account)
-
+                try keys.importSecretHex(hex: hex, runtime: rt)
                 app.refresh()
                 onSuccess?()
             } catch {
@@ -108,33 +101,5 @@ struct SetupView: View {
             }
             isWorking = false
         }
-    }
-}
-
-private enum KeychainBridge {
-    static func save(account: String, hex: String) {
-        let data = Data(hex.utf8)
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "com.radroots.keys",
-            kSecAttrAccount as String: account,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-            kSecValueData as String: data
-        ]
-        SecItemAdd(query as CFDictionary, nil)
-    }
-
-    static func setActiveAccount(account: String) {
-        let data = Data(account.utf8)
-        let base: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "com.radroots.keys.active",
-            kSecAttrAccount as String: "active"
-        ]
-        SecItemDelete(base as CFDictionary)
-        var query = base
-        query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        query[kSecValueData as String] = data
-        SecItemAdd(query as CFDictionary, nil)
     }
 }

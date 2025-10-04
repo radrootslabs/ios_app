@@ -7,12 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		022DA21729F49893319717AA /* RelaysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D9496F9F05A4E79E73A247 /* RelaysView.swift */; };
 		1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0274A0260D1C04F40C71AF /* HomeView.swift */; };
 		275D4D574BF3B3C1DD746CE7 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C71A93F98C7B93188748B99B /* ProfileView.swift */; };
 		2B3886FD26434A54F3726591 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8D19AA8D515FC8F5D2407378 /* Localizable.strings */; };
 		2B6ACA26689B355CECBFFB57 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A7641E5C643B4B36CFEDA8 /* SetupView.swift */; };
+		360F23EFE80FDBDC6983FB15 /* AppEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D448C9655B708CA3FA8712B9 /* AppEntry.swift */; };
 		7FD8FB018DA09568303194B2 /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADE61264E2C98E73828E8680 /* Strings.swift */; };
-		AAB91B301EF4BDC34E1E509D /* AppRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDE71B38C31DC432181E11AF /* AppRoot.swift */; };
+		A1B921027DA7ACD7343BE250 /* SectionWideButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17CA8F5611075F60F214A00 /* SectionWideButton.swift */; };
+		B971351ABE8E79A472B4DC7D /* View+Nav.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B0C9861CD86EAD3CAD549E /* View+Nav.swift */; };
 		C22DB0F3EB2E69A34DF941E0 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2818363B157125491FB84A1E /* App.swift */; };
 		C512BD267A3E2B8F10FABB3B /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FE790CA1CD31208947913B9 /* Logger.swift */; };
 		C8AB3389F7430A5C79AD7DF8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */; };
@@ -22,6 +25,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		08FA88664E5E3ED3A24D56CC /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		0A0274A0260D1C04F40C71AF /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		138AA7BAA021EE13E829390B /* Bundle+Build.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Bundle+Build.swift"; sourceTree = "<group>"; };
 		16A7641E5C643B4B36CFEDA8 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
@@ -30,14 +34,20 @@
 		3FADD6E2563CC9AF9F935DCE /* RadrootsKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RadrootsKit; path = RadrootsKit; sourceTree = SOURCE_ROOT; };
 		4BC4B7D0BB4C6D8E4B0AA4AD /* radroots.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.xcconfig; sourceTree = "<group>"; };
 		54EE5A34FE2086899F5B7568 /* radroots.git.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.git.xcconfig; sourceTree = "<group>"; };
+		676B89EB116B60AE8C2B4313 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		7BCA99336E305EC789152DDE /* radroots.local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.local.xcconfig; sourceTree = "<group>"; };
+		7C294E8EF50F5E1E73F5C135 /* Common.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
 		93AA285819DD1269C3EAD80A /* Radroots.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Radroots.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		93D729E070C32490545FA837 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		A0B0C9861CD86EAD3CAD549E /* View+Nav.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Nav.swift"; sourceTree = "<group>"; };
 		ADE61264E2C98E73828E8680 /* Strings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Strings.swift; sourceTree = "<group>"; };
+		B289F4B276245ABE083D777F /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		C17CA8F5611075F60F214A00 /* SectionWideButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionWideButton.swift; sourceTree = "<group>"; };
+		C1D9496F9F05A4E79E73A247 /* RelaysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelaysView.swift; sourceTree = "<group>"; };
 		C71A93F98C7B93188748B99B /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		CCF0F7B3C57D8D770F178329 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D448C9655B708CA3FA8712B9 /* AppEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEntry.swift; sourceTree = "<group>"; };
 		E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		FDE71B38C31DC432181E11AF /* AppRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRoot.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,9 +66,20 @@
 			isa = PBXGroup;
 			children = (
 				2818363B157125491FB84A1E /* App.swift */,
-				FDE71B38C31DC432181E11AF /* AppRoot.swift */,
+				D448C9655B708CA3FA8712B9 /* AppEntry.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		579F407D96CCAFD4000EF363 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				676B89EB116B60AE8C2B4313 /* Base.xcconfig */,
+				7C294E8EF50F5E1E73F5C135 /* Common.xcconfig */,
+				B289F4B276245ABE083D777F /* Debug.xcconfig */,
+				08FA88664E5E3ED3A24D56CC /* Release.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		5FD6379AE27C57D02E8C7EE1 /* Radroots */ = {
@@ -68,6 +89,7 @@
 				7BCA99336E305EC789152DDE /* radroots.local.xcconfig */,
 				4BC4B7D0BB4C6D8E4B0AA4AD /* radroots.xcconfig */,
 				23C2D7FF63B61CD356979E82 /* App */,
+				579F407D96CCAFD4000EF363 /* Config */,
 				E9C466456E8A8EEB73EE47F5 /* Resources */,
 				932F9ACAF6A7D30E34F2E375 /* Shared */,
 				BD0E20D32DF34D9E7C3EBCD2 /* Views */,
@@ -94,6 +116,7 @@
 		932F9ACAF6A7D30E34F2E375 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				D46F444AD1818932F03AC6B6 /* Components */,
 				9D22575D1FAD99FE8B6FCE6C /* Extensions */,
 				65EC1C4AF7DC676E78603D52 /* Localisation */,
 				F16A19713274742D956C3A4D /* Logging */,
@@ -113,6 +136,7 @@
 			isa = PBXGroup;
 			children = (
 				138AA7BAA021EE13E829390B /* Bundle+Build.swift */,
+				A0B0C9861CD86EAD3CAD549E /* View+Nav.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -122,6 +146,7 @@
 			children = (
 				0A0274A0260D1C04F40C71AF /* HomeView.swift */,
 				C71A93F98C7B93188748B99B /* ProfileView.swift */,
+				C1D9496F9F05A4E79E73A247 /* RelaysView.swift */,
 				E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */,
 				16A7641E5C643B4B36CFEDA8 /* SetupView.swift */,
 			);
@@ -143,6 +168,14 @@
 				8D19AA8D515FC8F5D2407378 /* Localizable.strings */,
 			);
 			path = Localizations;
+			sourceTree = "<group>";
+		};
+		D46F444AD1818932F03AC6B6 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				C17CA8F5611075F60F214A00 /* SectionWideButton.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		E9C466456E8A8EEB73EE47F5 /* Resources */ = {
@@ -234,14 +267,17 @@
 			buildActionMask = 2147483647;
 			files = (
 				C22DB0F3EB2E69A34DF941E0 /* App.swift in Sources */,
-				AAB91B301EF4BDC34E1E509D /* AppRoot.swift in Sources */,
+				360F23EFE80FDBDC6983FB15 /* AppEntry.swift in Sources */,
 				E3864E34D67BAD0744B93180 /* Bundle+Build.swift in Sources */,
 				1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */,
 				C512BD267A3E2B8F10FABB3B /* Logger.swift in Sources */,
 				275D4D574BF3B3C1DD746CE7 /* ProfileView.swift in Sources */,
+				022DA21729F49893319717AA /* RelaysView.swift in Sources */,
+				A1B921027DA7ACD7343BE250 /* SectionWideButton.swift in Sources */,
 				C8AB3389F7430A5C79AD7DF8 /* SettingsView.swift in Sources */,
 				2B6ACA26689B355CECBFFB57 /* SetupView.swift in Sources */,
 				7FD8FB018DA09568303194B2 /* Strings.swift in Sources */,
+				B971351ABE8E79A472B4DC7D /* View+Nav.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,7 +297,7 @@
 /* Begin XCBuildConfiguration section */
 		5486087B252C6EA76ADD9BB8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 4BC4B7D0BB4C6D8E4B0AA4AD /* radroots.xcconfig */;
+			baseConfigurationReference = B289F4B276245ABE083D777F /* Debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -279,7 +315,7 @@
 		};
 		D930E9391B5B63DB518922D2 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 4BC4B7D0BB4C6D8E4B0AA4AD /* radroots.xcconfig */;
+			baseConfigurationReference = 08FA88664E5E3ED3A24D56CC /* Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";

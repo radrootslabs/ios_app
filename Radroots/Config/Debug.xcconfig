@@ -1,0 +1,7 @@
+#include "Base.xcconfig"
+
+RR_LOG_STDOUT = YES
+RR_LOG_LEVEL = debug
+RR_LOG_FILE_ENABLED = NO
+RR_LOG_FILE_NAME = radroots_debug.log
+NOSTR_RELAYS = ws:$(SLASH)$(SLASH)localhost:21648

@@ -56,5 +56,16 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+
+	<key>RR_LOG_STDOUT</key>
+	<string>$(RR_LOG_STDOUT)</string>
+	<key>RR_LOG_LEVEL</key>
+	<string>$(RR_LOG_LEVEL)</string>
+	<key>RR_LOG_FILE_ENABLED</key>
+	<string>$(RR_LOG_FILE_ENABLED)</string>
+	<key>RR_LOG_FILE_NAME</key>
+	<string>$(RR_LOG_FILE_NAME)</string>
+	<key>NOSTR_RELAYS</key>
+	<string>$(NOSTR_RELAYS)</string>
 </dict>
 </plist>

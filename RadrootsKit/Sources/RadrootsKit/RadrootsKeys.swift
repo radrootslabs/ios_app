@@ -21,8 +21,17 @@ public final class RadrootsKeys: ObservableObject {
 
     public func generateAndPersist(runtime: RadrootsRuntime) throws {
         _ = try runtime.keysGenerateInMemory()
+        try persistCurrentKey(runtime: runtime, accountOverride: nil)
+    }
+
+    public func importSecretHex(hex: String, runtime: RadrootsRuntime) throws {
+        try runtime.keysLoadHex32(hex: hex)
+        try persistCurrentKey(runtime: runtime, accountOverride: nil)
+    }
+
+    private func persistCurrentKey(runtime: RadrootsRuntime, accountOverride: String?) throws {
         let hex = try runtime.keysExportSecretHex()
-        let account = runtime.keysNpub() ?? "profile-\(Int(Date().timeIntervalSince1970))"
+        let account = accountOverride ?? runtime.keysNpub() ?? "profile-\(Int(Date().timeIntervalSince1970))"
         Keychain.save(service: Keychain.service, account: account, data: Data(hex.utf8))
         Keychain.setActiveAccount(account)
         self.hasKey = runtime.keysIsLoaded()

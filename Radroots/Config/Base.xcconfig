@@ -1,0 +1,8 @@
+#include "../radroots.xcconfig"
+#include "Common.xcconfig"
+
+RR_LOG_STDOUT = YES
+RR_LOG_LEVEL = info
+RR_LOG_FILE_ENABLED = NO
+RR_LOG_FILE_NAME = radroots.log
+NOSTR_RELAYS = wss:$(SLASH)$(SLASH)relay.radroots.org

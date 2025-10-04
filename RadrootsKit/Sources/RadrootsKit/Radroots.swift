@@ -12,14 +12,22 @@ public final class Radroots: ObservableObject {
         build: String = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "0",
         buildSha: String? = nil
     ) throws {
-        try initLoggingIfNeeded()
+        let settings = LoggingSettings.load()
+        do {
+            try settings.apply()
+        } catch {
+            try? initLoggingStdout()
+        }
+        settings.logEffectiveConfigs()
+
         let rt = try RadrootsRuntime()
+        let resolvedSha = buildSha ?? (Bundle.main.object(forInfoDictionaryKey: "GIT_SHA") as? String)
         rt.setAppInfoPlatform(
             platform: "iOS",
             bundleId: bundleId,
             version: version,
             buildNumber: build,
-            buildSha: buildSha
+            buildSha: resolvedSha
         )
         self.runtime = rt
     }
@@ -30,12 +38,5 @@ public final class Radroots: ObservableObject {
 
     public func info() -> RuntimeInfo? {
         runtime?.info()
-    }
-
-    private func initLoggingIfNeeded() throws {
-        if (try? initLoggingStdout()) == nil {
-            let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!.path
-            try initLogging(dir: dir, fileName: "radroots.log", isStdout: true)
-        }
     }
 }

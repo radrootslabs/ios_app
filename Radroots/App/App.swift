@@ -6,7 +6,9 @@ struct RadrootsApp: App {
     var body: some Scene {
         WindowGroup {
             RadrootsProvider {
-                AppRootView()
+                AppEntry {
+                    HomeView()
+                }
             }
         }
     }

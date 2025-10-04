@@ -2,7 +2,7 @@ import Foundation
 import RadrootsKit
 import os
 
-private let oslog = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "App")
+private let oslog = os.Logger(subsystem: Bundle.main.bundleIdentifier ?? "Radroots", category: "App")
 
 enum RadrootsLogger {
     static func info(_ message: String) {
