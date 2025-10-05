@@ -31,14 +31,6 @@ private struct HomeDashboardView: View {
 
     var body: some View {
         List {
-            Section("Compose") {
-                NavigationLink {
-                    PostView()
-                } label: {
-                    Label("New Post", systemImage: "square.and.pencil")
-                }
-            }
-
             Section("Your Identity") {
                 NavigationLink {
                     ProfileView()
@@ -68,6 +60,22 @@ private struct HomeDashboardView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
+                }
+            }
+
+            Section("Compose") {
+                NavigationLink {
+                    PostCreateView()
+                } label: {
+                    Label("New Post", systemImage: "square.and.pencil")
+                }
+            }
+
+            Section("Explore") {
+                NavigationLink {
+                    PostFeedView()
+                } label: {
+                    Label("Public Feed", systemImage: "text.bubble.fill")
                 }
             }
         }

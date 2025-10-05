@@ -13,32 +13,40 @@
 		2B3886FD26434A54F3726591 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8D19AA8D515FC8F5D2407378 /* Localizable.strings */; };
 		2B6ACA26689B355CECBFFB57 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A7641E5C643B4B36CFEDA8 /* SetupView.swift */; };
 		360F23EFE80FDBDC6983FB15 /* AppEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D448C9655B708CA3FA8712B9 /* AppEntry.swift */; };
-		53694F65BFDDA2B5213063EE /* PostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BADD960784613FCC0EA1D14 /* PostView.swift */; };
+		53694F65BFDDA2B5213063EE /* PostCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BADD960784613FCC0EA1D14 /* PostCreateView.swift */; };
 		7FD8FB018DA09568303194B2 /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADE61264E2C98E73828E8680 /* Strings.swift */; };
+		9121BD4A3E7C6EF2B21F540F /* CopyButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C7DE4207398DE242519F9C /* CopyButton.swift */; };
 		A1B921027DA7ACD7343BE250 /* SectionWideButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17CA8F5611075F60F214A00 /* SectionWideButton.swift */; };
 		B971351ABE8E79A472B4DC7D /* View+Nav.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B0C9861CD86EAD3CAD549E /* View+Nav.swift */; };
 		C22DB0F3EB2E69A34DF941E0 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2818363B157125491FB84A1E /* App.swift */; };
 		C512BD267A3E2B8F10FABB3B /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FE790CA1CD31208947913B9 /* Logger.swift */; };
 		C8AB3389F7430A5C79AD7DF8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */; };
+		D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41A4289F43625DD65E6C4B25 /* CopyRow.swift */; };
+		D62E9461833A0AA5E622A1E6 /* ToastModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227028B4EBDC6703999FB9DA /* ToastModifier.swift */; };
 		DCE468F668A3C346E716B04C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CCF0F7B3C57D8D770F178329 /* Assets.xcassets */; };
 		E3864E34D67BAD0744B93180 /* Bundle+Build.swift in Sources */ = {isa = PBXBuildFile; fileRef = 138AA7BAA021EE13E829390B /* Bundle+Build.swift */; };
+		EB7C19F62D7DAB9C044D53AA /* PostDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3C0EFACAD213A69C12D5064 /* PostDetailView.swift */; };
+		F01E2EF766801B5D76A0852B /* FeedsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E07205F92CB5B757F7A985C /* FeedsView.swift */; };
 		F3E40E5A76B4EA19AC7603D2 /* RadrootsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2DAD90EBF8EB00ACDD7611CD /* RadrootsKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		08FA88664E5E3ED3A24D56CC /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		0A0274A0260D1C04F40C71AF /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		0BADD960784613FCC0EA1D14 /* PostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostView.swift; sourceTree = "<group>"; };
+		0BADD960784613FCC0EA1D14 /* PostCreateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostCreateView.swift; sourceTree = "<group>"; };
 		138AA7BAA021EE13E829390B /* Bundle+Build.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Bundle+Build.swift"; sourceTree = "<group>"; };
 		16A7641E5C643B4B36CFEDA8 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
+		227028B4EBDC6703999FB9DA /* ToastModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastModifier.swift; sourceTree = "<group>"; };
 		2818363B157125491FB84A1E /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		2FE790CA1CD31208947913B9 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		3FADD6E2563CC9AF9F935DCE /* RadrootsKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RadrootsKit; path = RadrootsKit; sourceTree = SOURCE_ROOT; };
+		41A4289F43625DD65E6C4B25 /* CopyRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyRow.swift; sourceTree = "<group>"; };
 		4BC4B7D0BB4C6D8E4B0AA4AD /* radroots.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.xcconfig; sourceTree = "<group>"; };
 		54EE5A34FE2086899F5B7568 /* radroots.git.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.git.xcconfig; sourceTree = "<group>"; };
 		676B89EB116B60AE8C2B4313 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		7BCA99336E305EC789152DDE /* radroots.local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.local.xcconfig; sourceTree = "<group>"; };
 		7C294E8EF50F5E1E73F5C135 /* Common.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
+		8E07205F92CB5B757F7A985C /* FeedsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedsView.swift; sourceTree = "<group>"; };
 		93AA285819DD1269C3EAD80A /* Radroots.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Radroots.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		93D729E070C32490545FA837 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A0B0C9861CD86EAD3CAD549E /* View+Nav.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Nav.swift"; sourceTree = "<group>"; };
@@ -50,6 +58,8 @@
 		CCF0F7B3C57D8D770F178329 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D448C9655B708CA3FA8712B9 /* AppEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEntry.swift; sourceTree = "<group>"; };
 		E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		F3C0EFACAD213A69C12D5064 /* PostDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostDetailView.swift; sourceTree = "<group>"; };
+		F4C7DE4207398DE242519F9C /* CopyButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyButton.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -122,6 +132,7 @@
 				9D22575D1FAD99FE8B6FCE6C /* Extensions */,
 				65EC1C4AF7DC676E78603D52 /* Localisation */,
 				F16A19713274742D956C3A4D /* Logging */,
+				C5BAA3C6E2D410F0C8475D89 /* Modifiers */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -146,8 +157,10 @@
 		BD0E20D32DF34D9E7C3EBCD2 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				8E07205F92CB5B757F7A985C /* FeedsView.swift */,
 				0A0274A0260D1C04F40C71AF /* HomeView.swift */,
-				0BADD960784613FCC0EA1D14 /* PostView.swift */,
+				F3C0EFACAD213A69C12D5064 /* PostDetailView.swift */,
+				0BADD960784613FCC0EA1D14 /* PostCreateView.swift */,
 				C71A93F98C7B93188748B99B /* ProfileView.swift */,
 				C1D9496F9F05A4E79E73A247 /* RelaysView.swift */,
 				E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */,
@@ -165,6 +178,14 @@
 			);
 			sourceTree = "<group>";
 		};
+		C5BAA3C6E2D410F0C8475D89 /* Modifiers */ = {
+			isa = PBXGroup;
+			children = (
+				227028B4EBDC6703999FB9DA /* ToastModifier.swift */,
+			);
+			path = Modifiers;
+			sourceTree = "<group>";
+		};
 		C5BC6846E71297290E1EAA29 /* Localizations */ = {
 			isa = PBXGroup;
 			children = (
@@ -176,6 +197,8 @@
 		D46F444AD1818932F03AC6B6 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				F4C7DE4207398DE242519F9C /* CopyButton.swift */,
+				41A4289F43625DD65E6C4B25 /* CopyRow.swift */,
 				C17CA8F5611075F60F214A00 /* SectionWideButton.swift */,
 			);
 			path = Components;
@@ -272,15 +295,20 @@
 				C22DB0F3EB2E69A34DF941E0 /* App.swift in Sources */,
 				360F23EFE80FDBDC6983FB15 /* AppEntry.swift in Sources */,
 				E3864E34D67BAD0744B93180 /* Bundle+Build.swift in Sources */,
+				9121BD4A3E7C6EF2B21F540F /* CopyButton.swift in Sources */,
+				D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */,
+				F01E2EF766801B5D76A0852B /* FeedsView.swift in Sources */,
 				1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */,
 				C512BD267A3E2B8F10FABB3B /* Logger.swift in Sources */,
-				53694F65BFDDA2B5213063EE /* PostView.swift in Sources */,
+				EB7C19F62D7DAB9C044D53AA /* PostDetailView.swift in Sources */,
+				53694F65BFDDA2B5213063EE /* PostCreateView.swift in Sources */,
 				275D4D574BF3B3C1DD746CE7 /* ProfileView.swift in Sources */,
 				022DA21729F49893319717AA /* RelaysView.swift in Sources */,
 				A1B921027DA7ACD7343BE250 /* SectionWideButton.swift in Sources */,
 				C8AB3389F7430A5C79AD7DF8 /* SettingsView.swift in Sources */,
 				2B6ACA26689B355CECBFFB57 /* SetupView.swift in Sources */,
 				7FD8FB018DA09568303194B2 /* Strings.swift in Sources */,
+				D62E9461833A0AA5E622A1E6 /* ToastModifier.swift in Sources */,
 				B971351ABE8E79A472B4DC7D /* View+Nav.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

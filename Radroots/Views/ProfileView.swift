@@ -112,9 +112,9 @@ public struct ProfileView: View {
         guard let rt = app.radroots.runtime else { return }
         isLoading = true
         Task {
-            let prof = rt.nostrProfileForSelf()
+            let meta = rt.nostrProfileForSelf()
             await MainActor.run {
-                self.original = OriginalProfile.from(prof)
+                self.original = OriginalProfile.from(meta)
                 self.name = original.name
                 self.displayName = original.displayName
                 self.nip05 = original.nip05
@@ -163,12 +163,12 @@ private struct OriginalProfile: Equatable {
 
     static let empty = OriginalProfile(name: "", displayName: "", nip05: "", about: "")
 
-    static func from(_ p: NostrProfile?) -> OriginalProfile {
+    static func from(_ p: NostrProfileEventMetadata?) -> OriginalProfile {
         OriginalProfile(
-            name: p?.name ?? "",
-            displayName: p?.displayName ?? "",
-            nip05: p?.nip05 ?? "",
-            about: p?.about ?? ""
+            name: p?.profile.name ?? "",
+            displayName: p?.profile.displayName ?? "",
+            nip05: p?.profile.nip05 ?? "",
+            about: p?.profile.about ?? ""
         )
     }
 }

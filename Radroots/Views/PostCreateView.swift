@@ -1,7 +1,7 @@
 import SwiftUI
 import RadrootsKit
 
-struct PostView: View {
+struct PostCreateView: View {
     @EnvironmentObject private var app: AppState
     @State private var text: String = ""
     @State private var isPosting = false
