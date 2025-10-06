@@ -3,19 +3,14 @@ import RadrootsKit
 
 struct PostFeedView: View {
     @EnvironmentObject private var app: AppState
-    @State private var posts: [NostrPostEventMetadata] = []
-    @State private var isLoading = false
-    @State private var errorMessage: String?
-    @State private var expandedReplyFor: String?
-    @State private var draftReplies: [String: String] = [:]
-    @State private var sendingReplyFor: Set<String> = []
+    @StateObject private var vm = PostFeedViewModel()
     @State private var resultTitle: String = ""
     @State private var resultMessage: String = ""
     @State private var showResult: Bool = false
 
     var body: some View {
         List {
-            if let e = errorMessage {
+            if let e = vm.errorMessage {
                 Section {
                     Text(e)
                         .foregroundStyle(.red)
@@ -24,20 +19,26 @@ struct PostFeedView: View {
             }
 
             Section {
-                ForEach(posts, id: \.id) { item in
+                ForEach(vm.posts, id: \.id) { item in
                     FeedPostRow(
                         post: item,
-                        isExpanded: expandedReplyFor == item.id,
-                        onToggleReply: { toggleReply(for: item.id) }
+                        isExpanded: vm.expandedReplyFor == item.id,
+                        onToggleReply: { vm.toggleReply(for: item.id) }
                     )
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
 
-                    if expandedReplyFor == item.id {
+                    if vm.expandedReplyFor == item.id {
                         InlineReplyComposer(
-                            text: bindingForReply(item.id),
-                            isSending: sendingReplyFor.contains(item.id),
-                            onCancel: { expandedReplyFor = nil },
-                            onSend: { handleReply(item) }
+                            text: vm.bindingForReply(item.id),
+                            isSending: vm.sendingReplyFor.contains(item.id),
+                            onCancel: { vm.expandedReplyFor = nil },
+                            onSend: {
+                                vm.sendReply(app: app, to: item) { title, message in
+                                    resultTitle = title
+                                    resultMessage = message
+                                    showResult = true
+                                }
+                            }
                         )
                         .listRowInsets(EdgeInsets(top: 6, leading: 64, bottom: 12, trailing: 16))
                         .listRowSeparator(.hidden)
@@ -53,89 +54,22 @@ struct PostFeedView: View {
         .inlineNavigationTitle("Feed")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                if isLoading { ProgressView() }
+                if vm.isLoading { ProgressView() }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button { Task { await load() } } label: {
+                Button { Task { await vm.refresh(app: app) } } label: {
                     Image(systemName: "arrow.clockwise")
                 }
-                .disabled(isLoading)
+                .disabled(vm.isLoading)
             }
         }
-        .task { if posts.isEmpty { await load() } }
-        .refreshable { await load() }
+        .task { vm.onAppear(app: app) }
+        .onDisappear { vm.onDisappear() }
+        .refreshable { await vm.refresh(app: app) }
         .alert(resultTitle, isPresented: $showResult) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(resultMessage)
-        }
-    }
-
-    private func load() async {
-        guard let rt = app.radroots.runtime else { return }
-        await MainActor.run {
-            isLoading = true
-            errorMessage = nil
-        }
-        do {
-            let fetched = try rt.nostrFetchTextNotes(limit: 50, sinceUnix: nil)
-            let sorted = fetched.sorted { $0.publishedAt > $1.publishedAt }
-            DebugDump.posts(sorted, label: "PostFeed.kind1.displayed")
-            await MainActor.run {
-                posts = sorted
-                isLoading = false
-            }
-        } catch {
-            await MainActor.run {
-                errorMessage = String(describing: error)
-                isLoading = false
-            }
-        }
-    }
-
-    private func toggleReply(for id: String) {
-        expandedReplyFor = expandedReplyFor == id ? nil : id
-    }
-
-    private func bindingForReply(_ id: String) -> Binding<String> {
-        Binding<String>(
-            get: { draftReplies[id, default: ""] },
-            set: { draftReplies[id] = $0 }
-        )
-    }
-
-    private func handleReply(_ post: NostrPostEventMetadata) {
-        guard let rt = app.radroots.runtime else { return }
-        let raw = draftReplies[post.id, default: ""]
-        let reply = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !reply.isEmpty else { return }
-        sendingReplyFor.insert(post.id)
-
-        Task {
-            do {
-                let id = try rt.nostrPostReply(
-                    parentEventIdHex: post.id,
-                    parentAuthorHex: post.author,
-                    content: reply,
-                    rootEventIdHex: nil as String?
-                )
-                await MainActor.run {
-                    draftReplies[post.id] = ""
-                    expandedReplyFor = nil
-                    sendingReplyFor.remove(post.id)
-                    resultTitle = "Reply Posted"
-                    resultMessage = "Event \(id)"
-                    showResult = true
-                    app.refresh()
-                }
-            } catch {
-                await MainActor.run {
-                    sendingReplyFor.remove(post.id)
-                    resultTitle = "Failed to Post Reply"
-                    resultMessage = String(describing: error)
-                    showResult = true
-                }
-            }
         }
     }
 }
@@ -196,6 +130,7 @@ fileprivate struct FeedPostRow: View {
         return "\(prefix)…\(suffix)"
     }
 }
+
 
 fileprivate struct InlineReplyComposer: View {
     @Binding var text: String
