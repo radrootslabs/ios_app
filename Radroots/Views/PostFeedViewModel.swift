@@ -13,7 +13,9 @@ final class PostFeedViewModel: ObservableObject {
     private var liveTask: Task<Void, Never>?
 
     func onAppear(app: AppState) {
-        if posts.isEmpty { Task { await load(app: app) } }
+        if posts.isEmpty {
+            Task { await load(app: app) }
+        }
         startLiveLoop(app: app)
     }
 
@@ -54,7 +56,7 @@ final class PostFeedViewModel: ObservableObject {
     func sendReply(
         app: AppState,
         to post: NostrPostEventMetadata,
-        setResult: @escaping (_ title: String, _ message: String) -> Void
+        setResult: @escaping @MainActor @Sendable (_ title: String, _ message: String) -> Void
     ) {
         guard let rt = app.radroots.runtime else { return }
         let raw = draftReplies[post.id, default: ""]
@@ -62,31 +64,47 @@ final class PostFeedViewModel: ObservableObject {
         guard !reply.isEmpty else { return }
         sendingReplyFor.insert(post.id)
 
-        Task {
-            do {
-                let id = try rt.nostrPostReply(
-                    parentEventIdHex: post.id,
-                    parentAuthorHex: post.author,
-                    content: reply,
-                    rootEventIdHex: nil as String?
-                )
-                draftReplies[post.id] = ""
+        Task { @MainActor in
+            let runtime = rt
+            let parentId = post.id
+            let parentAuthor = post.author
+            let text = reply
+
+            let result: Result<String, Error> = await Task.detached { @Sendable in
+                do {
+                    let id = try runtime.nostrPostReply(
+                        parentEventIdHex: parentId,
+                        parentAuthorHex: parentAuthor,
+                        content: text,
+                        rootEventIdHex: nil as String?
+                    )
+                    return .success(id)
+                } catch {
+                    return .failure(error)
+                }
+            }.value
+
+            switch result {
+            case .success(let id):
+                draftReplies[parentId] = ""
                 expandedReplyFor = nil
-                sendingReplyFor.remove(post.id)
+                sendingReplyFor.remove(parentId)
                 setResult("Reply Posted", "Event \(id)")
-            } catch {
-                sendingReplyFor.remove(post.id)
-                setResult("Failed to Post Reply", String(describing: error))
+            case .failure(let e):
+                sendingReplyFor.remove(parentId)
+                setResult("Failed to Post Reply", String(describing: e))
             }
         }
     }
 
+
     private func startLiveLoop(app: AppState) {
         guard liveTask == nil else { return }
-        liveTask = Task { [weak self] in
+        liveTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            var known = Set(posts.map { $0.id })
-            var since: UInt64? = posts.first?.publishedAt
+            var knownIds = Set(posts.map(\.id))
+            var since = posts.map(\.publishedAt).max()
+
             while !Task.isCancelled {
                 if app.relayConnectedCount == 0 {
                     try? await Task.sleep(for: .seconds(2))
@@ -96,18 +114,34 @@ final class PostFeedViewModel: ObservableObject {
                     try? await Task.sleep(for: .seconds(2))
                     continue
                 }
-                do {
-                    let fetched = try rt.nostrFetchTextNotes(limit: 50, sinceUnix: since)
-                    let newOnes = fetched.filter { !known.contains($0.id) }
+
+                let currentSince = since
+                let fetchResult: Result<[NostrPostEventMetadata], Error> = await Task.detached { @Sendable in
+                    do {
+                        let items = try rt.nostrFetchTextNotes(limit: 50, sinceUnix: currentSince)
+                        return .success(items)
+                    } catch {
+                        return .failure(error)
+                    }
+                }.value
+
+                if Task.isCancelled { break }
+
+                switch fetchResult {
+                case .failure:
+                    break
+                case .success(let fetched):
+                    let newOnes = fetched.filter { !knownIds.contains($0.id) }
                     if !newOnes.isEmpty {
-                        known.formUnion(newOnes.map { $0.id })
-                        let combined = (newOnes + posts).sorted { $0.publishedAt > $1.publishedAt }
-                        posts = combined
-                        if let m = newOnes.map(\.publishedAt).max() {
+                        knownIds.formUnion(newOnes.map(\.id))
+                        let maxTs = newOnes.map(\.publishedAt).max()
+                        posts = (newOnes + posts).sorted { $0.publishedAt > $1.publishedAt }
+                        if let m = maxTs {
                             since = max(since ?? 0, m)
                         }
                     }
-                } catch { }
+                }
+
                 try? await Task.sleep(for: .seconds(3))
             }
         }
