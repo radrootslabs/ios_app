@@ -13,8 +13,9 @@
 		2B3886FD26434A54F3726591 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8D19AA8D515FC8F5D2407378 /* Localizable.strings */; };
 		2B6ACA26689B355CECBFFB57 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A7641E5C643B4B36CFEDA8 /* SetupView.swift */; };
 		360F23EFE80FDBDC6983FB15 /* AppEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D448C9655B708CA3FA8712B9 /* AppEntry.swift */; };
-		53694F65BFDDA2B5213063EE /* PostCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BADD960784613FCC0EA1D14 /* PostCreateView.swift */; };
+		4025E63F6603011431B8A0E1 /* DebugDump.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F9BFC3C8CE2F86FB7DB74B /* DebugDump.swift */; };
 		7FD8FB018DA09568303194B2 /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADE61264E2C98E73828E8680 /* Strings.swift */; };
+		8B923F78BF5B680C7F6A7CE3 /* PostFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AE0EB327C10171444553378 /* PostFeedView.swift */; };
 		9121BD4A3E7C6EF2B21F540F /* CopyButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C7DE4207398DE242519F9C /* CopyButton.swift */; };
 		A1B921027DA7ACD7343BE250 /* SectionWideButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17CA8F5611075F60F214A00 /* SectionWideButton.swift */; };
 		B971351ABE8E79A472B4DC7D /* View+Nav.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B0C9861CD86EAD3CAD549E /* View+Nav.swift */; };
@@ -26,14 +27,13 @@
 		DCE468F668A3C346E716B04C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CCF0F7B3C57D8D770F178329 /* Assets.xcassets */; };
 		E3864E34D67BAD0744B93180 /* Bundle+Build.swift in Sources */ = {isa = PBXBuildFile; fileRef = 138AA7BAA021EE13E829390B /* Bundle+Build.swift */; };
 		EB7C19F62D7DAB9C044D53AA /* PostDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3C0EFACAD213A69C12D5064 /* PostDetailView.swift */; };
-		F01E2EF766801B5D76A0852B /* FeedsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E07205F92CB5B757F7A985C /* FeedsView.swift */; };
+		F32EFF00A8A852F76657FEE1 /* PostCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA8AAF0C0F1723860A8481E0 /* PostCreateView.swift */; };
 		F3E40E5A76B4EA19AC7603D2 /* RadrootsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2DAD90EBF8EB00ACDD7611CD /* RadrootsKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		08FA88664E5E3ED3A24D56CC /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		0A0274A0260D1C04F40C71AF /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		0BADD960784613FCC0EA1D14 /* PostCreateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostCreateView.swift; sourceTree = "<group>"; };
 		138AA7BAA021EE13E829390B /* Bundle+Build.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Bundle+Build.swift"; sourceTree = "<group>"; };
 		16A7641E5C643B4B36CFEDA8 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
 		227028B4EBDC6703999FB9DA /* ToastModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastModifier.swift; sourceTree = "<group>"; };
@@ -46,18 +46,20 @@
 		676B89EB116B60AE8C2B4313 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		7BCA99336E305EC789152DDE /* radroots.local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.local.xcconfig; sourceTree = "<group>"; };
 		7C294E8EF50F5E1E73F5C135 /* Common.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
-		8E07205F92CB5B757F7A985C /* FeedsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedsView.swift; sourceTree = "<group>"; };
 		93AA285819DD1269C3EAD80A /* Radroots.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Radroots.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		93D729E070C32490545FA837 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		9AE0EB327C10171444553378 /* PostFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostFeedView.swift; sourceTree = "<group>"; };
 		A0B0C9861CD86EAD3CAD549E /* View+Nav.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Nav.swift"; sourceTree = "<group>"; };
 		ADE61264E2C98E73828E8680 /* Strings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Strings.swift; sourceTree = "<group>"; };
 		B289F4B276245ABE083D777F /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		C17CA8F5611075F60F214A00 /* SectionWideButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionWideButton.swift; sourceTree = "<group>"; };
 		C1D9496F9F05A4E79E73A247 /* RelaysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelaysView.swift; sourceTree = "<group>"; };
 		C71A93F98C7B93188748B99B /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		CA8AAF0C0F1723860A8481E0 /* PostCreateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostCreateView.swift; sourceTree = "<group>"; };
 		CCF0F7B3C57D8D770F178329 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D448C9655B708CA3FA8712B9 /* AppEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEntry.swift; sourceTree = "<group>"; };
 		E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		E7F9BFC3C8CE2F86FB7DB74B /* DebugDump.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugDump.swift; sourceTree = "<group>"; };
 		F3C0EFACAD213A69C12D5064 /* PostDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostDetailView.swift; sourceTree = "<group>"; };
 		F4C7DE4207398DE242519F9C /* CopyButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyButton.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -157,10 +159,10 @@
 		BD0E20D32DF34D9E7C3EBCD2 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				8E07205F92CB5B757F7A985C /* FeedsView.swift */,
 				0A0274A0260D1C04F40C71AF /* HomeView.swift */,
+				CA8AAF0C0F1723860A8481E0 /* PostCreateView.swift */,
 				F3C0EFACAD213A69C12D5064 /* PostDetailView.swift */,
-				0BADD960784613FCC0EA1D14 /* PostCreateView.swift */,
+				9AE0EB327C10171444553378 /* PostFeedView.swift */,
 				C71A93F98C7B93188748B99B /* ProfileView.swift */,
 				C1D9496F9F05A4E79E73A247 /* RelaysView.swift */,
 				E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */,
@@ -216,6 +218,7 @@
 		F16A19713274742D956C3A4D /* Logging */ = {
 			isa = PBXGroup;
 			children = (
+				E7F9BFC3C8CE2F86FB7DB74B /* DebugDump.swift */,
 				2FE790CA1CD31208947913B9 /* Logger.swift */,
 			);
 			path = Logging;
@@ -297,11 +300,12 @@
 				E3864E34D67BAD0744B93180 /* Bundle+Build.swift in Sources */,
 				9121BD4A3E7C6EF2B21F540F /* CopyButton.swift in Sources */,
 				D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */,
-				F01E2EF766801B5D76A0852B /* FeedsView.swift in Sources */,
+				4025E63F6603011431B8A0E1 /* DebugDump.swift in Sources */,
 				1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */,
 				C512BD267A3E2B8F10FABB3B /* Logger.swift in Sources */,
+				F32EFF00A8A852F76657FEE1 /* PostCreateView.swift in Sources */,
 				EB7C19F62D7DAB9C044D53AA /* PostDetailView.swift in Sources */,
-				53694F65BFDDA2B5213063EE /* PostCreateView.swift in Sources */,
+				8B923F78BF5B680C7F6A7CE3 /* PostFeedView.swift in Sources */,
 				275D4D574BF3B3C1DD746CE7 /* ProfileView.swift in Sources */,
 				022DA21729F49893319717AA /* RelaysView.swift in Sources */,
 				A1B921027DA7ACD7343BE250 /* SectionWideButton.swift in Sources */,
