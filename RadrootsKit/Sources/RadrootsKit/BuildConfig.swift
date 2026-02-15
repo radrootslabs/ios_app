@@ -6,6 +6,7 @@ enum BuildConfigKey: String {
     case logFileEnabled = "RR_LOG_FILE_ENABLED"
     case logFileName = "RR_LOG_FILE_NAME"
     case nostrRelays = "NOSTR_RELAYS"
+    case tradeRhiPubkey = "RR_TRADE_RHI_PUBKEY"
 }
 
 enum BuildConfig {

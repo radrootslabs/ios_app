@@ -1,21 +1,27 @@
 import SwiftUI
-import RadrootsKit
 
 private enum HomeTab: Hashable {
-    case home
+    case feed
+    case market
     case settings
 }
 
 struct HomeView: View {
-    @State private var selection: HomeTab = .home
+    @State private var selection: HomeTab = .feed
 
     var body: some View {
         TabView(selection: $selection) {
             NavigationStack {
-                HomeDashboardView()
+                PostFeedView()
             }
-            .tabItem { Label("Home", systemImage: "house.fill") }
-            .tag(HomeTab.home)
+            .tabItem { Label("Feed", systemImage: "text.bubble.fill") }
+            .tag(HomeTab.feed)
+
+            NavigationStack {
+                MarketView()
+            }
+            .tabItem { Label("Market", systemImage: "leaf") }
+            .tag(HomeTab.market)
 
             NavigationStack {
                 SettingsView()
@@ -23,63 +29,5 @@ struct HomeView: View {
             .tabItem { Label("Settings", systemImage: "gearshape.fill") }
             .tag(HomeTab.settings)
         }
-    }
-}
-
-private struct HomeDashboardView: View {
-    @EnvironmentObject private var app: AppState
-
-    var body: some View {
-        List {
-            Section("Your Identity") {
-                NavigationLink {
-                    ProfileView()
-                } label: {
-                    HStack {
-                        Text("Profile")
-                        Spacer()
-                        Text(app.npub ?? "—")
-                            .font(.callout.monospaced())
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    }
-                }
-            }
-
-            Section("Relays") {
-                NavigationLink {
-                    RelaysView()
-                } label: {
-                    HStack {
-                        Text("Relays")
-                        Spacer()
-                        if app.relayConnectedCount > 0 {
-                            Label("\(app.relayConnectedCount)", systemImage: "dot.radiowaves.left.and.right")
-                                .labelStyle(.titleAndIcon)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-            }
-
-            Section("Compose") {
-                NavigationLink {
-                    PostCreateView()
-                } label: {
-                    Label("New Post", systemImage: "square.and.pencil")
-                }
-            }
-
-            Section("Explore") {
-                NavigationLink {
-                    PostFeedView()
-                } label: {
-                    Label("Public Feed", systemImage: "text.bubble.fill")
-                }
-            }
-        }
-        .listStyle(.insetGrouped)
-        .inlineNavigationTitle("Home")
     }
 }

@@ -85,7 +85,7 @@ public extension Radroots {
 }
 
 @MainActor
-private extension Radroots {
+extension Radroots {
     func requireRuntime() throws -> RadrootsRuntime {
         guard let rt = runtime else { throw RadrootsRuntimeError.runtimeNotStarted }
         return rt

@@ -18,35 +18,44 @@ struct PostFeedView: View {
                 }
             }
 
-            Section {
-                ForEach(vm.posts, id: \.id) { item in
-                    FeedPostRow(
-                        post: item,
-                        isExpanded: vm.expandedReplyFor == item.id,
-                        onToggleReply: { vm.toggleReply(for: item.id) }
-                    )
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-
-                    if vm.expandedReplyFor == item.id {
-                        InlineReplyComposer(
-                            text: vm.bindingForReply(item.id),
-                            isSending: vm.sendingReplyFor.contains(item.id),
-                            onCancel: { vm.expandedReplyFor = nil },
-                            onSend: {
-                                vm.sendReply(app: app, to: item) { title, message in
-                                    resultTitle = title
-                                    resultMessage = message
-                                    showResult = true
-                                }
-                            }
+            if vm.posts.isEmpty && vm.errorMessage == nil && !vm.isLoading {
+                ContentUnavailableView(
+                    "No Posts Yet",
+                    systemImage: "text.bubble",
+                    description: Text("Connect to relays to load the public feed.")
+                )
+                .listRowBackground(Color.clear)
+            } else {
+                Section {
+                    ForEach(vm.posts, id: \.id) { item in
+                        FeedPostRow(
+                            post: item,
+                            isExpanded: vm.expandedReplyFor == item.id,
+                            onToggleReply: { vm.toggleReply(for: item.id) }
                         )
-                        .listRowInsets(EdgeInsets(top: 6, leading: 64, bottom: 12, trailing: 16))
-                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+
+                        if vm.expandedReplyFor == item.id {
+                            InlineReplyComposer(
+                                text: vm.bindingForReply(item.id),
+                                isSending: vm.sendingReplyFor.contains(item.id),
+                                onCancel: { vm.expandedReplyFor = nil },
+                                onSend: {
+                                    vm.sendReply(app: app, to: item) { title, message in
+                                        resultTitle = title
+                                        resultMessage = message
+                                        showResult = true
+                                    }
+                                }
+                            )
+                            .listRowInsets(EdgeInsets(top: 6, leading: 64, bottom: 12, trailing: 16))
+                            .listRowSeparator(.hidden)
+                        }
                     }
-                }
-            } footer: {
-                if app.relayConnectedCount == 0 {
-                    Text("No relays connected. Configure and connect to load posts.")
+                } footer: {
+                    if app.relayConnectedCount == 0 {
+                        Text("No relays connected. Configure and connect to load posts.")
+                    }
                 }
             }
         }
@@ -57,6 +66,13 @@ struct PostFeedView: View {
                 if vm.isLoading { ProgressView() }
             }
             ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
+                    PostCreateView()
+                } label: {
+                    Image(systemName: "square.and.pencil")
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Button { Task { await vm.refresh(app: app) } } label: {
                     Image(systemName: "arrow.clockwise")
                 }
@@ -64,7 +80,7 @@ struct PostFeedView: View {
             }
         }
         .task { vm.onAppear(app: app) }
-        .onDisappear { vm.onDisappear() }
+        .onDisappear { vm.onDisappear(app: app) }
         .refreshable { await vm.refresh(app: app) }
         .alert(resultTitle, isPresented: $showResult) {
             Button("OK", role: .cancel) { }

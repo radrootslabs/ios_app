@@ -15,6 +15,29 @@ struct SettingsView: View {
                     Text("No key configured")
                         .foregroundStyle(.secondary)
                 }
+
+                NavigationLink {
+                    ProfileView()
+                } label: {
+                    Label("Profile", systemImage: "person.crop.circle")
+                }
+            }
+
+            Section("Network") {
+                NavigationLink {
+                    RelaysView()
+                } label: {
+                    Label("Relays", systemImage: "dot.radiowaves.left.and.right")
+                }
+            }
+
+            Section("Trade") {
+                if let rhi = TradeSettings.rhiPubkeyOptional {
+                    CopyRow(title: "RHI Pubkey", value: rhi)
+                } else {
+                    Text("Set RR_TRADE_RHI_PUBKEY to enable trade flows.")
+                        .foregroundStyle(.secondary)
+                }
             }
 
             if app.hasKey {
@@ -24,6 +47,8 @@ struct SettingsView: View {
                     } label: {
                         Label("Export Secret Hex (Danger)", systemImage: "square.and.arrow.up")
                     }
+                } header: {
+                    Text("Security")
                 } footer: {
                     if let exportError {
                         Text(exportError).foregroundStyle(.red)
@@ -34,6 +59,7 @@ struct SettingsView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .inlineNavigationTitle("Settings")
     }
 
     private func exportSecretHex() {

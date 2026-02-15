@@ -16,12 +16,13 @@ final class PostFeedViewModel: ObservableObject {
         if posts.isEmpty {
             Task { await load(app: app) }
         }
-        startLiveLoop(app: app)
+        startStream(app: app)
     }
 
-    func onDisappear() {
+    func onDisappear(app: AppState) {
         liveTask?.cancel()
         liveTask = nil
+        Task { try? app.radroots.nostrStopPostStream() }
     }
 
     func load(app: AppState) async {
@@ -98,51 +99,39 @@ final class PostFeedViewModel: ObservableObject {
     }
 
 
-    private func startLiveLoop(app: AppState) {
+    private func startStream(app: AppState) {
         guard liveTask == nil else { return }
         liveTask = Task { @MainActor [weak self] in
             guard let self else { return }
             var knownIds = Set(posts.map(\.id))
-            var since = posts.map(\.publishedAt).max()
+            let since = posts.map(\.publishedAt).max()
+            do {
+                try app.radroots.nostrStartPostStream(sinceUnix: since)
+            } catch {
+                errorMessage = String(describing: error)
+            }
 
             while !Task.isCancelled {
                 if app.relayConnectedCount == 0 {
-                    try? await Task.sleep(for: .seconds(2))
-                    continue
-                }
-                guard let rt = app.radroots.runtime else {
-                    try? await Task.sleep(for: .seconds(2))
+                    try? await Task.sleep(for: .seconds(1))
                     continue
                 }
 
-                let currentSince = since
-                let fetchResult: Result<[NostrPostEventMetadata], Error> = await Task.detached { @Sendable in
-                    do {
-                        let items = try rt.nostrFetchTextNotes(limit: 50, sinceUnix: currentSince)
-                        return .success(items)
-                    } catch {
-                        return .failure(error)
-                    }
-                }.value
+                if knownIds.count != posts.count {
+                    knownIds = Set(posts.map(\.id))
+                }
 
-                if Task.isCancelled { break }
-
-                switch fetchResult {
-                case .failure:
-                    break
-                case .success(let fetched):
-                    let newOnes = fetched.filter { !knownIds.contains($0.id) }
-                    if !newOnes.isEmpty {
-                        knownIds.formUnion(newOnes.map(\.id))
-                        let maxTs = newOnes.map(\.publishedAt).max()
-                        posts = (newOnes + posts).sorted { $0.publishedAt > $1.publishedAt }
-                        if let m = maxTs {
-                            since = max(since ?? 0, m)
+                if let event = app.radroots.nostrNextPostStreamEvent() {
+                    if knownIds.insert(event.id).inserted {
+                        posts.insert(event, at: 0)
+                        posts.sort { $0.publishedAt > $1.publishedAt }
+                        if posts.count > 200 {
+                            posts = Array(posts.prefix(200))
                         }
                     }
+                } else {
+                    try? await Task.sleep(for: .milliseconds(300))
                 }
-
-                try? await Task.sleep(for: .seconds(3))
             }
         }
     }

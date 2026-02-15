@@ -8,57 +8,33 @@ struct SetupView: View {
 
     var onSuccess: (() -> Void)? = nil
 
+    @State private var step: Step = .welcome
     @State private var isWorking = false
     @State private var errorMessage: String?
 
     var body: some View {
-        VStack(spacing: 24) {
-            Image(systemName: "key.fill")
-                .font(.system(size: 60, weight: .bold))
-            Text("Set up your Nostr Identity")
-                .font(.title2.weight(.semibold))
-
-            if let errorMessage {
-                Text(errorMessage)
-                    .foregroundStyle(.red)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-            }
-
-            VStack(spacing: 12) {
-                Button {
-                    generateKey()
-                } label: {
-                    HStack {
-                        if isWorking { ProgressView().padding(.trailing, 8) }
-                        Text("Generate New Key")
-                            .fontWeight(.semibold)
+        ZStack {
+            if step == .welcome {
+                SetupWelcomeView {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        step = .keySetup
                     }
-                    .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(isWorking)
-
-                Button {
-                    importFromClipboard()
-                } label: {
-                    Text("Import Secret Hex from Clipboard")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .disabled(isWorking)
+                .transition(.opacity.combined(with: .move(edge: .leading)))
             }
-            .padding(.top, 8)
 
-            Spacer()
-
-            Text("Your private key is stored securely in the iOS Keychain.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+            if step == .keySetup {
+                SetupKeyView(
+                    isWorking: isWorking,
+                    errorMessage: errorMessage,
+                    onGenerate: generateKey,
+                    onImport: importFromClipboard
+                )
+                .transition(.opacity.combined(with: .move(edge: .trailing)))
+            }
         }
-        .padding()
-        .inlineNavigationTitle("Setup")
+        .animation(.easeInOut(duration: 0.25), value: step)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     private func generateKey() {
@@ -101,5 +77,127 @@ struct SetupView: View {
             }
             isWorking = false
         }
+    }
+}
+
+private enum Step {
+    case welcome
+    case keySetup
+}
+
+private struct SetupWelcomeView: View {
+    let onContinue: () -> Void
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            Circle()
+                .fill(Color(.systemGray5))
+                .frame(width: 120, height: 120)
+                .overlay(
+                    Circle()
+                        .strokeBorder(Color(.systemGray4), lineWidth: 1)
+                )
+
+            Text(Ls.setupGreetingHeader)
+                .font(.title.weight(.semibold))
+                .multilineTextAlignment(.center)
+
+            Text(Ls.setupGreetingHeaderSub)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+
+            Spacer()
+
+            Button {
+                onContinue()
+            } label: {
+                Text("Continue")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+        }
+        .padding()
+    }
+}
+
+private struct SetupKeyView: View {
+    let isWorking: Bool
+    let errorMessage: String?
+    let onGenerate: () -> Void
+    let onImport: () -> Void
+
+    var body: some View {
+        VStack(spacing: 20) {
+            VStack(spacing: 10) {
+                Image(systemName: "key.fill")
+                    .font(.system(size: 44, weight: .semibold))
+                    .foregroundStyle(.secondary)
+
+                Text("Set up your Nostr identity")
+                    .font(.title2.weight(.semibold))
+                    .multilineTextAlignment(.center)
+
+                Text("Generate a new key or import an existing secret to get started.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+
+            if isWorking {
+                ProgressView()
+                    .controlSize(.large)
+            }
+
+            VStack(spacing: 12) {
+                Button {
+                    onGenerate()
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "sparkles")
+                        Text("Generate New Key")
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(isWorking)
+
+                Button {
+                    onImport()
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "doc.on.clipboard")
+                        Text("Import Secret Hex")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .disabled(isWorking)
+            }
+            .padding(.top, 4)
+
+            Spacer()
+
+            Text("Your private key is stored securely in the iOS Keychain.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
     }
 }
