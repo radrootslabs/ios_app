@@ -16,6 +16,7 @@ When crates.io releases are ready, these paths can be switched to versioned depe
 
 ## Build flow
 Use `make -C ios/RadrootsCore` (or `make` from `ios/`) to:
-- build Rust libs from shared crates
+- build from `../../crates/app-ffi-swift/Cargo.toml`
+- write Rust build artifacts under `ios/RadrootsCore/target`
 - generate UniFFI Swift bindings
 - package `RadrootsFFI.xcframework` into `ios/RadrootsKit/Artifacts`
