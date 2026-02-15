@@ -11,4 +11,4 @@ description = "radroots ios rust wrapper manifest"
 resolver = "2"
 
 [workspace.dependencies]
-radroots-app-ffi-swift = { path = "../../crates/app-ffi-swift" }
+radroots-app-ffi-swift = { path = "../../../../../../foundation/oss/rs/crates/app-ffi-swift" }

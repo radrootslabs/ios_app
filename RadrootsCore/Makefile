@@ -1,14 +1,12 @@
 CRATE             := radroots-app-ffi-swift
-WRAPPER_ROOT      := $(CURDIR)
-IOS_ROOT          := $(abspath $(WRAPPER_ROOT)/..)
-CRATES_ROOT       := $(abspath $(WRAPPER_ROOT)/../../crates)
+CRATES_ROOT       := ../../../../../../foundation/oss/rs/crates
 FFI_MANIFEST      := $(CRATES_ROOT)/app-ffi-swift/Cargo.toml
-RUST_TARGET_DIR   := $(WRAPPER_ROOT)/target
+RUST_TARGET_DIR   := target
 OUTDIR            := $(RUST_TARGET_DIR)/xcframework
-CARGO_FFI         := cd $(WRAPPER_ROOT) && CARGO_TARGET_DIR=$(RUST_TARGET_DIR) cargo
+CARGO_FFI         := CARGO_TARGET_DIR=$(RUST_TARGET_DIR) cargo
 
-FRAMEWORK_DEST    := $(IOS_ROOT)/RadrootsKit/Artifacts
-GENERATED_SWIFT   := $(IOS_ROOT)/RadrootsKit/Sources/RadrootsKit/Generated
+FRAMEWORK_DEST    := ../RadrootsKit/Artifacts
+GENERATED_SWIFT   := ../RadrootsKit/Sources/RadrootsKit/Generated
 CONFIG_PATH       := $(CRATES_ROOT)/app-ffi-swift/uniffi.toml
 
 LIB_DEV           := $(RUST_TARGET_DIR)/aarch64-apple-ios/release/libradroots_studio_app_ffi_swift.a

@@ -1,4 +1,4 @@
-WRAPPER_ROOT := $(CURDIR)/RadrootsCore
+WRAPPER_ROOT := RadrootsCore
 
 .PHONY: all clean build generate package bindings
 
