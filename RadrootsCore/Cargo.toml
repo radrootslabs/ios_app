@@ -14,6 +14,3 @@ resolver = "2"
 radroots-app-core = { path = "../../crates/app-core" }
 radroots-app-ffi-swift = { path = "../../crates/app-ffi-swift" }
 radroots-app-wasm = { path = "../../crates/app-wasm" }
-
-[dependencies]
-radroots-app-ffi-swift = { workspace = true }

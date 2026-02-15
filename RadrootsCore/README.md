@@ -11,6 +11,7 @@
 This `Cargo.toml` follows the same local workspace dependency style used in `internal/.../radrootsd/Cargo.toml`:
 - local `path` dependencies during active development
 - dependency declarations centralized in `[workspace.dependencies]`
+- `radroots-app-ffi-swift` is intentionally anchored in `[workspace.dependencies]` and built via `Makefile --manifest-path`, not linked as a Rust `[dependencies]` crate
 
 When crates.io releases are ready, these paths can be switched to versioned dependencies while preserving this wrapper layout for OSS iOS consumers.
 
