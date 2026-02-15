@@ -1,23 +1,19 @@
 # RadrootsCore
 
-`ios/RadrootsCore` is the iOS Rust wrapper entrypoint for shared app crates.
+`ios/RadrootsCore` is the iOS Rust wrapper for the shared Swift FFI crate.
 
-## Shared crates
-- backend runtime: `../../crates/app-core`
-- swift ffi surface: `../../crates/app-ffi-swift`
-- wasm surface: `../../crates/app-wasm`
+## Source of truth
+- `../../crates/app-ffi-swift` (built via `--manifest-path`)
 
 ## Dependency pattern
-This `Cargo.toml` follows the same local workspace dependency style used in `internal/.../radrootsd/Cargo.toml`:
-- local `path` dependencies during active development
-- dependency declarations centralized in `[workspace.dependencies]`
-- `radroots-app-ffi-swift` is intentionally anchored in `[workspace.dependencies]` and built via `Makefile --manifest-path`, not linked as a Rust `[dependencies]` crate
-
-When crates.io releases are ready, these paths can be switched to versioned dependencies while preserving this wrapper layout for OSS iOS consumers.
+- Keep `radroots-app-ffi-swift` in `[workspace.dependencies]` with a local `path` during development.
+- Switch this to a crates.io version later without changing the make/build flow.
+- Do not link `radroots-app-ffi-swift` as a Rust `[dependencies]` crate in this wrapper.
 
 ## Build flow
-Use `make -C ios/RadrootsCore` (or `make` from `ios/`) to:
+Run `make -C ios` (or `make -C ios/RadrootsCore`) to:
 - build from `../../crates/app-ffi-swift/Cargo.toml`
 - write Rust build artifacts under `ios/RadrootsCore/target`
 - generate UniFFI Swift bindings
 - package `RadrootsFFI.xcframework` into `ios/RadrootsKit/Artifacts`
+- copy generated Swift files into `ios/RadrootsKit/Sources/RadrootsKit/Generated`

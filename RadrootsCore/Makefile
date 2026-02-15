@@ -5,6 +5,7 @@ CRATES_ROOT       := $(abspath $(WRAPPER_ROOT)/../../crates)
 FFI_MANIFEST      := $(CRATES_ROOT)/app-ffi-swift/Cargo.toml
 RUST_TARGET_DIR   := $(WRAPPER_ROOT)/target
 OUTDIR            := $(RUST_TARGET_DIR)/xcframework
+CARGO_FFI         := cd $(WRAPPER_ROOT) && CARGO_TARGET_DIR=$(RUST_TARGET_DIR) cargo
 
 FRAMEWORK_DEST    := $(IOS_ROOT)/RadrootsKit/Artifacts
 GENERATED_SWIFT   := $(IOS_ROOT)/RadrootsKit/Sources/RadrootsKit/Generated
@@ -30,15 +31,15 @@ clean:
 
 build:
 	@echo "building $(CRATE) for ios device + simulator..."
-	cd $(WRAPPER_ROOT) && CARGO_TARGET_DIR=$(RUST_TARGET_DIR) cargo build --manifest-path $(FFI_MANIFEST) --release --target aarch64-apple-ios
-	cd $(WRAPPER_ROOT) && CARGO_TARGET_DIR=$(RUST_TARGET_DIR) cargo build --manifest-path $(FFI_MANIFEST) --release --target aarch64-apple-ios-sim
+	$(CARGO_FFI) build --manifest-path $(FFI_MANIFEST) --release --target aarch64-apple-ios
+	$(CARGO_FFI) build --manifest-path $(FFI_MANIFEST) --release --target aarch64-apple-ios-sim
 
 	@echo "building host cdylib for uniffi metadata..."
-	cd $(WRAPPER_ROOT) && CARGO_TARGET_DIR=$(RUST_TARGET_DIR) cargo build --manifest-path $(FFI_MANIFEST) --release
+	$(CARGO_FFI) build --manifest-path $(FFI_MANIFEST) --release
 
 generate:
 	@echo "generating swift bindings with uniffi..."
-	cd $(WRAPPER_ROOT) && CARGO_TARGET_DIR=$(RUST_TARGET_DIR) cargo run --manifest-path $(FFI_MANIFEST) --bin uniffi-bindgen -- \
+	$(CARGO_FFI) run --manifest-path $(FFI_MANIFEST) --bin uniffi-bindgen -- \
 		generate --library $(HOST_DYLIB) \
 		--language swift \
 		--out-dir $(OUTDIR)/generated \
