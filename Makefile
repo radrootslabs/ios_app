@@ -1,6 +1,6 @@
-WRAPPER_ROOT := RadrootsCore
+FFI_ROOT := RadrootsFFI
 
-.PHONY: all clean build generate package bindings
+.PHONY: all clean distclean sync-source build generate package install print-config
 
-all clean build generate package bindings:
-	$(MAKE) -C $(WRAPPER_ROOT) $@
+all clean distclean sync-source build generate package install print-config:
+	$(MAKE) -C $(FFI_ROOT) $@
