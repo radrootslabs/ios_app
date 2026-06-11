@@ -9,7 +9,6 @@
 *.ipa
 *.dSYM*
 *.hmap
-project.yml
 
 # SwiftPM
 .build

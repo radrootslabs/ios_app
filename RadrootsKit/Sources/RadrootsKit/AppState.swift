@@ -54,9 +54,9 @@ public final class AppState: ObservableObject {
         do {
             try radroots.start()
             if let rt = radroots.runtime {
-                keys.loadFromKeychainIfPresent(runtime: rt)
+                keys.loadFromRuntime(runtime: rt)
                 connectIfPossible()
-                if rt.keysIsLoaded() {
+                if rt.accountsHasSelectedSigningIdentity() {
                     startPollingStatus()
                 }
             }
@@ -71,8 +71,9 @@ public final class AppState: ObservableObject {
     public func refresh() {
         guard let rt = radroots.runtime else { return }
         infoJSONString = rt.infoJson()
-        hasKey = rt.keysIsLoaded()
-        npub = rt.keysNpub()
+        hasKey = rt.accountsHasSelectedSigningIdentity()
+        npub = rt.accountsSelectedNpub()
+        keys.refresh(runtime: rt)
         updateStatus()
     }
 
@@ -83,7 +84,7 @@ public final class AppState: ObservableObject {
     }
 
     private func connectIfPossible() {
-        guard let rt = radroots.runtime, rt.keysIsLoaded() else { return }
+        guard let rt = radroots.runtime, rt.accountsHasSelectedSigningIdentity() else { return }
         do {
             let relays = try RelaySettings.relays()
             try rt.nostrSetDefaultRelays(relays: relays)

@@ -36,14 +36,12 @@ public extension Radroots {
 
     func tradeListingFetchMessages(
         listingAddr: String,
-        orderId: String? = nil,
         limit: UInt16,
         sinceUnix: UInt64? = nil
     ) throws -> [TradeListingMessageSummary] {
         let rt = try requireRuntime()
         return try rt.tradeListingFetchMessages(
             listingAddr: listingAddr,
-            orderId: orderId,
             limit: limit,
             sinceUnix: sinceUnix
         )

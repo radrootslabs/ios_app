@@ -260,7 +260,7 @@ private struct ListingDraftState {
 
     func toTradeListingDraft() -> TradeListingDraft {
         let trimmedLabel = binLabel.trimmingCharacters(in: .whitespacesAndNewlines)
-        TradeListingDraft(
+        return TradeListingDraft(
             listingId: nil,
             farmPubkey: farmPubkey,
             farmDTag: farmDTag,

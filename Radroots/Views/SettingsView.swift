@@ -35,7 +35,7 @@ struct SettingsView: View {
                 if let rhi = TradeSettings.rhiPubkeyOptional {
                     CopyRow(title: "RHI Pubkey", value: rhi)
                 } else {
-                    Text("Set RR_TRADE_RHI_PUBKEY to enable trade flows.")
+                    Text("Listing publish and fetch use the shared field runtime.")
                         .foregroundStyle(.secondary)
                 }
             }
@@ -66,7 +66,10 @@ struct SettingsView: View {
         guard let rt = radroots.runtime else { return }
         exportError = nil
         do {
-            let hex = try rt.keysExportSecretHex()
+            guard let hex = try rt.accountsExportSelectedSecretHex() else {
+                exportError = "No selected account has an exportable secret."
+                return
+            }
             UIPasteboard.general.string = hex
         } catch {
             exportError = String(describing: error)

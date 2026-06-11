@@ -5,10 +5,13 @@ SHELL := /bin/bash
 -include Config/ffi-build.env
 
 SOURCE_MODE ?= git
-RADROOTS_CRATES_GIT_URL ?= https://github.com/radrootslabs/crates.git
-RADROOTS_CRATES_GIT_REV ?= 766c63c07ac7497d75a71aaab010fbc08ee934bc
-RADROOTS_APP_FFI_CRATE_VERSION ?= 0.1.0
+RADROOTS_FIELD_LIB_GIT_URL ?= git@github.com:radrootslabs/app_rt.git
+RADROOTS_FIELD_LIB_GIT_REV ?= 3ee79c4b346df72c1572ce80ce59b6dfe709bfc0
+RADROOTS_FIELD_FFI_CRATE_VERSION ?= 0.1.0-alpha.1
+FFI_FEATURES ?= radroots_app_core/rt,radroots_app_core/nostr-client
 LOCAL_FFI_MANIFEST ?=
+IPHONEOS_DEPLOYMENT_TARGET ?= 18.0
+RUSTUP_TOOLCHAIN ?= 1.92.0-aarch64-apple-darwin
 
 IOS_ROOT := $(abspath $(CURDIR)/..)
 KIT_ROOT := $(IOS_ROOT)/RadrootsKit
@@ -22,17 +25,18 @@ OUT_DIR := $(BUILD_ROOT)/out
 GENERATED_DIR := $(OUT_DIR)/generated
 HEADERS_DIR := $(OUT_DIR)/headers
 
-CRATE_NAME := radroots-app-ffi-swift
+CRATE_NAME := radroots_app_ffi_swift
 FFI_OUTPUT_NAME := RadrootsFFI
-LIB_STEM := libradroots_studio_app_ffi_swift
+LIB_STEM := libradroots_app_ffi_swift
 
-GIT_CRATES_DIR := $(SOURCE_ROOT)/radroots-crates
-CRATE_ARCHIVE := $(SOURCE_ROOT)/$(CRATE_NAME)-$(RADROOTS_APP_FFI_CRATE_VERSION).crate
-CRATE_EXTRACT_DIR := $(SOURCE_ROOT)/$(CRATE_NAME)-$(RADROOTS_APP_FFI_CRATE_VERSION)
+GIT_FIELD_LIB_DIR := $(SOURCE_ROOT)/field-lib
+CRATE_ARCHIVE := $(SOURCE_ROOT)/$(CRATE_NAME)-$(RADROOTS_FIELD_FFI_CRATE_VERSION).crate
+CRATE_EXTRACT_DIR := $(SOURCE_ROOT)/$(CRATE_NAME)-$(RADROOTS_FIELD_FFI_CRATE_VERSION)
+CARGO_FEATURE_FLAGS := $(if $(strip $(FFI_FEATURES)),--features $(FFI_FEATURES),)
 
 ifeq ($(SOURCE_MODE),git)
-FFI_MANIFEST := $(GIT_CRATES_DIR)/app-ffi-swift/Cargo.toml
-UNIFFI_CONFIG := $(GIT_CRATES_DIR)/app-ffi-swift/uniffi.toml
+FFI_MANIFEST := $(GIT_FIELD_LIB_DIR)/crates/ffi/Cargo.toml
+UNIFFI_CONFIG := $(GIT_FIELD_LIB_DIR)/crates/ffi/uniffi.toml
 SOURCE_TARGET := sync-source-git
 else ifeq ($(SOURCE_MODE),crates)
 FFI_MANIFEST := $(CRATE_EXTRACT_DIR)/Cargo.toml
@@ -48,7 +52,9 @@ endif
 
 FFI_CRATE_DIR := $(dir $(FFI_MANIFEST))
 
-CARGO := CARGO_TARGET_DIR=$(TARGET_DIR) cargo
+RUSTC_BIN := $(shell rustup which --toolchain $(RUSTUP_TOOLCHAIN) rustc)
+CARGO_BIN := rustup run $(RUSTUP_TOOLCHAIN) cargo
+CARGO := IPHONEOS_DEPLOYMENT_TARGET=$(IPHONEOS_DEPLOYMENT_TARGET) RUSTC=$(RUSTC_BIN) CARGO_TARGET_DIR=$(TARGET_DIR) $(CARGO_BIN)
 
 LIB_DEVICE := $(TARGET_DIR)/aarch64-apple-ios/release/$(LIB_STEM).a
 LIB_SIMULATOR := $(TARGET_DIR)/aarch64-apple-ios-sim/release/$(LIB_STEM).a
@@ -68,6 +74,9 @@ print-config:
 	@echo "UNIFFI_CONFIG=$(UNIFFI_CONFIG)"
 	@echo "ARTIFACTS_DIR=$(ARTIFACTS_DIR)"
 	@echo "GENERATED_SWIFT_DIR=$(GENERATED_SWIFT_DIR)"
+	@echo "IPHONEOS_DEPLOYMENT_TARGET=$(IPHONEOS_DEPLOYMENT_TARGET)"
+	@echo "RUSTUP_TOOLCHAIN=$(RUSTUP_TOOLCHAIN)"
+	@echo "RUSTC_BIN=$(RUSTC_BIN)"
 
 clean:
 	rm -rf $(TARGET_DIR) $(OUT_DIR) $(ARTIFACTS_DIR)/$(FFI_OUTPUT_NAME).xcframework
@@ -82,17 +91,17 @@ sync-source: $(SOURCE_TARGET)
 
 sync-source-git:
 	mkdir -p $(SOURCE_ROOT)
-	if [ ! -d $(GIT_CRATES_DIR)/.git ]; then \
-		git clone --filter=blob:none $(RADROOTS_CRATES_GIT_URL) $(GIT_CRATES_DIR); \
+	if [ ! -d $(GIT_FIELD_LIB_DIR)/.git ]; then \
+		git clone --filter=blob:none $(RADROOTS_FIELD_LIB_GIT_URL) $(GIT_FIELD_LIB_DIR); \
 	fi
-	git -C $(GIT_CRATES_DIR) fetch --tags --force origin
-	git -C $(GIT_CRATES_DIR) checkout --detach $(RADROOTS_CRATES_GIT_REV)
+	git -C $(GIT_FIELD_LIB_DIR) fetch --tags --force origin
+	git -C $(GIT_FIELD_LIB_DIR) checkout --detach $(RADROOTS_FIELD_LIB_GIT_REV)
 	test -f $(FFI_MANIFEST)
 
 sync-source-crates:
 	mkdir -p $(SOURCE_ROOT)
 	rm -rf $(CRATE_EXTRACT_DIR)
-	curl -fLsS https://crates.io/api/v1/crates/$(CRATE_NAME)/$(RADROOTS_APP_FFI_CRATE_VERSION)/download -o $(CRATE_ARCHIVE)
+	curl -fLsS https://crates.io/api/v1/crates/$(CRATE_NAME)/$(RADROOTS_FIELD_FFI_CRATE_VERSION)/download -o $(CRATE_ARCHIVE)
 	tar -xzf $(CRATE_ARCHIVE) -C $(SOURCE_ROOT)
 	test -f $(FFI_MANIFEST)
 
@@ -105,17 +114,17 @@ sync-source-local:
 	test -f $(UNIFFI_CONFIG)
 
 ensure-toolchain:
-	rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+	rustup target add --toolchain $(RUSTUP_TOOLCHAIN) aarch64-apple-ios aarch64-apple-ios-sim
 
 build: ensure-toolchain
 	mkdir -p $(TARGET_DIR) $(OUT_DIR)
-	$(CARGO) build --manifest-path $(FFI_MANIFEST) --release --target aarch64-apple-ios
-	$(CARGO) build --manifest-path $(FFI_MANIFEST) --release --target aarch64-apple-ios-sim
-	$(CARGO) build --manifest-path $(FFI_MANIFEST) --release
+	$(CARGO) build --manifest-path $(FFI_MANIFEST) $(CARGO_FEATURE_FLAGS) --release --target aarch64-apple-ios
+	$(CARGO) build --manifest-path $(FFI_MANIFEST) $(CARGO_FEATURE_FLAGS) --release --target aarch64-apple-ios-sim
+	$(CARGO) build --manifest-path $(FFI_MANIFEST) $(CARGO_FEATURE_FLAGS) --release
 
 generate:
 	mkdir -p $(GENERATED_DIR) $(HEADERS_DIR)
-	cd $(FFI_CRATE_DIR) && CARGO_TARGET_DIR=$(TARGET_DIR) cargo run --manifest-path Cargo.toml --bin uniffi-bindgen -- \
+	cd $(FFI_CRATE_DIR) && $(CARGO) run --manifest-path Cargo.toml $(CARGO_FEATURE_FLAGS) --bin uniffi-bindgen -- \
 		generate --library $(LIB_HOST) \
 		--language swift \
 		--out-dir $(GENERATED_DIR) \

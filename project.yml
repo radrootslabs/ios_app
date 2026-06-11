@@ -1,0 +1,38 @@
+name: Radroots
+
+options:
+  deploymentTarget:
+    iOS: "18.0"
+
+configs:
+  Debug: debug
+  Release: release
+
+packages:
+  RadrootsKit:
+    path: RadrootsKit
+
+targets:
+  Radroots:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: Radroots
+        excludes:
+          - Info.plist
+    settings:
+      base:
+        SWIFT_VERSION: 6.0
+        INFOPLIST_FILE: Radroots/Info.plist
+    configFiles:
+      Debug: Radroots/Config/Debug.xcconfig
+      Release: Radroots/Config/Release.xcconfig
+    dependencies:
+      - package: RadrootsKit
+    preBuildScripts:
+      - name: Generate git SHA xcconfig
+        basedOnDependencyAnalysis: false
+        script: |
+          GIT_SHA=$(git rev-parse --short HEAD || echo "unknown")
+          echo "GIT_SHA = $GIT_SHA" > "$SRCROOT/Radroots/radroots.git.xcconfig"

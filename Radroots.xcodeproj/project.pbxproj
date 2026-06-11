@@ -242,6 +242,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2513910CE2A2ED545A78A163 /* Build configuration list for PBXNativeTarget "Radroots" */;
 			buildPhases = (
+				1687531B35A5B613B89DA261 /* Generate git SHA xcconfig */,
 				78F7810CC77628CB591F8CD2 /* Sources */,
 				0FB0BFB846269AC353E4AD0E /* Resources */,
 				1384F9BE8BB29250A1B4A26A /* Frameworks */,
@@ -266,9 +267,10 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
 			};
 			buildConfigurationList = D17883D6A48F29A2A4DFE795 /* Build configuration list for PBXProject "Radroots" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -281,6 +283,7 @@
 				DA033E4B08F702473D7DDDE3 /* XCLocalSwiftPackageReference "RadrootsKit" */,
 			);
 			preferredProjectObjectVersion = 77;
+			productRefGroup = 6240123423927396E47D6B3E /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -300,6 +303,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		1687531B35A5B613B89DA261 /* Generate git SHA xcconfig */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Generate git SHA xcconfig";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "GIT_SHA=$(git rev-parse --short HEAD || echo \"unknown\")\necho \"GIT_SHA = $GIT_SHA\" > \"$SRCROOT/Radroots/radroots.git.xcconfig\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		78F7810CC77628CB591F8CD2 /* Sources */ = {

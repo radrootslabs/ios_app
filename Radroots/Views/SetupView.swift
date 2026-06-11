@@ -193,7 +193,7 @@ private struct SetupKeyView: View {
 
             Spacer()
 
-            Text("Your private key is stored securely in the iOS Keychain.")
+            Text("Your account is managed by the shared field runtime.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
