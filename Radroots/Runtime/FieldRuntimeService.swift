@@ -74,6 +74,14 @@ public final class FieldRuntimeService: @unchecked Sendable {
         try await run { try $0.nostrIdentityRemove(identityId: identityId) }
     }
 
+    public func nostrIdentityResetAll() async throws {
+        try await run { try $0.nostrIdentityResetAll() }
+    }
+
+    public func nostrIdentityExportSelectedSecretHex() async throws -> String? {
+        try await run { try $0.nostrIdentityExportSelectedSecretHex() }
+    }
+
     public func nostrProfileForSelf() async -> NostrProfileEventMetadata? {
         await runValue { $0.nostrProfileForSelf() }
     }

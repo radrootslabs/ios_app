@@ -63,6 +63,7 @@ public final class AppState: ObservableObject {
 
     private let lockKey = "field_ios.identity_locked"
     private var statusTask: Task<Void, Never>?
+    private var identityCustodyStore: FieldIdentityCustodyStore?
 
     public init(radroots: Radroots = Radroots()) {
         self.radroots = radroots
@@ -78,9 +79,14 @@ public final class AppState: ObservableObject {
         bootstrapPhase = .starting
         do {
             let service = try radroots.start()
+            let custodyStore = try FieldIdentityCustodyStore.configured()
+            identityCustodyStore = custodyStore
             if BuildConfig.bool(.resetLocalState) == true {
+                try custodyStore.resetLocalState(bundleIdentifier: try bundleIdentifier())
                 try await removeAllIdentities(using: service)
                 setLocked(false)
+            } else {
+                try await restorePersistedIdentity(using: service, custodyStore: custodyStore)
             }
             try await configureRelays(using: service)
             try await refreshRuntimeState(using: service)
@@ -113,6 +119,7 @@ public final class AppState: ObservableObject {
 
     public func continueWithLocalIdentity() async throws {
         let service = try requireRuntimeService()
+        try await persistSelectedIdentity(using: service)
         setLocked(false)
         try await connect(using: service)
         await refreshRuntimeState(using: service)
@@ -122,6 +129,7 @@ public final class AppState: ObservableObject {
     public func createLocalIdentity() async throws {
         let service = try requireRuntimeService()
         _ = try await service.nostrIdentityGenerate(label: "Radroots Field", makeSelected: true)
+        try await persistSelectedIdentity(using: service)
         setLocked(false)
         try await connect(using: service)
         await refreshRuntimeState(using: service)
@@ -137,6 +145,7 @@ public final class AppState: ObservableObject {
             label: "Imported Field Identity",
             makeSelected: true
         )
+        try await persistSelectedIdentity(using: service)
         setLocked(false)
         try await connect(using: service)
         await refreshRuntimeState(using: service)
@@ -151,6 +160,7 @@ public final class AppState: ObservableObject {
 
     public func resetLocalIdentity() async throws {
         let service = try requireRuntimeService()
+        try identityCustodyStoreOrConfigured().resetLocalState(bundleIdentifier: try bundleIdentifier())
         try await removeAllIdentities(using: service)
         setLocked(false)
         relayConnectedCount = 0
@@ -226,14 +236,49 @@ public final class AppState: ObservableObject {
     }
 
     private func removeAllIdentities(using service: FieldRuntimeService) async throws {
-        let existing = try await service.nostrIdentityList()
-        for identity in existing {
-            try await service.nostrIdentityRemove(identityId: identity.id)
-        }
+        try await service.nostrIdentityResetAll()
         hasKey = false
         npub = nil
         identityLabel = nil
         identities = []
+    }
+
+    private func restorePersistedIdentity(
+        using service: FieldRuntimeService,
+        custodyStore: FieldIdentityCustodyStore
+    ) async throws {
+        let snapshot = try await service.nostrIdentitySnapshot()
+        guard !snapshot.hasSelectedSigningIdentity else { return }
+        guard let secretHex = try custodyStore.loadSelectedSecretHex() else { return }
+        _ = try await service.nostrIdentityImportSecret(
+            secretKey: secretHex,
+            label: "Radroots Field",
+            makeSelected: true
+        )
+    }
+
+    private func persistSelectedIdentity(using service: FieldRuntimeService) async throws {
+        guard let secretHex = try await service.nostrIdentityExportSelectedSecretHex() else {
+            throw FieldIdentityCustodyError.missingSelectedSecret
+        }
+        try identityCustodyStoreOrConfigured().saveSelectedSecretHex(secretHex)
+    }
+
+    private func identityCustodyStoreOrConfigured() throws -> FieldIdentityCustodyStore {
+        if let identityCustodyStore {
+            return identityCustodyStore
+        }
+        let configured = try FieldIdentityCustodyStore.configured()
+        identityCustodyStore = configured
+        return configured
+    }
+
+    private func bundleIdentifier() throws -> String {
+        guard let bundleIdentifier = Bundle.main.bundleIdentifier,
+              !bundleIdentifier.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw FieldIdentityCustodyError.missingBundleIdentifier
+        }
+        return bundleIdentifier
     }
 
     private func setLocked(_ value: Bool) {

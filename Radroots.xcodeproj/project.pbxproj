@@ -19,6 +19,7 @@
 		360F23EFE80FDBDC6983FB15 /* AppEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D448C9655B708CA3FA8712B9 /* AppEntry.swift */; };
 		3A7FA9E5BCC7590B2EAC5349 /* RelaySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBB081610305940C7849C7C /* RelaySettings.swift */; };
 		3B6020E24A2DAD8ADFC2F155 /* BuildConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A71EFADBC7D54AF5B9314773 /* BuildConfig.swift */; };
+		3DA8DBB426B71C53724F09B4 /* FieldIdentityCustodyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F60FA44F589B6E94223CE685 /* FieldIdentityCustodyStore.swift */; };
 		4025E63F6603011431B8A0E1 /* DebugDump.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F9BFC3C8CE2F86FB7DB74B /* DebugDump.swift */; };
 		4B44B723FF06ECC363A486BA /* TradeListingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26BAE32CD1D46033DDA1A5BB /* TradeListingDetailView.swift */; };
 		505A5731ACDBBB0296134340 /* TradeListingCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 947ADA6D32E42ED2B40A5351 /* TradeListingCreateView.swift */; };
@@ -95,6 +96,7 @@
 		F21554DA87EEC1E5C5F38365 /* PostFeedViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostFeedViewModel.swift; sourceTree = "<group>"; };
 		F3C0EFACAD213A69C12D5064 /* PostDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostDetailView.swift; sourceTree = "<group>"; };
 		F4C7DE4207398DE242519F9C /* CopyButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyButton.swift; sourceTree = "<group>"; };
+		F60FA44F589B6E94223CE685 /* FieldIdentityCustodyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldIdentityCustodyStore.swift; sourceTree = "<group>"; };
 		F6D224B525028DE5D8C8E28D /* TradeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeSettings.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -170,6 +172,7 @@
 			isa = PBXGroup;
 			children = (
 				A71EFADBC7D54AF5B9314773 /* BuildConfig.swift */,
+				F60FA44F589B6E94223CE685 /* FieldIdentityCustodyStore.swift */,
 				E883FDB7004A210C9D7BE27A /* FieldRuntimeService.swift */,
 				D4DE3DD8C3BB2F63676F463E /* LoggingSettings.swift */,
 				63189EB90A86A9929BECD9ED /* Nostr.swift */,
@@ -404,6 +407,7 @@
 				9121BD4A3E7C6EF2B21F540F /* CopyButton.swift in Sources */,
 				D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */,
 				4025E63F6603011431B8A0E1 /* DebugDump.swift in Sources */,
+				3DA8DBB426B71C53724F09B4 /* FieldIdentityCustodyStore.swift in Sources */,
 				D25C1E1DC99F5CF8E99AE970 /* FieldRuntimeService.swift in Sources */,
 				1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */,
 				C512BD267A3E2B8F10FABB3B /* Logger.swift in Sources */,
