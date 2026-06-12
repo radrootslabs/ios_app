@@ -22,6 +22,7 @@ Radroots/radroots.git.xcconfig
 RadrootsKit/Artifacts/
 RadrootsKit/Sources/RadrootsKit/Generated/
 Radroots/Frameworks/RadrootsFFI.xcframework/
+Radroots/Generated/
 
 # Local overrides
 Radroots/radroots.local.xcconfig

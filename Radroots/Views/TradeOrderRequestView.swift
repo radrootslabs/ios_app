@@ -1,6 +1,5 @@
 import SwiftUI
 import Foundation
-import RadrootsKit
 
 struct TradeOrderRequestView: View {
     @EnvironmentObject private var app: AppState

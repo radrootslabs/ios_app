@@ -1,5 +1,4 @@
 import SwiftUI
-import RadrootsKit
 
 public struct ProfileView: View {
     @EnvironmentObject private var app: AppState

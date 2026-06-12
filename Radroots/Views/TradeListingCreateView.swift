@@ -1,5 +1,4 @@
 import SwiftUI
-import RadrootsKit
 
 struct TradeListingCreateView: View {
     @EnvironmentObject private var app: AppState

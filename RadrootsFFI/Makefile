@@ -14,9 +14,9 @@ IPHONEOS_DEPLOYMENT_TARGET ?= 18.0
 RUSTUP_TOOLCHAIN ?= 1.92.0-aarch64-apple-darwin
 
 IOS_ROOT := $(abspath $(CURDIR)/..)
-KIT_ROOT := $(IOS_ROOT)/RadrootsKit
-ARTIFACTS_DIR := $(KIT_ROOT)/Artifacts
-GENERATED_SWIFT_DIR := $(KIT_ROOT)/Sources/RadrootsKit/Generated
+APP_ROOT := $(IOS_ROOT)/Radroots
+ARTIFACTS_DIR := $(APP_ROOT)/Frameworks
+GENERATED_SWIFT_DIR := $(APP_ROOT)/Generated
 
 BUILD_ROOT := $(CURDIR)/.build
 SOURCE_ROOT := $(BUILD_ROOT)/source

@@ -35,6 +35,10 @@ struct LoggingSettings: Equatable {
             .loggingFileEnabled,
             .loggingFileName,
             .nostrRelayUrls,
+            .authApiBaseUrl,
+            .accountsApiBaseUrl,
+            .keychainServicePrefix,
+            .resetLocalState,
             .tradeRhiPubkey,
         ]
         let dict = BuildConfig.effectiveDictionary(keys: keys)

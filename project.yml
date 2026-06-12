@@ -10,7 +10,7 @@ configs:
 
 packages:
   RadrootsKit:
-    path: RadrootsKit
+    path: ../../../../domains/radroots/apple_kit
 
 targets:
   Radroots:
@@ -21,6 +21,7 @@ targets:
       - path: Radroots
         excludes:
           - Info.plist
+          - Frameworks
     settings:
       base:
         SWIFT_VERSION: 6.0
@@ -29,6 +30,8 @@ targets:
       Debug: Radroots/Config/Debug.xcconfig
       Release: Radroots/Config/Release.xcconfig
     dependencies:
+      - framework: Radroots/Frameworks/RadrootsFFI.xcframework
+        embed: false
       - package: RadrootsKit
     preBuildScripts:
       - name: Generate git SHA xcconfig

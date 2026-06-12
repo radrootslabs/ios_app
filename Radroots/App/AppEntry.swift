@@ -1,5 +1,4 @@
 import SwiftUI
-import RadrootsKit
 
 public struct AppEntry<Main: View>: View {
     @EnvironmentObject private var appState: AppState

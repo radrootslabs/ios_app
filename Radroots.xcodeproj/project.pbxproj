@@ -8,27 +8,40 @@
 
 /* Begin PBXBuildFile section */
 		022DA21729F49893319717AA /* RelaysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D9496F9F05A4E79E73A247 /* RelaysView.swift */; };
+		049D620DD8C02816893BF765 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBE1472FFD63A33F3AEA6C6C /* AppState.swift */; };
+		04AA409CFECBA11BFC175C5C /* RadrootsFFI.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD7B47A576C4D5CE9318D3E6 /* RadrootsFFI.xcframework */; };
 		1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0274A0260D1C04F40C71AF /* HomeView.swift */; };
 		275D4D574BF3B3C1DD746CE7 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C71A93F98C7B93188748B99B /* ProfileView.swift */; };
 		2B3886FD26434A54F3726591 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8D19AA8D515FC8F5D2407378 /* Localizable.strings */; };
 		2B6ACA26689B355CECBFFB57 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A7641E5C643B4B36CFEDA8 /* SetupView.swift */; };
 		33A800AA701C354099623B24 /* MarketView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08C0B870E44C7B152A7FABE0 /* MarketView.swift */; };
+		35D8223F5E169DDB4E3E87C0 /* TradeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6D224B525028DE5D8C8E28D /* TradeSettings.swift */; };
 		360F23EFE80FDBDC6983FB15 /* AppEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D448C9655B708CA3FA8712B9 /* AppEntry.swift */; };
+		3A7FA9E5BCC7590B2EAC5349 /* RelaySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBB081610305940C7849C7C /* RelaySettings.swift */; };
+		3B6020E24A2DAD8ADFC2F155 /* BuildConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A71EFADBC7D54AF5B9314773 /* BuildConfig.swift */; };
 		4025E63F6603011431B8A0E1 /* DebugDump.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F9BFC3C8CE2F86FB7DB74B /* DebugDump.swift */; };
 		4B44B723FF06ECC363A486BA /* TradeListingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26BAE32CD1D46033DDA1A5BB /* TradeListingDetailView.swift */; };
 		505A5731ACDBBB0296134340 /* TradeListingCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 947ADA6D32E42ED2B40A5351 /* TradeListingCreateView.swift */; };
 		5AECD474FB2F91855BDD79C0 /* PostFeedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F21554DA87EEC1E5C5F38365 /* PostFeedViewModel.swift */; };
+		657BEA5AAFF129E10177FE63 /* Nostr.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63189EB90A86A9929BECD9ED /* Nostr.swift */; };
+		7C8DD424F3E3E0AB1B133863 /* RadrootsKitBindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC881872F750120A184F45E6 /* RadrootsKitBindings.swift */; };
 		7FD8FB018DA09568303194B2 /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADE61264E2C98E73828E8680 /* Strings.swift */; };
 		8B923F78BF5B680C7F6A7CE3 /* PostFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AE0EB327C10171444553378 /* PostFeedView.swift */; };
+		8F6D0970610DF68816DE1A98 /* Radroots.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F0F21496E7A8490EB14AC5B /* Radroots.swift */; };
 		9121BD4A3E7C6EF2B21F540F /* CopyButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C7DE4207398DE242519F9C /* CopyButton.swift */; };
 		A1B921027DA7ACD7343BE250 /* SectionWideButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17CA8F5611075F60F214A00 /* SectionWideButton.swift */; };
+		B8A3BBDE3A1FC0248512BF76 /* LoggingSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4DE3DD8C3BB2F63676F463E /* LoggingSettings.swift */; };
 		B971351ABE8E79A472B4DC7D /* View+Nav.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B0C9861CD86EAD3CAD549E /* View+Nav.swift */; };
 		C22DB0F3EB2E69A34DF941E0 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2818363B157125491FB84A1E /* App.swift */; };
 		C512BD267A3E2B8F10FABB3B /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FE790CA1CD31208947913B9 /* Logger.swift */; };
 		C8AB3389F7430A5C79AD7DF8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */; };
 		D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41A4289F43625DD65E6C4B25 /* CopyRow.swift */; };
+		D57D0AED4A22098FB804B5AF /* AuthSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F392F542A3EE3AF60E02D45 /* AuthSettings.swift */; };
+		D5C58A98C950D45AD027962A /* TradeListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D69D200DB1F5FA7AA561CD7 /* TradeListing.swift */; };
 		D62E9461833A0AA5E622A1E6 /* ToastModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227028B4EBDC6703999FB9DA /* ToastModifier.swift */; };
 		DCE468F668A3C346E716B04C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CCF0F7B3C57D8D770F178329 /* Assets.xcassets */; };
+		DF1CB54078BD8238247D3D3A /* FieldSessionCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 517CC5F5A5A0DE883725CBCF /* FieldSessionCredentialStore.swift */; };
+		E1EDAEE6B182025ACAF754A6 /* RadrootsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15DBA726450712D6DE88E951 /* RadrootsProvider.swift */; };
 		E3864E34D67BAD0744B93180 /* Bundle+Build.swift in Sources */ = {isa = PBXBuildFile; fileRef = 138AA7BAA021EE13E829390B /* Bundle+Build.swift */; };
 		EB7C19F62D7DAB9C044D53AA /* PostDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3C0EFACAD213A69C12D5064 /* PostDetailView.swift */; };
 		F32EFF00A8A852F76657FEE1 /* PostCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA8AAF0C0F1723860A8481E0 /* PostCreateView.swift */; };
@@ -41,37 +54,50 @@
 		08FA88664E5E3ED3A24D56CC /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		0A0274A0260D1C04F40C71AF /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		138AA7BAA021EE13E829390B /* Bundle+Build.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Bundle+Build.swift"; sourceTree = "<group>"; };
+		15DBA726450712D6DE88E951 /* RadrootsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsProvider.swift; sourceTree = "<group>"; };
 		16A7641E5C643B4B36CFEDA8 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
 		227028B4EBDC6703999FB9DA /* ToastModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastModifier.swift; sourceTree = "<group>"; };
 		26BAE32CD1D46033DDA1A5BB /* TradeListingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeListingDetailView.swift; sourceTree = "<group>"; };
 		2818363B157125491FB84A1E /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		2FE790CA1CD31208947913B9 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
-		3FADD6E2563CC9AF9F935DCE /* RadrootsKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RadrootsKit; path = RadrootsKit; sourceTree = SOURCE_ROOT; };
 		41A4289F43625DD65E6C4B25 /* CopyRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyRow.swift; sourceTree = "<group>"; };
 		466BFA2F60BE3113EDD1BA3B /* TradeOrderRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeOrderRequestView.swift; sourceTree = "<group>"; };
 		4BC4B7D0BB4C6D8E4B0AA4AD /* radroots.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.xcconfig; sourceTree = "<group>"; };
+		4F392F542A3EE3AF60E02D45 /* AuthSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSettings.swift; sourceTree = "<group>"; };
+		517CC5F5A5A0DE883725CBCF /* FieldSessionCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldSessionCredentialStore.swift; sourceTree = "<group>"; };
 		54EE5A34FE2086899F5B7568 /* radroots.git.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.git.xcconfig; sourceTree = "<group>"; };
+		63189EB90A86A9929BECD9ED /* Nostr.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostr.swift; sourceTree = "<group>"; };
 		676B89EB116B60AE8C2B4313 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		6FBB081610305940C7849C7C /* RelaySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelaySettings.swift; sourceTree = "<group>"; };
+		7515B8FD2A65990C3E3E93CE /* apple_kit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = apple_kit; path = ../../../../domains/radroots/apple_kit; sourceTree = SOURCE_ROOT; };
 		7BCA99336E305EC789152DDE /* radroots.local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.local.xcconfig; sourceTree = "<group>"; };
 		7C294E8EF50F5E1E73F5C135 /* Common.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
+		7D69D200DB1F5FA7AA561CD7 /* TradeListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeListing.swift; sourceTree = "<group>"; };
+		8F0F21496E7A8490EB14AC5B /* Radroots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Radroots.swift; sourceTree = "<group>"; };
 		93AA285819DD1269C3EAD80A /* Radroots.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Radroots.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		93D729E070C32490545FA837 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		947ADA6D32E42ED2B40A5351 /* TradeListingCreateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeListingCreateView.swift; sourceTree = "<group>"; };
 		9AE0EB327C10171444553378 /* PostFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostFeedView.swift; sourceTree = "<group>"; };
 		A0B0C9861CD86EAD3CAD549E /* View+Nav.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Nav.swift"; sourceTree = "<group>"; };
+		A71EFADBC7D54AF5B9314773 /* BuildConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildConfig.swift; sourceTree = "<group>"; };
 		ADE61264E2C98E73828E8680 /* Strings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Strings.swift; sourceTree = "<group>"; };
 		B289F4B276245ABE083D777F /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		BD7B47A576C4D5CE9318D3E6 /* RadrootsFFI.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = RadrootsFFI.xcframework; path = Radroots/Frameworks/RadrootsFFI.xcframework; sourceTree = "<group>"; };
 		C17CA8F5611075F60F214A00 /* SectionWideButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionWideButton.swift; sourceTree = "<group>"; };
 		C1D9496F9F05A4E79E73A247 /* RelaysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelaysView.swift; sourceTree = "<group>"; };
 		C71A93F98C7B93188748B99B /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		CA8AAF0C0F1723860A8481E0 /* PostCreateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostCreateView.swift; sourceTree = "<group>"; };
+		CBE1472FFD63A33F3AEA6C6C /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		CCF0F7B3C57D8D770F178329 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D448C9655B708CA3FA8712B9 /* AppEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEntry.swift; sourceTree = "<group>"; };
+		D4DE3DD8C3BB2F63676F463E /* LoggingSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggingSettings.swift; sourceTree = "<group>"; };
+		DC881872F750120A184F45E6 /* RadrootsKitBindings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsKitBindings.swift; sourceTree = "<group>"; };
 		E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		E7F9BFC3C8CE2F86FB7DB74B /* DebugDump.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugDump.swift; sourceTree = "<group>"; };
 		F21554DA87EEC1E5C5F38365 /* PostFeedViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostFeedViewModel.swift; sourceTree = "<group>"; };
 		F3C0EFACAD213A69C12D5064 /* PostDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostDetailView.swift; sourceTree = "<group>"; };
 		F4C7DE4207398DE242519F9C /* CopyButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyButton.swift; sourceTree = "<group>"; };
+		F6D224B525028DE5D8C8E28D /* TradeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeSettings.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,6 +105,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				04AA409CFECBA11BFC175C5C /* RadrootsFFI.xcframework in Frameworks */,
 				F3E40E5A76B4EA19AC7603D2 /* RadrootsKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -91,6 +118,8 @@
 			children = (
 				2818363B157125491FB84A1E /* App.swift */,
 				D448C9655B708CA3FA8712B9 /* AppEntry.swift */,
+				CBE1472FFD63A33F3AEA6C6C /* AppState.swift */,
+				15DBA726450712D6DE88E951 /* RadrootsProvider.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -114,7 +143,9 @@
 				4BC4B7D0BB4C6D8E4B0AA4AD /* radroots.xcconfig */,
 				23C2D7FF63B61CD356979E82 /* App */,
 				579F407D96CCAFD4000EF363 /* Config */,
+				902187CDBBF756677402D2BF /* Generated */,
 				E9C466456E8A8EEB73EE47F5 /* Resources */,
+				688000357CB95AB5B3067911 /* Runtime */,
 				932F9ACAF6A7D30E34F2E375 /* Shared */,
 				BD0E20D32DF34D9E7C3EBCD2 /* Views */,
 			);
@@ -137,6 +168,30 @@
 			path = Localisation;
 			sourceTree = "<group>";
 		};
+		688000357CB95AB5B3067911 /* Runtime */ = {
+			isa = PBXGroup;
+			children = (
+				4F392F542A3EE3AF60E02D45 /* AuthSettings.swift */,
+				A71EFADBC7D54AF5B9314773 /* BuildConfig.swift */,
+				517CC5F5A5A0DE883725CBCF /* FieldSessionCredentialStore.swift */,
+				D4DE3DD8C3BB2F63676F463E /* LoggingSettings.swift */,
+				63189EB90A86A9929BECD9ED /* Nostr.swift */,
+				8F0F21496E7A8490EB14AC5B /* Radroots.swift */,
+				6FBB081610305940C7849C7C /* RelaySettings.swift */,
+				7D69D200DB1F5FA7AA561CD7 /* TradeListing.swift */,
+				F6D224B525028DE5D8C8E28D /* TradeSettings.swift */,
+			);
+			path = Runtime;
+			sourceTree = "<group>";
+		};
+		902187CDBBF756677402D2BF /* Generated */ = {
+			isa = PBXGroup;
+			children = (
+				DC881872F750120A184F45E6 /* RadrootsKitBindings.swift */,
+			);
+			path = Generated;
+			sourceTree = "<group>";
+		};
 		932F9ACAF6A7D30E34F2E375 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
@@ -152,9 +207,17 @@
 		9458C318B571871852A3FD1B /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				3FADD6E2563CC9AF9F935DCE /* RadrootsKit */,
+				7515B8FD2A65990C3E3E93CE /* apple_kit */,
 			);
 			name = Packages;
+			sourceTree = "<group>";
+		};
+		97FA23F0FD7E25C1AF2585FB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				BD7B47A576C4D5CE9318D3E6 /* RadrootsFFI.xcframework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		9D22575D1FAD99FE8B6FCE6C /* Extensions */ = {
@@ -191,6 +254,7 @@
 			children = (
 				9458C318B571871852A3FD1B /* Packages */,
 				5FD6379AE27C57D02E8C7EE1 /* Radroots */,
+				97FA23F0FD7E25C1AF2585FB /* Frameworks */,
 				6240123423927396E47D6B3E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -284,7 +348,7 @@
 			mainGroup = C4F02317699AB4FA59315D05;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				DA033E4B08F702473D7DDDE3 /* XCLocalSwiftPackageReference "RadrootsKit" */,
+				D71BF9693060631950EFC310 /* XCLocalSwiftPackageReference "../../../../domains/radroots/apple_kit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6240123423927396E47D6B3E /* Products */;
@@ -337,27 +401,39 @@
 			files = (
 				C22DB0F3EB2E69A34DF941E0 /* App.swift in Sources */,
 				360F23EFE80FDBDC6983FB15 /* AppEntry.swift in Sources */,
+				049D620DD8C02816893BF765 /* AppState.swift in Sources */,
+				D57D0AED4A22098FB804B5AF /* AuthSettings.swift in Sources */,
+				3B6020E24A2DAD8ADFC2F155 /* BuildConfig.swift in Sources */,
 				E3864E34D67BAD0744B93180 /* Bundle+Build.swift in Sources */,
 				9121BD4A3E7C6EF2B21F540F /* CopyButton.swift in Sources */,
 				D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */,
 				4025E63F6603011431B8A0E1 /* DebugDump.swift in Sources */,
+				DF1CB54078BD8238247D3D3A /* FieldSessionCredentialStore.swift in Sources */,
 				1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */,
 				C512BD267A3E2B8F10FABB3B /* Logger.swift in Sources */,
+				B8A3BBDE3A1FC0248512BF76 /* LoggingSettings.swift in Sources */,
 				33A800AA701C354099623B24 /* MarketView.swift in Sources */,
+				657BEA5AAFF129E10177FE63 /* Nostr.swift in Sources */,
 				F32EFF00A8A852F76657FEE1 /* PostCreateView.swift in Sources */,
 				EB7C19F62D7DAB9C044D53AA /* PostDetailView.swift in Sources */,
 				8B923F78BF5B680C7F6A7CE3 /* PostFeedView.swift in Sources */,
 				5AECD474FB2F91855BDD79C0 /* PostFeedViewModel.swift in Sources */,
 				275D4D574BF3B3C1DD746CE7 /* ProfileView.swift in Sources */,
+				8F6D0970610DF68816DE1A98 /* Radroots.swift in Sources */,
+				7C8DD424F3E3E0AB1B133863 /* RadrootsKitBindings.swift in Sources */,
+				E1EDAEE6B182025ACAF754A6 /* RadrootsProvider.swift in Sources */,
+				3A7FA9E5BCC7590B2EAC5349 /* RelaySettings.swift in Sources */,
 				022DA21729F49893319717AA /* RelaysView.swift in Sources */,
 				A1B921027DA7ACD7343BE250 /* SectionWideButton.swift in Sources */,
 				C8AB3389F7430A5C79AD7DF8 /* SettingsView.swift in Sources */,
 				2B6ACA26689B355CECBFFB57 /* SetupView.swift in Sources */,
 				7FD8FB018DA09568303194B2 /* Strings.swift in Sources */,
 				D62E9461833A0AA5E622A1E6 /* ToastModifier.swift in Sources */,
+				D5C58A98C950D45AD027962A /* TradeListing.swift in Sources */,
 				505A5731ACDBBB0296134340 /* TradeListingCreateView.swift in Sources */,
 				4B44B723FF06ECC363A486BA /* TradeListingDetailView.swift in Sources */,
 				FD9B01F8F5DD1F05A64FD556 /* TradeOrderRequestView.swift in Sources */,
+				35D8223F5E169DDB4E3E87C0 /* TradeSettings.swift in Sources */,
 				B971351ABE8E79A472B4DC7D /* View+Nav.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -382,6 +458,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"Radroots/Frameworks\"",
+				);
 				INFOPLIST_FILE = Radroots/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -400,6 +480,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"Radroots/Frameworks\"",
+				);
 				INFOPLIST_FILE = Radroots/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -555,9 +639,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		DA033E4B08F702473D7DDDE3 /* XCLocalSwiftPackageReference "RadrootsKit" */ = {
+		D71BF9693060631950EFC310 /* XCLocalSwiftPackageReference "../../../../domains/radroots/apple_kit" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = RadrootsKit;
+			relativePath = ../../../../domains/radroots/apple_kit;
 		};
 /* End XCLocalSwiftPackageReference section */
 

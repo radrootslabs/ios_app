@@ -16,7 +16,6 @@ public struct RadrootsProvider<Content: View>: View {
     public var body: some View {
         content()
             .environmentObject(appState)
-            .environmentObject(appState.keys)
             .environmentObject(appState.radroots)
             .task {
                 do {

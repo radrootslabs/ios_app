@@ -1,5 +1,4 @@
 import SwiftUI
-import RadrootsKit
 
 @main
 struct RadrootsApp: App {

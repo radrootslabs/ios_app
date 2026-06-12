@@ -1,5 +1,4 @@
 import SwiftUI
-import RadrootsKit
 
 struct PostDetailView: View {
     let post: NostrPostEventMetadata
