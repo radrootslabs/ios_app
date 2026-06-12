@@ -108,10 +108,10 @@ public struct ProfileView: View {
     }
 
     private func loadProfile() {
-        guard let rt = app.radroots.runtime else { return }
+        guard let service = app.runtimeService else { return }
         isLoading = true
         Task {
-            let meta = rt.nostrProfileForSelf()
+            let meta = await service.nostrProfileForSelf()
             await MainActor.run {
                 self.original = OriginalProfile.from(meta)
                 self.name = original.name
@@ -124,13 +124,13 @@ public struct ProfileView: View {
     }
 
     private func post() {
-        guard let rt = app.radroots.runtime, isPostEnabled else { return }
+        guard let service = app.runtimeService, isPostEnabled else { return }
         isPosting = true
         postMessage = nil
         let payload = PostPayload(name: name, displayName: displayName, nip05: nip05, about: about)
         Task {
             do {
-                let id = try rt.nostrPostProfile(
+                let id = try await service.nostrPostProfile(
                     name: payload.name,
                     displayName: payload.displayName,
                     nip05: payload.nip05,
@@ -139,7 +139,7 @@ public struct ProfileView: View {
                 await MainActor.run {
                     self.original = OriginalProfile(name: name, displayName: displayName, nip05: nip05, about: about)
                     self.isPosting = false
-                    self.postMessage = "Posted kind:0 event: \(id)"
+                    self.postMessage = "Posted kind:0 event: \(id.rawValue)"
                     self.showMessage = true
                     self.app.refresh()
                 }

@@ -53,7 +53,7 @@ private struct TodayView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Today")
                         .font(.largeTitle.weight(.bold))
-                    Text(app.accountDisplayName ?? app.username ?? "Field operator")
+                    Text(app.identityDisplayName)
                         .font(.title3.weight(.semibold))
                     HStack(spacing: 10) {
                         Label(syncLabel, systemImage: syncImage)
@@ -122,7 +122,7 @@ private struct ActivityView: View {
     var body: some View {
         List {
             Section("Recent Activity") {
-                ActivityRow(title: "Session ready", detail: app.username ?? "Signed in", systemImage: "person.crop.circle.badge.checkmark")
+                ActivityRow(title: "Identity ready", detail: app.npub.map(shortNpub) ?? "Local key selected", systemImage: "person.crop.circle.badge.checkmark")
                 ActivityRow(title: "Relay posture", detail: "\(app.relayConnectedCount) connected, \(app.relayConnectingCount) connecting", systemImage: "dot.radiowaves.left.and.right")
                 ActivityRow(title: "Draft queue", detail: "No local drafts", systemImage: "tray")
             }
@@ -130,6 +130,11 @@ private struct ActivityView: View {
         .listStyle(.insetGrouped)
         .inlineNavigationTitle("Activity")
         .accessibilityIdentifier("field_ios.activity")
+    }
+
+    private func shortNpub(_ value: String) -> String {
+        guard value.count > 18 else { return value }
+        return "\(value.prefix(12))...\(value.suffix(6))"
     }
 }
 

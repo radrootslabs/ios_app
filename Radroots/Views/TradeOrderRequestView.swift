@@ -96,7 +96,7 @@ struct TradeOrderRequestView: View {
     }
 
     private func sendOrder() {
-        guard let rt = app.radroots.runtime else { return }
+        guard let service = app.runtimeService else { return }
         guard let rhiPubkey = TradeSettings.rhiPubkeyOptional else {
             errorMessage = "Missing RHI pubkey."
             return
@@ -122,20 +122,12 @@ struct TradeOrderRequestView: View {
         )
 
         Task { @MainActor in
-            let result: Result<TradeOrderSendResult, Error> = await Task.detached { @Sendable in
-                do {
-                    return .success(try rt.tradeListingSendOrderRequest(draft: draft))
-                } catch {
-                    return .failure(error)
-                }
-            }.value
-
-            switch result {
-            case .success(let out):
+            do {
+                let out = try await service.tradeListingSendOrderRequest(draft: draft)
                 isSending = false
                 onComplete(out)
                 dismiss()
-            case .failure(let error):
+            } catch {
                 isSending = false
                 errorMessage = String(describing: error)
             }

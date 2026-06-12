@@ -3,6 +3,7 @@ import Foundation
 @MainActor
 public final class Radroots: ObservableObject {
     public private(set) var runtime: RadrootsRuntime?
+    public private(set) var runtimeService: FieldRuntimeService?
 
     public init() {}
 
@@ -11,7 +12,7 @@ public final class Radroots: ObservableObject {
         version: String = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "0",
         build: String = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "0",
         buildSha: String? = nil
-    ) throws {
+    ) throws -> FieldRuntimeService {
         let settings = LoggingSettings.load()
         do {
             try settings.apply()
@@ -30,6 +31,9 @@ public final class Radroots: ObservableObject {
             buildSha: resolvedSha
         )
         self.runtime = rt
+        let service = FieldRuntimeService(runtime: rt)
+        self.runtimeService = service
+        return service
     }
 
     deinit {

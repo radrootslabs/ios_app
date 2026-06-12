@@ -35,8 +35,6 @@ struct LoggingSettings: Equatable {
             .loggingFileEnabled,
             .loggingFileName,
             .nostrRelayUrls,
-            .authApiBaseUrl,
-            .accountsApiBaseUrl,
             .keychainServicePrefix,
             .resetLocalState,
             .tradeRhiPubkey,

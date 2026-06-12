@@ -76,16 +76,16 @@ struct PostCreateView: View {
     }
 
     private func post() {
-        guard let rt = app.radroots.runtime else { return }
+        guard let service = app.runtimeService else { return }
         let content = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !content.isEmpty else { return }
         isPosting = true
         resultMessage = nil
         Task {
             do {
-                let id = try rt.nostrPostTextNote(content: content)
+                let id = try await service.nostrPostTextNote(content: content)
                 await MainActor.run {
-                    resultMessage = "Posted kind:1 event: \(id)"
+                    resultMessage = "Posted kind:1 event: \(id.rawValue)"
                     showResult = true
                     text = ""
                     isPosting = false

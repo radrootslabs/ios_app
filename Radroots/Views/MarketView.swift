@@ -14,23 +14,15 @@ final class TradeListingsViewModel: ObservableObject {
     }
 
     func refresh(app: AppState) async {
-        guard let rt = app.radroots.runtime else { return }
+        guard let service = app.runtimeService else { return }
         isLoading = true
         errorMessage = nil
 
-        let result: Result<[TradeListingSummary], Error> = await Task.detached { @Sendable in
-            do {
-                return .success(try rt.tradeListingsFetch(limit: 60, sinceUnix: nil))
-            } catch {
-                return .failure(error)
-            }
-        }.value
-
-        switch result {
-        case .success(let items):
+        do {
+            let items = try await service.tradeListingsFetch(limit: 60, sinceUnix: nil)
             listings = items
             isLoading = false
-        case .failure(let error):
+        } catch {
             errorMessage = String(describing: error)
             isLoading = false
         }

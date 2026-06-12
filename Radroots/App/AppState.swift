@@ -1,25 +1,23 @@
 import Foundation
 
-enum FieldAppSessionError: LocalizedError {
+enum FieldAppRuntimeError: LocalizedError {
     case runtimeNotReady
-    case missingSessionTokenBundle
 
     var errorDescription: String? {
         switch self {
         case .runtimeNotReady:
-            "Runtime not ready. Please relaunch."
-        case .missingSessionTokenBundle:
-            "The authenticated session did not return tokens."
+            "Runtime not ready. Please retry."
         }
     }
 }
 
 @MainActor
 public final class AppState: ObservableObject {
-    public enum BootstrapPhase {
+    public enum BootstrapPhase: Equatable {
         case idle
         case starting
         case ready
+        case failed(String)
     }
 
     public enum RelayLight {
@@ -28,32 +26,47 @@ public final class AppState: ObservableObject {
 
     @Published public private(set) var bootstrapPhase: BootstrapPhase = .idle
     @Published public private(set) var infoJSONString: String = ""
-    @Published public private(set) var sessionPhase: FieldSessionPhase = .signedOut
-    @Published public private(set) var username: String?
-    @Published public private(set) var accountDisplayName: String?
-    @Published public private(set) var pendingChallenge: FieldLoginChallenge?
     @Published public private(set) var hasKey: Bool = false
+    @Published public private(set) var isLocked: Bool = false
     @Published public private(set) var npub: String?
+    @Published public private(set) var identityLabel: String?
+    @Published public private(set) var identities: [NostrIdentityRecord] = []
     @Published public private(set) var relayConnectedCount: UInt32 = 0
     @Published public private(set) var relayConnectingCount: UInt32 = 0
     @Published public private(set) var relayLight: RelayLight = .red
     @Published public private(set) var relayLastError: String?
 
     public var canShowAppContent: Bool {
-        bootstrapPhase == .ready && sessionPhase == .authenticated
+        bootstrapPhase == .ready && hasKey && !isLocked
     }
 
     public var requiresSetup: Bool {
-        bootstrapPhase == .ready && sessionPhase != .authenticated
+        bootstrapPhase == .ready && (!hasKey || isLocked)
+    }
+
+    public var identityDisplayName: String {
+        if let label = identityLabel?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !label.isEmpty {
+            return label
+        }
+        if let npub {
+            return shortNpub(npub)
+        }
+        return "Local Nostr identity"
     }
 
     public let radroots: Radroots
 
-    private var sessionStore: FieldSessionCredentialStore?
+    public var runtimeService: FieldRuntimeService? {
+        radroots.runtimeService
+    }
+
+    private let lockKey = "field_ios.identity_locked"
     private var statusTask: Task<Void, Never>?
 
     public init(radroots: Radroots = Radroots()) {
         self.radroots = radroots
+        self.isLocked = UserDefaults.standard.bool(forKey: lockKey)
     }
 
     deinit {
@@ -61,155 +74,185 @@ public final class AppState: ObservableObject {
     }
 
     public func start() async throws {
-        guard bootstrapPhase == .idle else { return }
+        guard bootstrapPhase == .idle || isFailed else { return }
         bootstrapPhase = .starting
         do {
-            try radroots.start()
-            let store = try FieldSessionCredentialStore()
-            sessionStore = store
+            let service = try radroots.start()
             if BuildConfig.bool(.resetLocalState) == true {
-                try? store.delete()
+                try await removeAllIdentities(using: service)
+                setLocked(false)
             }
-            if let rt = radroots.runtime {
-                try configure(runtime: rt)
-                try restoreSessionIfPossible(runtime: rt, store: store)
+            try await configureRelays(using: service)
+            try await refreshRuntimeState(using: service)
+            if hasKey && !isLocked {
+                try await connect(using: service)
+                startPollingStatus()
             }
-            refresh()
             bootstrapPhase = .ready
         } catch {
-            bootstrapPhase = .idle
+            statusTask?.cancel()
+            statusTask = nil
+            let message = error.localizedDescription
+            bootstrapPhase = .failed(message)
             throw error
         }
     }
 
+    public func retryStartup() {
+        bootstrapPhase = .idle
+        Task {
+            try? await start()
+        }
+    }
+
     public func refresh() {
-        guard let rt = radroots.runtime else { return }
-        infoJSONString = rt.infoJson()
-        apply(snapshot: rt.fieldSessionSnapshot())
-    }
-
-    @discardableResult
-    public func startLogin(username: String) throws -> FieldLoginChallenge {
-        let rt = try requireRuntime()
-        let challenge = try rt.fieldStartLogin(username: username)
-        apply(snapshot: rt.fieldSessionSnapshot())
-        return challenge
-    }
-
-    @discardableResult
-    public func resendLoginChallenge(challengeId: String) throws -> FieldLoginChallenge {
-        let rt = try requireRuntime()
-        let challenge = try rt.fieldResendLoginChallenge(challengeId: challengeId)
-        apply(snapshot: rt.fieldSessionSnapshot())
-        return challenge
-    }
-
-    public func verifyLogin(challengeId: String, code: String) throws {
-        let rt = try requireRuntime()
-        let snapshot = try rt.fieldVerifyLoginChallenge(challengeId: challengeId, code: code)
-        apply(snapshot: snapshot)
-        guard let tokens = try rt.fieldSessionTokenBundle() else {
-            throw FieldAppSessionError.missingSessionTokenBundle
+        Task {
+            await refreshRuntimeState()
         }
-        try sessionStore?.save(tokens)
-        prepareAuthenticatedRuntime()
     }
 
-    public func logout() {
-        guard let rt = radroots.runtime else { return }
-        do {
-            _ = try rt.fieldRevokeSession()
-        } catch {
-            relayLastError = error.localizedDescription
-        }
-        try? sessionStore?.delete()
-        apply(snapshot: rt.fieldClearSession())
+    public func continueWithLocalIdentity() async throws {
+        let service = try requireRuntimeService()
+        setLocked(false)
+        try await connect(using: service)
+        await refreshRuntimeState(using: service)
+        startPollingStatus()
+    }
+
+    public func createLocalIdentity() async throws {
+        let service = try requireRuntimeService()
+        _ = try await service.nostrIdentityGenerate(label: "Radroots Field", makeSelected: true)
+        setLocked(false)
+        try await connect(using: service)
+        await refreshRuntimeState(using: service)
+        startPollingStatus()
+    }
+
+    public func importNostrSecret(_ secretKey: String) async throws {
+        let trimmed = secretKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let service = try requireRuntimeService()
+        _ = try await service.nostrIdentityImportSecret(
+            secretKey: trimmed,
+            label: "Imported Field Identity",
+            makeSelected: true
+        )
+        setLocked(false)
+        try await connect(using: service)
+        await refreshRuntimeState(using: service)
+        startPollingStatus()
+    }
+
+    public func signOut() {
+        setLocked(true)
         statusTask?.cancel()
         statusTask = nil
     }
 
-    private func configure(runtime: RadrootsRuntime) throws {
-        try runtime.fieldConfigureAuth(
-            authApiBaseUrl: try AuthSettings.authApiBaseURL(),
-            accountsApiBaseUrl: AuthSettings.accountsApiBaseURL()
-        )
+    public func resetLocalIdentity() async throws {
+        let service = try requireRuntimeService()
+        try await removeAllIdentities(using: service)
+        setLocked(false)
+        relayConnectedCount = 0
+        relayConnectingCount = 0
+        relayLight = .red
+        relayLastError = nil
+        await refreshRuntimeState(using: service)
+        statusTask?.cancel()
+        statusTask = nil
     }
 
-    private func restoreSessionIfPossible(
-        runtime: RadrootsRuntime,
-        store: FieldSessionCredentialStore
-    ) throws {
-        guard let tokens = try store.load() else {
-            apply(snapshot: runtime.fieldSessionSnapshot())
-            return
+    public func requireRuntimeService() throws -> FieldRuntimeService {
+        guard let service = runtimeService else {
+            throw FieldAppRuntimeError.runtimeNotReady
         }
-        do {
-            let snapshot = try runtime.fieldRestoreSession(
-                accessToken: tokens.accessToken,
-                refreshToken: tokens.refreshToken
-            )
-            apply(snapshot: snapshot)
-            prepareAuthenticatedRuntime()
-        } catch {
-            try? store.delete()
-            apply(snapshot: runtime.fieldClearSession())
-        }
+        return service
     }
 
-    private func prepareAuthenticatedRuntime() {
-        guard let rt = radroots.runtime else { return }
+    private var isFailed: Bool {
+        if case .failed = bootstrapPhase {
+            return true
+        }
+        return false
+    }
+
+    private func configureRelays(using service: FieldRuntimeService) async throws {
+        try await service.nostrSetDefaultRelays(try RelaySettings.relays())
+    }
+
+    private func connect(using service: FieldRuntimeService) async throws {
+        try await configureRelays(using: service)
+        try await service.nostrConnectIfKeyPresent()
+        await refreshRelayStatus(using: service)
+        relayLastError = nil
+    }
+
+    private func refreshRuntimeState() async {
+        guard let service = runtimeService else { return }
+        await refreshRuntimeState(using: service)
+    }
+
+    private func refreshRuntimeState(using service: FieldRuntimeService) async {
+        infoJSONString = await service.infoJson()
         do {
-            let snapshot = try rt.fieldPrepareAuthenticatedNostr(relays: try RelaySettings.relays())
-            relayLastError = nil
-            apply(snapshot: snapshot)
+            let snapshot = try await service.nostrIdentitySnapshot()
+            apply(identity: snapshot)
         } catch {
             relayLastError = error.localizedDescription
         }
-        startPollingStatus()
+        await refreshRelayStatus(using: service)
     }
 
-    private func startPollingStatus() {
-        statusTask?.cancel()
-        statusTask = Task { [weak self] in
-            while !Task.isCancelled {
-                await MainActor.run { self?.refreshRelayStatus() }
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-            }
-        }
-    }
-
-    private func refreshRelayStatus() {
-        guard let rt = radroots.runtime else { return }
-        apply(snapshot: rt.fieldSessionSnapshot())
-    }
-
-    private func apply(snapshot: FieldSessionSnapshot) {
-        sessionPhase = snapshot.phase
-        pendingChallenge = snapshot.pendingChallenge
-        username = snapshot.account?.username
-        accountDisplayName = snapshot.account?.displayName
-        npub = snapshot.selectedNpub
-        hasKey = snapshot.selectedNpub != nil
-        relayConnectedCount = snapshot.nostrConnected
-        relayConnectingCount = snapshot.nostrConnecting
-        relayLastError = snapshot.nostrLastError ?? relayLastError
-
-        switch snapshot.nostrLight {
+    private func refreshRelayStatus(using service: FieldRuntimeService) async {
+        let status = await service.nostrConnectionStatus()
+        relayConnectedCount = status.connected
+        relayConnectingCount = status.connecting
+        relayLastError = status.lastError ?? relayLastError
+        switch status.light {
         case .green:
             relayLight = .green
         case .yellow:
             relayLight = .yellow
         case .red:
             relayLight = .red
-        @unknown default:
-            relayLight = .red
         }
     }
 
-    private func requireRuntime() throws -> RadrootsRuntime {
-        guard let rt = radroots.runtime else {
-            throw FieldAppSessionError.runtimeNotReady
+    private func apply(identity snapshot: NostrIdentitySnapshot) {
+        hasKey = snapshot.hasSelectedSigningIdentity
+        npub = snapshot.selectedNpub
+        identities = snapshot.identities
+        identityLabel = snapshot.identities.first(where: { $0.isSelected })?.label
+    }
+
+    private func removeAllIdentities(using service: FieldRuntimeService) async throws {
+        let existing = try await service.nostrIdentityList()
+        for identity in existing {
+            try await service.nostrIdentityRemove(identityId: identity.id)
         }
-        return rt
+        hasKey = false
+        npub = nil
+        identityLabel = nil
+        identities = []
+    }
+
+    private func setLocked(_ value: Bool) {
+        isLocked = value
+        UserDefaults.standard.set(value, forKey: lockKey)
+    }
+
+    private func startPollingStatus() {
+        statusTask?.cancel()
+        statusTask = Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.refreshRuntimeState()
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+            }
+        }
+    }
+
+    private func shortNpub(_ value: String) -> String {
+        guard value.count > 18 else { return value }
+        return "\(value.prefix(12))...\(value.suffix(6))"
     }
 }

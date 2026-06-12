@@ -12,31 +12,21 @@ final class TradeListingDetailViewModel: ObservableObject {
     }
 
     func refresh(app: AppState) async {
-        guard let rt = app.radroots.runtime else { return }
+        guard let service = app.runtimeService else { return }
         isLoading = true
         errorMessage = nil
 
         let listingAddr = listing.listingAddr
 
-        let result: Result<[TradeListingMessageSummary], Error> = await Task.detached { @Sendable in
-            do {
-                return .success(
-                    try rt.tradeListingFetchMessages(
-                        listingAddr: listingAddr,
-                        limit: 80,
-                        sinceUnix: nil
-                    )
-                )
-            } catch {
-                return .failure(error)
-            }
-        }.value
-
-        switch result {
-        case .success(let items):
+        do {
+            let items = try await service.tradeListingFetchMessages(
+                listingAddr: listingAddr,
+                limit: 80,
+                sinceUnix: nil
+            )
             messages = items
             isLoading = false
-        case .failure(let error):
+        } catch {
             errorMessage = String(describing: error)
             isLoading = false
         }

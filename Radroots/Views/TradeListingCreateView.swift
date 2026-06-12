@@ -138,26 +138,18 @@ struct TradeListingCreateView: View {
     }
 
     private func publish() {
-        guard let rt = app.radroots.runtime else { return }
+        guard let service = app.runtimeService else { return }
         errorMessage = nil
         isPosting = true
         let draftValue = draft.toTradeListingDraft()
 
         Task { @MainActor in
-            let result: Result<String, Error> = await Task.detached { @Sendable in
-                do {
-                    return .success(try rt.tradeListingPublish(draft: draftValue))
-                } catch {
-                    return .failure(error)
-                }
-            }.value
-
-            switch result {
-            case .success:
+            do {
+                _ = try await service.tradeListingPublish(draft: draftValue)
                 isPosting = false
                 onCreated?()
                 dismiss()
-            case .failure(let error):
+            } catch {
                 isPosting = false
                 errorMessage = String(describing: error)
             }

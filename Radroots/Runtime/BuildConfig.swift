@@ -8,8 +8,6 @@ enum BuildConfigKey: String {
     case loggingFileEnabled = "RADROOTS_FIELD_IOS_LOGGING_FILE_ENABLED"
     case loggingFileName = "RADROOTS_FIELD_IOS_LOGGING_FILE_NAME"
     case nostrRelayUrls = "RADROOTS_FIELD_IOS_NOSTR_RELAY_URLS"
-    case authApiBaseUrl = "RADROOTS_FIELD_IOS_AUTH_API_BASE_URL"
-    case accountsApiBaseUrl = "RADROOTS_FIELD_IOS_ACCOUNTS_API_BASE_URL"
     case keychainServicePrefix = "RADROOTS_FIELD_IOS_KEYCHAIN_SERVICE_PREFIX"
     case resetLocalState = "RADROOTS_FIELD_IOS_RESET_LOCAL_STATE"
     case tradeRhiPubkey = "RADROOTS_FIELD_IOS_TRADE_RHI_PUBKEY"

@@ -13,6 +13,10 @@ public struct AppEntry<Main: View>: View {
             switch appState.bootstrapPhase {
             case .idle, .starting:
                 SplashView()
+            case .failed(let message):
+                StartupFailureView(message: message) {
+                    appState.retryStartup()
+                }
             case .ready:
                 if appState.canShowAppContent {
                     main()
@@ -24,6 +28,39 @@ public struct AppEntry<Main: View>: View {
             }
         }
         .accessibilityIdentifier("field_ios.app_entry")
+    }
+}
+
+private struct StartupFailureView: View {
+    let message: String
+    let onRetry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Spacer()
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 56, weight: .semibold))
+                .foregroundStyle(.red)
+            Text("Startup failed")
+                .font(.title2.weight(.semibold))
+            Text(message)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .textSelection(.enabled)
+            Spacer()
+            Button {
+                onRetry()
+            } label: {
+                Label("Retry", systemImage: "arrow.clockwise")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .accessibilityIdentifier("field_ios.bootstrap.retry")
+        }
+        .padding()
+        .accessibilityIdentifier("field_ios.bootstrap.failed")
     }
 }
 
