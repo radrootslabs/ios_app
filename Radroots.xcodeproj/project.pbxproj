@@ -65,6 +65,7 @@
 		54EE5A34FE2086899F5B7568 /* radroots.git.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.git.xcconfig; sourceTree = "<group>"; };
 		676B89EB116B60AE8C2B4313 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		7B55F6649DFED91BA8670D13 /* RadrootsSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsSmokeTests.swift; sourceTree = "<group>"; };
+		7BCA99336E305EC789152DDE /* radroots.local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.local.xcconfig; sourceTree = "<group>"; };
 		7C294E8EF50F5E1E73F5C135 /* Common.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
 		93AA285819DD1269C3EAD80A /* Radroots.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Radroots.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		93D729E070C32490545FA837 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -130,6 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				54EE5A34FE2086899F5B7568 /* radroots.git.xcconfig */,
+				7BCA99336E305EC789152DDE /* radroots.local.xcconfig */,
 				4BC4B7D0BB4C6D8E4B0AA4AD /* radroots.xcconfig */,
 				23C2D7FF63B61CD356979E82 /* App */,
 				579F407D96CCAFD4000EF363 /* Config */,
