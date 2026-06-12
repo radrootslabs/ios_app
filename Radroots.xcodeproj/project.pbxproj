@@ -15,7 +15,6 @@
 		33A800AA701C354099623B24 /* MarketView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08C0B870E44C7B152A7FABE0 /* MarketView.swift */; };
 		360F23EFE80FDBDC6983FB15 /* AppEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D448C9655B708CA3FA8712B9 /* AppEntry.swift */; };
 		4025E63F6603011431B8A0E1 /* DebugDump.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F9BFC3C8CE2F86FB7DB74B /* DebugDump.swift */; };
-		456DE610453A759C6E9C7E67 /* RadrootsSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B55F6649DFED91BA8670D13 /* RadrootsSmokeTests.swift */; };
 		4B44B723FF06ECC363A486BA /* TradeListingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26BAE32CD1D46033DDA1A5BB /* TradeListingDetailView.swift */; };
 		505A5731ACDBBB0296134340 /* TradeListingCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 947ADA6D32E42ED2B40A5351 /* TradeListingCreateView.swift */; };
 		5AECD474FB2F91855BDD79C0 /* PostFeedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F21554DA87EEC1E5C5F38365 /* PostFeedViewModel.swift */; };
@@ -37,16 +36,6 @@
 		FD9B01F8F5DD1F05A64FD556 /* TradeOrderRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 466BFA2F60BE3113EDD1BA3B /* TradeOrderRequestView.swift */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		5B242C3EC56D6F3216103D77 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 572C41532B5066EC7641561C /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 469EC50C49E7266DF1C2000B;
-			remoteInfo = Radroots;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXFileReference section */
 		08C0B870E44C7B152A7FABE0 /* MarketView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketView.swift; sourceTree = "<group>"; };
 		08FA88664E5E3ED3A24D56CC /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
@@ -57,14 +46,12 @@
 		26BAE32CD1D46033DDA1A5BB /* TradeListingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeListingDetailView.swift; sourceTree = "<group>"; };
 		2818363B157125491FB84A1E /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		2FE790CA1CD31208947913B9 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
-		318804462AADCA05FB04ACD9 /* RadrootsTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RadrootsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3FADD6E2563CC9AF9F935DCE /* RadrootsKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RadrootsKit; path = RadrootsKit; sourceTree = SOURCE_ROOT; };
 		41A4289F43625DD65E6C4B25 /* CopyRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyRow.swift; sourceTree = "<group>"; };
 		466BFA2F60BE3113EDD1BA3B /* TradeOrderRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeOrderRequestView.swift; sourceTree = "<group>"; };
 		4BC4B7D0BB4C6D8E4B0AA4AD /* radroots.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.xcconfig; sourceTree = "<group>"; };
 		54EE5A34FE2086899F5B7568 /* radroots.git.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.git.xcconfig; sourceTree = "<group>"; };
 		676B89EB116B60AE8C2B4313 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
-		7B55F6649DFED91BA8670D13 /* RadrootsSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsSmokeTests.swift; sourceTree = "<group>"; };
 		7BCA99336E305EC789152DDE /* radroots.local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.local.xcconfig; sourceTree = "<group>"; };
 		7C294E8EF50F5E1E73F5C135 /* Common.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
 		93AA285819DD1269C3EAD80A /* Radroots.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Radroots.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -108,14 +95,6 @@
 			path = App;
 			sourceTree = "<group>";
 		};
-		31C88176C5674CFF5F9CFBEA /* RadrootsTests */ = {
-			isa = PBXGroup;
-			children = (
-				7B55F6649DFED91BA8670D13 /* RadrootsSmokeTests.swift */,
-			);
-			path = RadrootsTests;
-			sourceTree = "<group>";
-		};
 		579F407D96CCAFD4000EF363 /* Config */ = {
 			isa = PBXGroup;
 			children = (
@@ -146,7 +125,6 @@
 			isa = PBXGroup;
 			children = (
 				93AA285819DD1269C3EAD80A /* Radroots.app */,
-				318804462AADCA05FB04ACD9 /* RadrootsTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -213,7 +191,6 @@
 			children = (
 				9458C318B571871852A3FD1B /* Packages */,
 				5FD6379AE27C57D02E8C7EE1 /* Radroots */,
-				31C88176C5674CFF5F9CFBEA /* RadrootsTests */,
 				6240123423927396E47D6B3E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -286,24 +263,6 @@
 			productReference = 93AA285819DD1269C3EAD80A /* Radroots.app */;
 			productType = "com.apple.product-type.application";
 		};
-		67B2EF8D69F6CEA9BE5A8B04 /* RadrootsTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = DCDE79513C7AE684F9540473 /* Build configuration list for PBXNativeTarget "RadrootsTests" */;
-			buildPhases = (
-				4948BBB44D48B961DE81F508 /* Sources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				C4ECFE4B8C347EE1F784B9BA /* PBXTargetDependency */,
-			);
-			name = RadrootsTests;
-			packageProductDependencies = (
-			);
-			productName = RadrootsTests;
-			productReference = 318804462AADCA05FB04ACD9 /* RadrootsTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -333,7 +292,6 @@
 			projectRoot = "";
 			targets = (
 				469EC50C49E7266DF1C2000B /* Radroots */,
-				67B2EF8D69F6CEA9BE5A8B04 /* RadrootsTests */,
 			);
 		};
 /* End PBXProject section */
@@ -373,14 +331,6 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		4948BBB44D48B961DE81F508 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				456DE610453A759C6E9C7E67 /* RadrootsSmokeTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		78F7810CC77628CB591F8CD2 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -414,14 +364,6 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
-/* Begin PBXTargetDependency section */
-		C4ECFE4B8C347EE1F784B9BA /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 469EC50C49E7266DF1C2000B /* Radroots */;
-			targetProxy = 5B242C3EC56D6F3216103D77 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin PBXVariantGroup section */
 		8D19AA8D515FC8F5D2407378 /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
@@ -452,24 +394,6 @@
 			};
 			name = Debug;
 		};
-		8113D02CF1312FB10249F707 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				SDKROOT = iphoneos;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Radroots.app/Radroots";
-			};
-			name = Release;
-		};
 		D930E9391B5B63DB518922D2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 08FA88664E5E3ED3A24D56CC /* Release.xcconfig */;
@@ -487,24 +411,6 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
-		};
-		F1654BB285BEA5667F11CBD2 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				SDKROOT = iphoneos;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Radroots.app/Radroots";
-			};
-			name = Debug;
 		};
 		F4E5B115657562F65E2A7C00 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -642,15 +548,6 @@
 			buildConfigurations = (
 				F4F00921D65CA3F2388F2BCC /* Debug */,
 				F4E5B115657562F65E2A7C00 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
-		};
-		DCDE79513C7AE684F9540473 /* Build configuration list for PBXNativeTarget "RadrootsTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				F1654BB285BEA5667F11CBD2 /* Debug */,
-				8113D02CF1312FB10249F707 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

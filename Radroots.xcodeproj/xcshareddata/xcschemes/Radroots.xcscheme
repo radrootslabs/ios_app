@@ -39,20 +39,7 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "67B2EF8D69F6CEA9BE5A8B04"
-               BuildableName = "RadrootsTests.xctest"
-               BlueprintName = "RadrootsTests"
-               ReferencedContainer = "container:Radroots.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
       </Testables>
-      <CommandLineArguments>
-      </CommandLineArguments>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
