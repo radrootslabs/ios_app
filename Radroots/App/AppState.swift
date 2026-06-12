@@ -2,11 +2,14 @@ import Foundation
 
 enum FieldAppRuntimeError: LocalizedError {
     case runtimeNotReady
+    case forcedStartupFailure
 
     var errorDescription: String? {
         switch self {
         case .runtimeNotReady:
             "Runtime not ready. Please retry."
+        case .forcedStartupFailure:
+            "Startup failure requested by field iOS runtime mode."
         }
     }
 }
@@ -78,6 +81,9 @@ public final class AppState: ObservableObject {
         guard bootstrapPhase == .idle || isFailed else { return }
         bootstrapPhase = .starting
         do {
+            if startupFailureWasRequested {
+                throw FieldAppRuntimeError.forcedStartupFailure
+            }
             let service = try radroots.start()
             let custodyStore = try FieldIdentityCustodyStore.configured()
             identityCustodyStore = custodyStore
@@ -88,7 +94,6 @@ public final class AppState: ObservableObject {
             } else {
                 try await restorePersistedIdentity(using: service, custodyStore: custodyStore)
             }
-            try await configureRelays(using: service)
             try await refreshRuntimeState(using: service)
             if hasKey && !isLocked {
                 try await connect(using: service)
@@ -184,6 +189,22 @@ public final class AppState: ObservableObject {
             return true
         }
         return false
+    }
+
+    private var startupFailureWasRequested: Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        let environment = ProcessInfo.processInfo.environment
+        guard environment["RADROOTS_FIELD_IOS_UI_TEST"] == "true" ||
+            arguments.contains("--radroots-field-ios-ui-test") else {
+            return false
+        }
+        if BuildConfig.string(.runtimeMode) == "ui-test-startup-failure" {
+            return true
+        }
+        if environment["RADROOTS_FIELD_IOS_FORCE_STARTUP_FAILURE"] == "true" {
+            return true
+        }
+        return arguments.contains("--radroots-field-ios-force-startup-failure")
     }
 
     private func configureRelays(using service: FieldRuntimeService) async throws {
