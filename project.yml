@@ -36,3 +36,24 @@ targets:
         script: |
           GIT_SHA=$(git rev-parse --short HEAD || echo "unknown")
           echo "GIT_SHA = $GIT_SHA" > "$SRCROOT/Radroots/radroots.git.xcconfig"
+  RadrootsTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: RadrootsTests
+    settings:
+      base:
+        SWIFT_VERSION: 6.0
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: Radroots
+
+schemes:
+  Radroots:
+    build:
+      targets:
+        Radroots: all
+    test:
+      targets:
+        - RadrootsTests

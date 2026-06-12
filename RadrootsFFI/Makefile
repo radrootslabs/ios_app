@@ -123,6 +123,7 @@ build: ensure-toolchain
 	$(CARGO) build --manifest-path $(FFI_MANIFEST) $(CARGO_FEATURE_FLAGS) --release
 
 generate:
+	rm -rf $(GENERATED_DIR) $(HEADERS_DIR)
 	mkdir -p $(GENERATED_DIR) $(HEADERS_DIR)
 	cd $(FFI_CRATE_DIR) && $(CARGO) run --manifest-path Cargo.toml $(CARGO_FEATURE_FLAGS) --bin uniffi-bindgen -- \
 		generate --library $(LIB_HOST) \
