@@ -48,7 +48,7 @@ struct SetupView: View {
         Task { @MainActor in
             do {
                 try keys.generateAndPersist(runtime: rt)
-                app.refresh()
+                app.activateAfterKeyGeneration()
                 onSuccess?()
             } catch {
                 errorMessage = String(describing: error)
@@ -71,7 +71,7 @@ struct SetupView: View {
                     throw NSError(domain: "Setup", code: -1, userInfo: [NSLocalizedDescriptionKey: "Clipboard is empty."])
                 }
                 try keys.importSecretHex(hex: hex, runtime: rt)
-                app.refresh()
+                app.activateAfterKeyGeneration()
                 onSuccess?()
             } catch {
                 errorMessage = String(describing: error)
