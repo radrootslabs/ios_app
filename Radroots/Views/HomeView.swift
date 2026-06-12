@@ -72,7 +72,7 @@ private struct TodayView: View {
                 FieldActionRow(title: "Compliance Note", subtitle: "Reserve audit-ready notes for the current workflow.", systemImage: "checkmark.seal.fill")
             }
 
-            Section("Diagnostics") {
+            Section("Relay") {
                 RelayMetricRow(label: "Connected", systemImage: "dot.radiowaves.left.and.right", value: app.relayConnectedCount)
                 RelayMetricRow(label: "Connecting", systemImage: "antenna.radiowaves.left.and.right", value: app.relayConnectingCount)
                 if let last = app.relayLastError {
@@ -80,10 +80,6 @@ private struct TodayView: View {
                         .foregroundStyle(.red)
                         .font(.footnote)
                 }
-                Text(app.infoJSONString)
-                    .font(.footnote.monospaced())
-                    .textSelection(.enabled)
-                    .lineLimit(8)
             }
         }
         .listStyle(.insetGrouped)

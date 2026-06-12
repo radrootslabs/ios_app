@@ -33,6 +33,17 @@ struct SettingsView: View {
                 }
             }
 
+            if diagnosticsAvailable {
+                Section("Operator") {
+                    NavigationLink {
+                        RuntimeDiagnosticsView()
+                    } label: {
+                        Label("Diagnostics", systemImage: "stethoscope")
+                    }
+                    .accessibilityIdentifier("field_ios.settings.diagnostics")
+                }
+            }
+
             Section("Trade") {
                 if let rhi = TradeSettings.rhiPubkeyOptional {
                     CopyRow(title: "RHI Pubkey", value: rhi)
@@ -80,6 +91,10 @@ struct SettingsView: View {
         .accessibilityIdentifier("field_ios.settings")
     }
 
+    private var diagnosticsAvailable: Bool {
+        BuildConfig.string(.runtimeMode) != "production"
+    }
+
     private func resetIdentity() {
         resetError = nil
         Task {
@@ -89,5 +104,32 @@ struct SettingsView: View {
                 resetError = error.localizedDescription
             }
         }
+    }
+}
+
+private struct RuntimeDiagnosticsView: View {
+    @EnvironmentObject private var app: AppState
+
+    var body: some View {
+        List {
+            Section("Relay") {
+                LabeledContent("Connected", value: "\(app.relayConnectedCount)")
+                LabeledContent("Connecting", value: "\(app.relayConnectingCount)")
+                if let relayLastError = app.relayLastError {
+                    Text(relayLastError)
+                        .foregroundStyle(.red)
+                        .font(.footnote)
+                }
+            }
+
+            Section("Runtime Metadata") {
+                Text(app.infoJSONString.isEmpty ? "No runtime metadata available." : app.infoJSONString)
+                    .font(.footnote.monospaced())
+                    .textSelection(.enabled)
+            }
+        }
+        .listStyle(.insetGrouped)
+        .inlineNavigationTitle("Diagnostics")
+        .accessibilityIdentifier("field_ios.diagnostics")
     }
 }
