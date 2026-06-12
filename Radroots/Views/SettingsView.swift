@@ -60,6 +60,7 @@ struct SettingsView: View {
         }
         .listStyle(.insetGrouped)
         .inlineNavigationTitle("Settings")
+        .accessibilityIdentifier("field_ios.settings")
     }
 
     private func exportSecretHex() {

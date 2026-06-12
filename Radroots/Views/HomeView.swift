@@ -29,5 +29,6 @@ struct HomeView: View {
             .tabItem { Label("Settings", systemImage: "gearshape.fill") }
             .tag(HomeTab.settings)
         }
+        .accessibilityIdentifier("field_ios.home.tabs")
     }
 }

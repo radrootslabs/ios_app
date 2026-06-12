@@ -61,6 +61,7 @@ struct PostFeedView: View {
         }
         .listStyle(.insetGrouped)
         .inlineNavigationTitle("Feed")
+        .accessibilityIdentifier("field_ios.feed")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 if vm.isLoading { ProgressView() }

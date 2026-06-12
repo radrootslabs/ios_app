@@ -83,6 +83,7 @@ struct MarketView: View {
         }
         .listStyle(.plain)
         .navigationTitle("Market")
+        .accessibilityIdentifier("field_ios.market")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 if vm.isLoading {

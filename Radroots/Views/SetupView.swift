@@ -35,6 +35,7 @@ struct SetupView: View {
         }
         .animation(.easeInOut(duration: 0.25), value: step)
         .toolbar(.hidden, for: .navigationBar)
+        .accessibilityIdentifier("field_ios.setup")
     }
 
     private func generateKey() {
@@ -120,8 +121,10 @@ private struct SetupWelcomeView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
+            .accessibilityIdentifier("field_ios.setup.continue")
         }
         .padding()
+        .accessibilityIdentifier("field_ios.setup.welcome")
     }
 }
 
@@ -175,6 +178,7 @@ private struct SetupKeyView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .disabled(isWorking)
+                .accessibilityIdentifier("field_ios.setup.generate_key")
 
                 Button {
                     onImport()
@@ -188,6 +192,7 @@ private struct SetupKeyView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.large)
                 .disabled(isWorking)
+                .accessibilityIdentifier("field_ios.setup.import_secret")
             }
             .padding(.top, 4)
 
@@ -199,5 +204,6 @@ private struct SetupKeyView: View {
                 .multilineTextAlignment(.center)
         }
         .padding()
+        .accessibilityIdentifier("field_ios.setup.key")
     }
 }

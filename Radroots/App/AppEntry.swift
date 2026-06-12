@@ -24,6 +24,7 @@ public struct AppEntry<Main: View>: View {
                 }
             }
         }
+        .accessibilityIdentifier("field_ios.app_entry")
     }
 }
 
@@ -33,5 +34,6 @@ private struct SplashView: View {
             Color(.systemBackground).ignoresSafeArea()
             ProgressView().controlSize(.large)
         }
+        .accessibilityIdentifier("field_ios.bootstrap")
     }
 }
