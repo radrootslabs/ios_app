@@ -4,13 +4,13 @@ public enum RelaySettingsError: LocalizedError {
     case noRelaysConfigured
 
     public var errorDescription: String? {
-        "No Nostr relays configured. Set build setting 'NOSTR_RELAYS'."
+        "No Nostr relays configured. Set 'RADROOTS_FIELD_IOS_NOSTR_RELAY_URLS'."
     }
 }
 
 public enum RelaySettings {
     public static func relays() throws -> [String] {
-        guard let parts = BuildConfig.array(.nostrRelays) else {
+        guard let parts = BuildConfig.array(.nostrRelayUrls) else {
             throw RelaySettingsError.noRelaysConfigured
         }
         let normalized = normalize(parts)

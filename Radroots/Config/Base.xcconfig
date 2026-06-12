@@ -1,8 +1,10 @@
-#include "../radroots.xcconfig"
 #include "Common.xcconfig"
+#include "../radroots.xcconfig"
 
-RR_LOG_STDOUT = YES
-RR_LOG_LEVEL = info
-RR_LOG_FILE_ENABLED = NO
-RR_LOG_FILE_NAME = radroots.log
-NOSTR_RELAYS = wss:$(SLASH)$(SLASH)relay.radroots.org
+RADROOTS_FIELD_IOS_RUNTIME_MODE = production
+RADROOTS_FIELD_IOS_LOGGING_STDOUT = false
+RADROOTS_FIELD_IOS_LOGGING_FILTER = info
+RADROOTS_FIELD_IOS_LOGGING_FILE_ENABLED = true
+RADROOTS_FIELD_IOS_LOGGING_FILE_NAME = field-ios.log
+RADROOTS_FIELD_IOS_NOSTR_RELAY_URLS = wss:$(SLASH)$(SLASH)radroots.org
+RADROOTS_FIELD_IOS_TRADE_RHI_PUBKEY =

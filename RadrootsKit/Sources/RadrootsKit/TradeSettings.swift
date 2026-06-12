@@ -4,7 +4,7 @@ public enum TradeSettingsError: LocalizedError {
     case noRhiPubkeyConfigured
 
     public var errorDescription: String? {
-        "No trade RHI pubkey configured. Set build setting 'RR_TRADE_RHI_PUBKEY'."
+        "No trade RHI pubkey configured. Set 'RADROOTS_FIELD_IOS_TRADE_RHI_PUBKEY'."
     }
 }
 

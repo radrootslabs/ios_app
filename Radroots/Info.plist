@@ -57,15 +57,19 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 
-	<key>RR_LOG_STDOUT</key>
-	<string>$(RR_LOG_STDOUT)</string>
-	<key>RR_LOG_LEVEL</key>
-	<string>$(RR_LOG_LEVEL)</string>
-	<key>RR_LOG_FILE_ENABLED</key>
-	<string>$(RR_LOG_FILE_ENABLED)</string>
-	<key>RR_LOG_FILE_NAME</key>
-	<string>$(RR_LOG_FILE_NAME)</string>
-	<key>NOSTR_RELAYS</key>
-	<string>$(NOSTR_RELAYS)</string>
+	<key>RADROOTS_FIELD_IOS_RUNTIME_MODE</key>
+	<string>$(RADROOTS_FIELD_IOS_RUNTIME_MODE)</string>
+	<key>RADROOTS_FIELD_IOS_LOGGING_STDOUT</key>
+	<string>$(RADROOTS_FIELD_IOS_LOGGING_STDOUT)</string>
+	<key>RADROOTS_FIELD_IOS_LOGGING_FILTER</key>
+	<string>$(RADROOTS_FIELD_IOS_LOGGING_FILTER)</string>
+	<key>RADROOTS_FIELD_IOS_LOGGING_FILE_ENABLED</key>
+	<string>$(RADROOTS_FIELD_IOS_LOGGING_FILE_ENABLED)</string>
+	<key>RADROOTS_FIELD_IOS_LOGGING_FILE_NAME</key>
+	<string>$(RADROOTS_FIELD_IOS_LOGGING_FILE_NAME)</string>
+	<key>RADROOTS_FIELD_IOS_NOSTR_RELAY_URLS</key>
+	<string>$(RADROOTS_FIELD_IOS_NOSTR_RELAY_URLS)</string>
+	<key>RADROOTS_FIELD_IOS_TRADE_RHI_PUBKEY</key>
+	<string>$(RADROOTS_FIELD_IOS_TRADE_RHI_PUBKEY)</string>
 </dict>
 </plist>

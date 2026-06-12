@@ -7,10 +7,10 @@ struct LoggingSettings: Equatable {
     var level: String?
 
     static func load() -> LoggingSettings {
-        let stdout = BuildConfig.bool(.logStdout) ?? true
-        let fileEnabled = BuildConfig.bool(.logFileEnabled) ?? false
-        let fileName = BuildConfig.string(.logFileName) ?? "radroots.log"
-        let level = BuildConfig.string(.logLevel)
+        let stdout = BuildConfig.bool(.loggingStdout) ?? true
+        let fileEnabled = BuildConfig.bool(.loggingFileEnabled) ?? false
+        let fileName = BuildConfig.string(.loggingFileName) ?? "field-ios.log"
+        let level = BuildConfig.string(.loggingFilter)
         return LoggingSettings(stdout: stdout, fileEnabled: fileEnabled, fileName: fileName, level: level)
     }
 
@@ -27,7 +27,16 @@ struct LoggingSettings: Equatable {
     }
 
     func logEffectiveConfigs() {
-        let keys: [BuildConfigKey] = [.logStdout, .logLevel, .logFileEnabled, .logFileName, .nostrRelays]
+        let keys: [BuildConfigKey] = [
+            .envFile,
+            .runtimeMode,
+            .loggingStdout,
+            .loggingFilter,
+            .loggingFileEnabled,
+            .loggingFileName,
+            .nostrRelayUrls,
+            .tradeRhiPubkey,
+        ]
         let dict = BuildConfig.effectiveDictionary(keys: keys)
         let json = (try? JSONSerialization.data(withJSONObject: dict, options: [.sortedKeys])) ?? Data()
         let text = String(data: json, encoding: .utf8) ?? String(describing: dict)

@@ -46,7 +46,7 @@ struct TradeOrderRequestView: View {
                 if let errorMessage {
                     Text(errorMessage).foregroundStyle(.red)
                 } else if TradeSettings.rhiPubkeyOptional == nil {
-                    Text("Set RR_TRADE_RHI_PUBKEY to enable order requests.")
+                    Text("Set RADROOTS_FIELD_IOS_TRADE_RHI_PUBKEY to enable order requests.")
                         .foregroundStyle(.secondary)
                 }
             }
