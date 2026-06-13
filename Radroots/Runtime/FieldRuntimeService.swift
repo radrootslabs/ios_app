@@ -52,31 +52,17 @@ public final class FieldRuntimeService: @unchecked Sendable {
         try await run { try $0.nostrIdentityList() }
     }
 
-    public func nostrIdentityGenerate(label: String?, makeSelected: Bool) async throws -> NostrIdentityRecord {
-        try await run { try $0.nostrIdentityGenerate(label: label, makeSelected: makeSelected) }
+    public func nostrIdentityValidateHostCustodySecret(secretKey: String) async throws -> NostrHostCustodyIdentity {
+        try await run { try $0.nostrIdentityValidateHostCustodySecret(secretKey: secretKey) }
     }
 
-    public func nostrIdentityImportSecret(
+    public func nostrIdentityRestoreHostCustodySecret(
         secretKey: String,
         label: String?,
         makeSelected: Bool
     ) async throws -> NostrIdentityRecord {
         try await run {
-            try $0.nostrIdentityImportSecret(
-                secretKey: secretKey,
-                label: label,
-                makeSelected: makeSelected
-            )
-        }
-    }
-
-    public func nostrIdentityRestoreHostSecret(
-        secretKey: String,
-        label: String?,
-        makeSelected: Bool
-    ) async throws -> NostrIdentityRecord {
-        try await run {
-            try $0.nostrIdentityRestoreHostSecret(
+            try $0.nostrIdentityRestoreHostCustodySecret(
                 secretKey: secretKey,
                 label: label,
                 makeSelected: makeSelected
@@ -88,12 +74,12 @@ public final class FieldRuntimeService: @unchecked Sendable {
         try await run { try $0.nostrIdentityRemove(identityId: identityId) }
     }
 
-    public func nostrIdentityClearRuntimeState() async throws {
-        try await run { try $0.nostrIdentityClearRuntimeState() }
+    public func nostrIdentityLockHostCustodyRuntime() async throws {
+        try await run { try $0.nostrIdentityLockHostCustodyRuntime() }
     }
 
-    public func nostrIdentityResetAll() async throws {
-        try await run { try $0.nostrIdentityResetAll() }
+    public func nostrIdentityResetHostCustodyRuntime() async throws {
+        try await run { try $0.nostrIdentityResetHostCustodyRuntime() }
     }
 
     public func nostrProfileForSelf() async -> NostrProfileEventMetadata? {

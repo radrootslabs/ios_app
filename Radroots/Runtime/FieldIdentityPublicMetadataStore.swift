@@ -27,7 +27,7 @@ struct FieldIdentityPublicMetadataStore {
 
     static func configured() throws -> FieldIdentityPublicMetadataStore {
         guard let servicePrefix = BuildConfig.string(.keychainServicePrefix) else {
-            throw FieldIdentityCustodyError.missingKeychainServicePrefix
+            throw FieldSecureIdentityStoreError.missingSecureStoreServicePrefix
         }
         return FieldIdentityPublicMetadataStore(servicePrefix: servicePrefix)
     }
