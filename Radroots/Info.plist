@@ -41,7 +41,12 @@
 	</dict>
 
 	<key>UILaunchScreen</key>
-	<dict/>
+	<dict>
+		<key>UIColorName</key>
+		<string>RadrootsSplashBackground</string>
+		<key>UIImageName</key>
+		<string>RadrootsSplashLogomark</string>
+	</dict>
 
 	<key>UISupportedInterfaceOrientations</key>
 	<array>

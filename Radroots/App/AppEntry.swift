@@ -65,11 +65,29 @@ private struct StartupFailureView: View {
 }
 
 private struct SplashView: View {
+    private let splashGlyphSize: CGFloat = 160
+
     var body: some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
-            ProgressView().controlSize(.large)
+            Color("RadrootsSplashBackground")
+                .ignoresSafeArea()
+
+            Color.clear
+                .accessibilityElement()
+                .accessibilityLabel("Startup")
+                .accessibilityIdentifier("field_ios.bootstrap")
+
+            GeometryReader { proxy in
+                Image("RadrootsSplashLogomark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: splashGlyphSize, height: splashGlyphSize)
+                    .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
+                    .accessibilityLabel("Radroots")
+                    .accessibilityIdentifier("field_ios.splash.logo")
+            }
+            .ignoresSafeArea()
         }
-        .accessibilityIdentifier("field_ios.bootstrap")
+        .accessibilityElement(children: .contain)
     }
 }

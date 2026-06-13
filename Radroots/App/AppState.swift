@@ -84,6 +84,7 @@ public final class AppState: ObservableObject {
         guard bootstrapPhase == .idle || isFailed else { return }
         bootstrapPhase = .starting
         do {
+            try await holdBootstrapSplashForUITestIfRequested()
             if startupFailureWasRequested {
                 throw FieldAppRuntimeError.forcedStartupFailure
             }
@@ -205,13 +206,35 @@ public final class AppState: ObservableObject {
         return false
     }
 
-    private var startupFailureWasRequested: Bool {
+    private var uiTestWasRequested: Bool {
         let arguments = ProcessInfo.processInfo.arguments
         let environment = ProcessInfo.processInfo.environment
-        guard environment["RADROOTS_FIELD_IOS_UI_TEST"] == "true" ||
-            arguments.contains("--radroots-field-ios-ui-test") else {
+        return environment["RADROOTS_FIELD_IOS_UI_TEST"] == "true" ||
+            arguments.contains("--radroots-field-ios-ui-test")
+    }
+
+    private var uiTestBootstrapSplashHoldNanoseconds: UInt64? {
+        guard uiTestWasRequested else { return nil }
+        guard let raw = ProcessInfo.processInfo.environment["RADROOTS_FIELD_IOS_UI_TEST_BOOTSTRAP_SPLASH_HOLD_SECONDS"],
+              let seconds = Double(raw),
+              seconds.isFinite,
+              seconds > 0 else {
+            return nil
+        }
+        return UInt64(seconds * 1_000_000_000)
+    }
+
+    private func holdBootstrapSplashForUITestIfRequested() async throws {
+        guard let nanoseconds = uiTestBootstrapSplashHoldNanoseconds else { return }
+        try await Task.sleep(nanoseconds: nanoseconds)
+    }
+
+    private var startupFailureWasRequested: Bool {
+        guard uiTestWasRequested else {
             return false
         }
+        let arguments = ProcessInfo.processInfo.arguments
+        let environment = ProcessInfo.processInfo.environment
         if BuildConfig.string(.runtimeMode) == "ui-test-startup-failure" {
             return true
         }
