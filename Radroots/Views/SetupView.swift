@@ -22,7 +22,7 @@ struct SetupView: View {
                     .frame(width: 112, height: 112)
 
                 VStack(spacing: 8) {
-                    Text(app.hasKey ? "Local identity ready" : "Create a Nostr identity")
+                    Text(app.hasKey ? "Identity saved on this iPhone" : "Create a Nostr identity")
                         .font(.title.weight(.semibold))
                         .multilineTextAlignment(.center)
 
@@ -33,7 +33,7 @@ struct SetupView: View {
                             .multilineTextAlignment(.center)
                             .textSelection(.enabled)
                     } else {
-                        Text("Radroots uses your local Nostr identity to publish and read field events.")
+                        Text("Radroots uses a local Nostr identity to publish and read field events.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -51,7 +51,7 @@ struct SetupView: View {
                     Button {
                         continueWithIdentity()
                     } label: {
-                        Label("Continue", systemImage: "arrow.right.circle.fill")
+                        Label("Unlock Identity", systemImage: "lock.open.fill")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
@@ -98,7 +98,7 @@ struct SetupView: View {
                             Button {
                                 importIdentity()
                             } label: {
-                                Label("Use Secret Key", systemImage: "checkmark.circle.fill")
+                                Label("Import Identity", systemImage: "checkmark.circle.fill")
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.borderedProminent)

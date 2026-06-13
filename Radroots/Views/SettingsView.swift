@@ -16,8 +16,8 @@ struct SettingsView: View {
                     Text("No local Nostr identity is selected.")
                         .foregroundStyle(.secondary)
                 }
-                LabeledContent("Stored identities", value: app.storedIdentityAvailable ? "1" : "0")
-                LabeledContent("Runtime identity", value: app.runtimeIdentityReady ? "Ready" : "Locked")
+                LabeledContent("Saved identity", value: app.storedIdentityAvailable ? "Available" : "Missing")
+                LabeledContent("Runtime identity", value: app.runtimeIdentityReady ? "Unlocked" : "Locked")
 
                 NavigationLink {
                     ProfileView()
@@ -58,14 +58,14 @@ struct SettingsView: View {
                 Button {
                     app.signOut()
                 } label: {
-                    Label("Sign Out", systemImage: "lock.fill")
+                    Label("Lock Identity", systemImage: "lock.fill")
                 }
                 .accessibilityIdentifier("field_ios.settings.sign_out")
 
                 Button(role: .destructive) {
                     showResetConfirmation = true
                 } label: {
-                    Label("Reset Local Identity", systemImage: "trash")
+                    Label("Delete Identity", systemImage: "trash")
                 }
                 .accessibilityIdentifier("field_ios.settings.reset_identity")
             } footer: {
@@ -78,16 +78,16 @@ struct SettingsView: View {
         .listStyle(.insetGrouped)
         .inlineNavigationTitle("Settings")
         .confirmationDialog(
-            "Reset local Nostr identity?",
+            "Delete saved Nostr identity?",
             isPresented: $showResetConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Reset Identity", role: .destructive) {
+            Button("Delete Identity", role: .destructive) {
                 resetIdentity()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This removes the local identity from this app. Sign out keeps it.")
+            Text("This removes the identity saved on this iPhone. Lock keeps it available.")
         }
         .accessibilityIdentifier("field_ios.settings")
     }
