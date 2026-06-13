@@ -155,10 +155,11 @@ struct SetupView: View {
     private func importIdentity() {
         errorMessage = nil
         isWorking = true
+        let submittedSecret = secretKey
+        secretKey = ""
         Task {
             do {
-                try await app.importNostrSecret(secretKey)
-                secretKey = ""
+                try await app.importNostrSecret(submittedSecret)
                 onSuccess?()
             } catch {
                 errorMessage = error.localizedDescription

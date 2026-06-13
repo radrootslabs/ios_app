@@ -38,6 +38,7 @@
 		C8AB3389F7430A5C79AD7DF8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */; };
 		D25C1E1DC99F5CF8E99AE970 /* FieldRuntimeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E883FDB7004A210C9D7BE27A /* FieldRuntimeService.swift */; };
 		D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41A4289F43625DD65E6C4B25 /* CopyRow.swift */; };
+		D4CFDE54747B6D6957977025 /* FieldIdentityPublicMetadataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA942715DB13FFD494FD35A0 /* FieldIdentityPublicMetadataStore.swift */; };
 		D5C58A98C950D45AD027962A /* TradeListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D69D200DB1F5FA7AA561CD7 /* TradeListing.swift */; };
 		D62E9461833A0AA5E622A1E6 /* ToastModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227028B4EBDC6703999FB9DA /* ToastModifier.swift */; };
 		DCE468F668A3C346E716B04C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CCF0F7B3C57D8D770F178329 /* Assets.xcassets */; };
@@ -84,6 +85,7 @@
 		C1D9496F9F05A4E79E73A247 /* RelaysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelaysView.swift; sourceTree = "<group>"; };
 		C71A93F98C7B93188748B99B /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		CA8AAF0C0F1723860A8481E0 /* PostCreateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostCreateView.swift; sourceTree = "<group>"; };
+		CA942715DB13FFD494FD35A0 /* FieldIdentityPublicMetadataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldIdentityPublicMetadataStore.swift; sourceTree = "<group>"; };
 		CBE1472FFD63A33F3AEA6C6C /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		CCF0F7B3C57D8D770F178329 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D448C9655B708CA3FA8712B9 /* AppEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEntry.swift; sourceTree = "<group>"; };
@@ -172,6 +174,7 @@
 			children = (
 				A71EFADBC7D54AF5B9314773 /* BuildConfig.swift */,
 				F60FA44F589B6E94223CE685 /* FieldIdentityCustodyStore.swift */,
+				CA942715DB13FFD494FD35A0 /* FieldIdentityPublicMetadataStore.swift */,
 				E883FDB7004A210C9D7BE27A /* FieldRuntimeService.swift */,
 				D4DE3DD8C3BB2F63676F463E /* LoggingSettings.swift */,
 				63189EB90A86A9929BECD9ED /* Nostr.swift */,
@@ -398,6 +401,7 @@
 				D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */,
 				4025E63F6603011431B8A0E1 /* DebugDump.swift in Sources */,
 				3DA8DBB426B71C53724F09B4 /* FieldIdentityCustodyStore.swift in Sources */,
+				D4CFDE54747B6D6957977025 /* FieldIdentityPublicMetadataStore.swift in Sources */,
 				D25C1E1DC99F5CF8E99AE970 /* FieldRuntimeService.swift in Sources */,
 				1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */,
 				C512BD267A3E2B8F10FABB3B /* Logger.swift in Sources */,

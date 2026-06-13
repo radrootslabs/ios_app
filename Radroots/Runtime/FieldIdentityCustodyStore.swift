@@ -1,11 +1,15 @@
 import Foundation
 import RadrootsKit
+import Security
 
 enum FieldIdentityCustodyError: LocalizedError {
     case missingKeychainServicePrefix
     case missingBundleIdentifier
     case invalidStoredSecret
     case missingSelectedSecret
+    case missingKeychainAccessPolicy
+    case invalidKeychainAccessPolicy(String)
+    case randomSecretGenerationFailed(Int32)
 
     var errorDescription: String? {
         switch self {
@@ -17,6 +21,26 @@ enum FieldIdentityCustodyError: LocalizedError {
             "Stored Nostr identity secret is invalid."
         case .missingSelectedSecret:
             "No selected Nostr identity secret is available to secure."
+        case .missingKeychainAccessPolicy:
+            "Missing RADROOTS_FIELD_IOS_KEYCHAIN_ACCESS_POLICY."
+        case .invalidKeychainAccessPolicy(let value):
+            "Invalid RADROOTS_FIELD_IOS_KEYCHAIN_ACCESS_POLICY: \(value)."
+        case .randomSecretGenerationFailed(let status):
+            "Secure Nostr identity generation failed with status \(status)."
+        }
+    }
+}
+
+enum FieldIdentityKeychainAccessPolicy: String {
+    case userPresenceLocal = "user_presence_local"
+    case secureLocal = "secure_local"
+
+    var storePolicy: RadrootsSecretAccessPolicy {
+        switch self {
+        case .userPresenceLocal:
+            .userPresenceLocalSecret
+        case .secureLocal:
+            .secureLocalSecret
         }
     }
 }
@@ -56,12 +80,16 @@ struct FieldIdentityCustodyStore {
         return trimmed.isEmpty ? nil : trimmed
     }
 
-    func saveSelectedSecretHex(_ secretHex: String) throws {
-        let trimmed = secretHex.trimmingCharacters(in: .whitespacesAndNewlines)
+    func saveSelectedSecret(_ secret: String) throws {
+        let trimmed = secret.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             throw FieldIdentityCustodyError.missingSelectedSecret
         }
-        try store.put(Data(trimmed.utf8), for: Self.selectedSecretKey, policy: .secureLocalSecret)
+        try store.put(
+            Data(trimmed.utf8),
+            for: Self.selectedSecretKey,
+            policy: try Self.configuredAccessPolicy().storePolicy
+        )
     }
 
     func deleteSelectedSecret() throws {
@@ -83,6 +111,25 @@ struct FieldIdentityCustodyStore {
 
     static func keychainServiceName(servicePrefix: String) throws -> String {
         try selectedSecretKey.serviceName(servicePrefix: servicePrefix)
+    }
+
+    static func configuredAccessPolicy() throws -> FieldIdentityKeychainAccessPolicy {
+        guard let rawValue = BuildConfig.string(.keychainAccessPolicy) else {
+            throw FieldIdentityCustodyError.missingKeychainAccessPolicy
+        }
+        guard let policy = FieldIdentityKeychainAccessPolicy(rawValue: rawValue) else {
+            throw FieldIdentityCustodyError.invalidKeychainAccessPolicy(rawValue)
+        }
+        return policy
+    }
+
+    static func generateSecretHex() throws -> String {
+        var bytes = [UInt8](repeating: 0, count: 32)
+        let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        guard status == errSecSuccess else {
+            throw FieldIdentityCustodyError.randomSecretGenerationFailed(status)
+        }
+        return bytes.map { String(format: "%02x", $0) }.joined()
     }
 
     private static var selectedSecretKey: RadrootsSecureStoreKey {

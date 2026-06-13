@@ -16,7 +16,8 @@ struct SettingsView: View {
                     Text("No local Nostr identity is selected.")
                         .foregroundStyle(.secondary)
                 }
-                LabeledContent("Stored identities", value: "\(app.identities.count)")
+                LabeledContent("Stored identities", value: app.storedIdentityAvailable ? "1" : "0")
+                LabeledContent("Runtime identity", value: app.runtimeIdentityReady ? "Ready" : "Locked")
 
                 NavigationLink {
                     ProfileView()

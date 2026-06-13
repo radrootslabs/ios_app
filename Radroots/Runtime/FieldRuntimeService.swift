@@ -52,7 +52,7 @@ public final class FieldRuntimeService: @unchecked Sendable {
         try await run { try $0.nostrIdentityList() }
     }
 
-    public func nostrIdentityGenerate(label: String?, makeSelected: Bool) async throws -> String {
+    public func nostrIdentityGenerate(label: String?, makeSelected: Bool) async throws -> NostrIdentityRecord {
         try await run { try $0.nostrIdentityGenerate(label: label, makeSelected: makeSelected) }
     }
 
@@ -60,9 +60,23 @@ public final class FieldRuntimeService: @unchecked Sendable {
         secretKey: String,
         label: String?,
         makeSelected: Bool
-    ) async throws -> String {
+    ) async throws -> NostrIdentityRecord {
         try await run {
             try $0.nostrIdentityImportSecret(
+                secretKey: secretKey,
+                label: label,
+                makeSelected: makeSelected
+            )
+        }
+    }
+
+    public func nostrIdentityRestoreHostSecret(
+        secretKey: String,
+        label: String?,
+        makeSelected: Bool
+    ) async throws -> NostrIdentityRecord {
+        try await run {
+            try $0.nostrIdentityRestoreHostSecret(
                 secretKey: secretKey,
                 label: label,
                 makeSelected: makeSelected
@@ -74,12 +88,12 @@ public final class FieldRuntimeService: @unchecked Sendable {
         try await run { try $0.nostrIdentityRemove(identityId: identityId) }
     }
 
-    public func nostrIdentityResetAll() async throws {
-        try await run { try $0.nostrIdentityResetAll() }
+    public func nostrIdentityClearRuntimeState() async throws {
+        try await run { try $0.nostrIdentityClearRuntimeState() }
     }
 
-    public func nostrIdentityExportSelectedSecretHex() async throws -> String? {
-        try await run { try $0.nostrIdentityExportSelectedSecretHex() }
+    public func nostrIdentityResetAll() async throws {
+        try await run { try $0.nostrIdentityResetAll() }
     }
 
     public func nostrProfileForSelf() async -> NostrProfileEventMetadata? {
