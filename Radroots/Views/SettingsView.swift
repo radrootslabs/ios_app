@@ -16,8 +16,16 @@ struct SettingsView: View {
                     Text("No local Nostr identity is selected.")
                         .foregroundStyle(.secondary)
                 }
-                LabeledContent("Saved identity", value: app.storedIdentityAvailable ? "Available" : "Missing")
-                LabeledContent("Runtime identity", value: app.runtimeIdentityReady ? "Unlocked" : "Locked")
+                IdentityStateRow(
+                    title: "Saved identity",
+                    value: app.storedIdentityAvailable ? "Available" : "Missing",
+                    identifier: "field_ios.settings.saved_identity"
+                )
+                IdentityStateRow(
+                    title: "Runtime identity",
+                    value: app.runtimeIdentityReady ? "Unlocked" : "Locked",
+                    identifier: "field_ios.settings.runtime_identity"
+                )
 
                 NavigationLink {
                     ProfileView()
@@ -105,6 +113,20 @@ struct SettingsView: View {
                 resetError = error.localizedDescription
             }
         }
+    }
+}
+
+private struct IdentityStateRow: View {
+    let title: String
+    let value: String
+    let identifier: String
+
+    var body: some View {
+        LabeledContent(title, value: value)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(title)
+            .accessibilityValue(value)
+            .accessibilityIdentifier(identifier)
     }
 }
 
