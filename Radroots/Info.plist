@@ -20,6 +20,8 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Radroots uses your location only when you tap Location Check-in.</string>
 
 	<key>GIT_SHA</key>
 	<string>$(GIT_SHA)</string>

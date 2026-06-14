@@ -43,6 +43,9 @@ public final class AppState: ObservableObject {
     @Published public private(set) var relayLastError: String?
     @Published public private(set) var fileAccessProbeValue: String?
     @Published public private(set) var documentInterchangeProbeValue: String?
+    @Published public private(set) var locationCheckInState: FieldLocationCheckInState = .idle(
+        RadrootsLocationServicesAvailability(locationServicesEnabled: false, authorization: .unavailable)
+    )
 
     public var canShowAppContent: Bool {
         bootstrapPhase == .ready && runtimeIdentityReady && !isLocked
@@ -73,6 +76,7 @@ public final class AppState: ObservableObject {
     private var statusTask: Task<Void, Never>?
     private var secureIdentityStore: FieldSecureIdentityStore?
     private var identityMetadataStore: FieldIdentityPublicMetadataStore?
+    private let locationCheckIn = FieldLocationCheckIn()
 
     public init(radroots: Radroots = Radroots()) {
         self.radroots = radroots
@@ -112,7 +116,7 @@ public final class AppState: ObservableObject {
             } else {
                 loadStoredIdentityMetadata(metadataStore)
             }
-            try await refreshRuntimeState(using: service)
+            await refreshRuntimeState(using: service)
             if runtimeIdentityReady && !isLocked {
                 try await connect(using: service)
                 startPollingStatus()
@@ -123,6 +127,7 @@ public final class AppState: ObservableObject {
                 identityResetObserved: false
             )
             try refreshDocumentInterchangeProbe(bundleIdentifier: appBundleIdentifier)
+            await refreshLocationCheckInStatus()
             bootstrapPhase = .ready
         } catch {
             statusTask?.cancel()
@@ -218,6 +223,18 @@ public final class AppState: ObservableObject {
             throw FieldAppRuntimeError.runtimeNotReady
         }
         return service
+    }
+
+    public func refreshLocationCheckInStatus() async {
+        locationCheckInState = await locationCheckIn.status()
+    }
+
+    public func performLocationCheckIn() async {
+        let currentState = await locationCheckIn.status()
+        if let availability = currentState.availability {
+            locationCheckInState = .checking(availability)
+        }
+        locationCheckInState = await locationCheckIn.checkIn()
     }
 
     func prepareDiagnosticsDocumentExport() throws -> RadrootsPreparedExportDocument {
