@@ -24,6 +24,10 @@
 	<string>Radroots uses your location only when you tap Location Check-in.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Radroots uses the camera only when you capture photo evidence or scan a document.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>nostr</string>
+	</array>
 
 	<key>GIT_SHA</key>
 	<string>$(GIT_SHA)</string>

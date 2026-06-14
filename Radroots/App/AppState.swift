@@ -43,6 +43,8 @@ public final class AppState: ObservableObject {
     @Published public private(set) var relayLastError: String?
     @Published public private(set) var fileAccessProbeValue: String?
     @Published public private(set) var documentInterchangeProbeValue: String?
+    @Published public private(set) var externalActionStatus: String?
+    @Published public private(set) var canOpenNostrProfile: Bool = false
     @Published public private(set) var locationCheckInState: FieldLocationCheckInState = .idle(
         RadrootsLocationServicesAvailability(locationServicesEnabled: false, authorization: .unavailable)
     )
@@ -79,6 +81,7 @@ public final class AppState: ObservableObject {
     private var identityMetadataStore: FieldIdentityPublicMetadataStore?
     private var captureIntake: FieldCaptureIntake?
     private let locationCheckIn = FieldLocationCheckIn.configured()
+    private let externalActions = FieldExternalActions.configured()
 
     public init(radroots: Radroots = Radroots()) {
         self.radroots = radroots
@@ -125,6 +128,7 @@ public final class AppState: ObservableObject {
                 try await connect(using: service)
                 startPollingStatus()
             }
+            await refreshNostrProfileExternalActionCapability()
             try refreshFileAccessProbe(
                 bundleIdentifier: appBundleIdentifier,
                 resetLocalStateRequested: resetLocalStateRequested,
@@ -162,6 +166,7 @@ public final class AppState: ObservableObject {
         setLocked(false)
         try await connect(using: service)
         await refreshRuntimeState(using: service)
+        await refreshNostrProfileExternalActionCapability()
         startPollingStatus()
     }
 
@@ -171,6 +176,7 @@ public final class AppState: ObservableObject {
         setLocked(false)
         try await connect(using: service)
         await refreshRuntimeState(using: service)
+        await refreshNostrProfileExternalActionCapability()
         startPollingStatus()
     }
 
@@ -187,6 +193,7 @@ public final class AppState: ObservableObject {
         setLocked(false)
         try await connect(using: service)
         await refreshRuntimeState(using: service)
+        await refreshNostrProfileExternalActionCapability()
         startPollingStatus()
     }
 
@@ -213,6 +220,8 @@ public final class AppState: ObservableObject {
         relayConnectingCount = 0
         relayLight = .red
         relayLastError = nil
+        canOpenNostrProfile = false
+        externalActionStatus = nil
         await refreshRuntimeState(using: service)
         try refreshFileAccessProbe(
             bundleIdentifier: try bundleIdentifier(),
@@ -265,6 +274,31 @@ public final class AppState: ObservableObject {
     public func scanDocumentEvidence() async {
         await performCaptureIntakeOperation(.scanningDocument) { captureIntake, records in
             try await captureIntake.scanDocument(records: records)
+        }
+    }
+
+    public func refreshNostrProfileExternalActionCapability() async {
+        guard let npub else {
+            canOpenNostrProfile = false
+            return
+        }
+        canOpenNostrProfile = await externalActions.canOpenPublicNostrProfile(npub: npub)
+    }
+
+    public func openAppSettingsRecovery() async {
+        await requestExternalAction {
+            try await externalActions.openAppSettings()
+        }
+    }
+
+    public func openCurrentNostrProfile() async {
+        guard let npub else {
+            externalActionStatus = "No public Nostr identity is selected."
+            canOpenNostrProfile = false
+            return
+        }
+        await requestExternalAction {
+            try await externalActions.openPublicNostrProfile(npub: npub)
         }
     }
 
@@ -438,6 +472,7 @@ public final class AppState: ObservableObject {
             hasKey = false
             npub = nil
             identityLabel = nil
+            canOpenNostrProfile = false
         }
     }
 
@@ -519,6 +554,7 @@ public final class AppState: ObservableObject {
         npub = nil
         identityLabel = nil
         identities = []
+        canOpenNostrProfile = false
     }
 
     private func secureIdentityStoreOrConfigured() throws -> FieldSecureIdentityStore {
@@ -578,6 +614,17 @@ public final class AppState: ObservableObject {
             connectingCount: relayConnectingCount,
             lastError: relayLastError
         )
+    }
+
+    private func requestExternalAction(
+        _ action: () async throws -> FieldExternalActionRequestRecord
+    ) async {
+        do {
+            let record = try await action()
+            externalActionStatus = record.statusText
+        } catch {
+            externalActionStatus = error.localizedDescription
+        }
     }
 
     private func setLocked(_ value: Bool) {
