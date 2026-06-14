@@ -49,14 +49,17 @@ public struct FieldLocationCheckIn: Sendable {
 
     public init(
         locationServices: any RadrootsLocationServices = RadrootsAppleLocationServices(),
-        request: RadrootsCurrentLocationRequest = try! RadrootsCurrentLocationRequest(
-            timeoutSeconds: 10,
-            desiredAccuracyMeters: 100,
-            maximumCachedReadingAgeSeconds: 30
-        )
+        request: RadrootsCurrentLocationRequest? = nil
     ) {
         self.locationServices = locationServices
-        self.request = request
+        self.request = request ?? Self.defaultRequest()
+    }
+
+    static func configured() -> Self {
+        guard let mode = FieldLocationCheckInUITestMode.current else {
+            return Self()
+        }
+        return Self(locationServices: FieldLocationCheckInUITestLocationServices(mode: mode))
     }
 
     public func status() async -> FieldLocationCheckInState {
@@ -93,6 +96,85 @@ public struct FieldLocationCheckIn: Sendable {
             return .failed(availability, message)
         } catch {
             return .failed(availability, error.localizedDescription)
+        }
+    }
+
+    private static func defaultRequest() -> RadrootsCurrentLocationRequest {
+        do {
+            return try RadrootsCurrentLocationRequest(
+                timeoutSeconds: 10,
+                desiredAccuracyMeters: 100,
+                maximumCachedReadingAgeSeconds: 30
+            )
+        } catch {
+            preconditionFailure("invalid default location check-in request")
+        }
+    }
+}
+
+private enum FieldLocationCheckInUITestMode: String {
+    case success
+    case denied
+    case unavailable
+    case timeout
+
+    static var current: Self? {
+        guard ProcessInfo.processInfo.environment["RADROOTS_FIELD_IOS_UI_TEST"] == "true" else {
+            return nil
+        }
+        guard let raw = ProcessInfo.processInfo.environment["RADROOTS_FIELD_IOS_UI_TEST_LOCATION_MODE"] else {
+            return nil
+        }
+        return Self(rawValue: raw)
+    }
+}
+
+private actor FieldLocationCheckInUITestLocationServices: RadrootsLocationServices {
+    private let mode: FieldLocationCheckInUITestMode
+
+    init(mode: FieldLocationCheckInUITestMode) {
+        self.mode = mode
+    }
+
+    func currentAvailability() async -> RadrootsLocationServicesAvailability {
+        switch mode {
+        case .success:
+            RadrootsLocationServicesAvailability(locationServicesEnabled: true, authorization: .authorizedWhenInUse)
+        case .denied:
+            RadrootsLocationServicesAvailability(locationServicesEnabled: true, authorization: .denied)
+        case .unavailable:
+            RadrootsLocationServicesAvailability(locationServicesEnabled: false, authorization: .unavailable)
+        case .timeout:
+            RadrootsLocationServicesAvailability(locationServicesEnabled: true, authorization: .authorizedWhenInUse)
+        }
+    }
+
+    func requestWhenInUseAuthorization() async throws -> RadrootsLocationAuthorization {
+        switch mode {
+        case .success, .timeout:
+            .authorizedWhenInUse
+        case .denied:
+            throw RadrootsLocationServicesError.permissionDenied("location permission is denied")
+        case .unavailable:
+            throw RadrootsLocationServicesError.unavailable("location services are unavailable")
+        }
+    }
+
+    func currentLocation(_ request: RadrootsCurrentLocationRequest) async throws -> RadrootsCurrentLocationResult {
+        switch mode {
+        case .success:
+            let reading = try RadrootsLocationReading(
+                coordinate: RadrootsLocationCoordinate(latitude: 49.2827, longitude: -123.1207),
+                horizontalAccuracyMeters: 12,
+                capturedAt: Date()
+            )
+            return try RadrootsCurrentLocationResult(reading: reading, authorization: .authorizedWhenInUse)
+        case .denied:
+            throw RadrootsLocationServicesError.permissionDenied("location permission is denied")
+        case .unavailable:
+            throw RadrootsLocationServicesError.unavailable("location services are unavailable")
+        case .timeout:
+            throw RadrootsLocationServicesError.timeout("current location request timed out")
         }
     }
 }

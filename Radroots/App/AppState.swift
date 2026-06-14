@@ -76,7 +76,7 @@ public final class AppState: ObservableObject {
     private var statusTask: Task<Void, Never>?
     private var secureIdentityStore: FieldSecureIdentityStore?
     private var identityMetadataStore: FieldIdentityPublicMetadataStore?
-    private let locationCheckIn = FieldLocationCheckIn()
+    private let locationCheckIn = FieldLocationCheckIn.configured()
 
     public init(radroots: Radroots = Radroots()) {
         self.radroots = radroots
