@@ -42,6 +42,7 @@ public final class AppState: ObservableObject {
     @Published public private(set) var relayLight: RelayLight = .red
     @Published public private(set) var relayLastError: String?
     @Published public private(set) var fileAccessProbeValue: String?
+    @Published public private(set) var documentInterchangeProbeValue: String?
 
     public var canShowAppContent: Bool {
         bootstrapPhase == .ready && runtimeIdentityReady && !isLocked
@@ -121,6 +122,7 @@ public final class AppState: ObservableObject {
                 resetLocalStateRequested: resetLocalStateRequested,
                 identityResetObserved: false
             )
+            try refreshDocumentInterchangeProbe(bundleIdentifier: appBundleIdentifier)
             bootstrapPhase = .ready
         } catch {
             statusTask?.cancel()
@@ -482,6 +484,17 @@ public final class AppState: ObservableObject {
                 loggingFileName: loggingSettings.fileName
             )
         }
+    }
+
+    private func refreshDocumentInterchangeProbe(bundleIdentifier: String) throws {
+        documentInterchangeProbeValue = try FieldDocumentInterchangeUITestProbe.startupValue(
+            bundleIdentifier: bundleIdentifier,
+            infoJSONString: infoJSONString,
+            relays: RelaySettings.relays(),
+            connectedCount: relayConnectedCount,
+            connectingCount: relayConnectingCount,
+            lastError: relayLastError
+        )
     }
 
     private func setLocked(_ value: Bool) {

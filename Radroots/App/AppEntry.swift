@@ -36,6 +36,13 @@ public struct AppEntry<Main: View>: View {
                     .accessibilityIdentifier("field_ios.file_access.probe")
                     .accessibilityValue(probeValue)
             }
+            if let probeValue = appState.documentInterchangeProbeValue {
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .accessibilityElement()
+                    .accessibilityIdentifier("field_ios.document_interchange.probe")
+                    .accessibilityValue(probeValue)
+            }
         }
     }
 }
