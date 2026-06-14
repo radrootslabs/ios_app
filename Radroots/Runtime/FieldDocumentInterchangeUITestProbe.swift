@@ -36,11 +36,11 @@ enum FieldDocumentInterchangeUITestProbe {
             connectingCount: connectingCount,
             lastError: lastError
         )
-        let diagnosticsFileExists = FileManager.default.fileExists(atPath: diagnosticsExport.fileURL.path)
+        let diagnosticsFileExists = try fileAccess.preparedExportExists(diagnosticsExport)
         try fileAccess.releasePreparedExport(diagnosticsExport)
-        let diagnosticsReleaseRemovedFile = !FileManager.default.fileExists(atPath: diagnosticsExport.fileURL.path)
+        let diagnosticsReleaseRemovedFile = !(try fileAccess.preparedExportExists(diagnosticsExport))
         let relayExport = try interchange.prepareRelayConfigExport(relays: relays)
-        let relayExportFileExists = FileManager.default.fileExists(atPath: relayExport.fileURL.path)
+        let relayExportFileExists = try fileAccess.preparedExportExists(relayExport)
         try fileAccess.releasePreparedExport(relayExport)
         try fileAccess.write(
             .inline(relayImportFixtureData()),
