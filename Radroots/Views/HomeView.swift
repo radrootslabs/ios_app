@@ -1,3 +1,4 @@
+import RadrootsKit
 import SwiftUI
 
 private enum HomeTab: String, Hashable {
@@ -67,7 +68,7 @@ private struct TodayView: View {
 
             Section("Next Actions") {
                 FieldActionRow(title: "Photo Evidence", subtitle: "Document a crop, delivery, or field condition.", systemImage: "camera.fill")
-                FieldActionRow(title: "Location Check-in", subtitle: "Record where field work is happening.", systemImage: "location.fill")
+                LocationCheckInRow()
                 FieldActionRow(title: "Status Log", subtitle: "Capture a short operational update.", systemImage: "text.badge.checkmark")
                 FieldActionRow(title: "Compliance Note", subtitle: "Reserve audit-ready notes for the current workflow.", systemImage: "checkmark.seal.fill")
             }
@@ -97,11 +98,13 @@ private struct TodayView: View {
 }
 
 private struct CaptureView: View {
+    @EnvironmentObject private var app: AppState
+
     var body: some View {
         List {
             Section("Capture") {
                 FieldActionRow(title: "Photo Evidence", subtitle: "Attach visual proof to field work.", systemImage: "camera.fill")
-                FieldActionRow(title: "Location Check-in", subtitle: "Pair a note with the current site.", systemImage: "location.fill")
+                LocationCheckInRow()
                 FieldActionRow(title: "Status Log", subtitle: "Record observations from the field.", systemImage: "square.and.pencil")
                 FieldActionRow(title: "Compliance Note", subtitle: "Prepare traceability notes for review.", systemImage: "checkmark.seal.fill")
             }
@@ -155,6 +158,140 @@ private struct FieldActionRow: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
+    }
+}
+
+private struct LocationCheckInRow: View {
+    @EnvironmentObject private var app: AppState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: systemImage)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(systemColor)
+                    .frame(width: 34, height: 34)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Location Check-in")
+                        .font(.headline)
+                    Text(statusText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("field_ios.location_check_in.status")
+                    if let detailText {
+                        Text(detailText)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("field_ios.location_check_in.detail")
+                    }
+                }
+                Spacer()
+                if isChecking {
+                    ProgressView()
+                        .accessibilityIdentifier("field_ios.location_check_in.progress")
+                }
+            }
+
+            Button {
+                Task {
+                    await app.performLocationCheckIn()
+                }
+            } label: {
+                Label(actionTitle, systemImage: "location.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(isChecking)
+            .accessibilityIdentifier("field_ios.location_check_in.action")
+        }
+        .padding(.vertical, 4)
+        .accessibilityIdentifier("field_ios.location_check_in.card")
+        .task {
+            await app.refreshLocationCheckInStatus()
+        }
+    }
+
+    private var isChecking: Bool {
+        if case .checking = app.locationCheckInState {
+            return true
+        }
+        return false
+    }
+
+    private var systemImage: String {
+        switch app.locationCheckInState {
+        case .checkedIn:
+            "location.circle.fill"
+        case .failed:
+            "location.slash.fill"
+        case .checking:
+            "location.fill"
+        case .idle(let availability):
+            availability.canRequestCurrentLocation ? "location.circle.fill" : "location.fill"
+        }
+    }
+
+    private var systemColor: Color {
+        switch app.locationCheckInState {
+        case .checkedIn:
+            .green
+        case .failed:
+            .red
+        case .checking:
+            .green
+        case .idle(let availability):
+            availability.canRequestCurrentLocation ? .green : .secondary
+        }
+    }
+
+    private var actionTitle: String {
+        isChecking ? "Checking In" : "Check In"
+    }
+
+    private var statusText: String {
+        switch app.locationCheckInState {
+        case .idle(let availability):
+            statusText(for: availability)
+        case .checking:
+            "Checking current location..."
+        case .checkedIn(let reading):
+            "Checked in at \(reading.coordinateSummary)"
+        case .failed(_, let message):
+            "Check-in unavailable: \(message)"
+        }
+    }
+
+    private var detailText: String? {
+        switch app.locationCheckInState {
+        case .checkedIn(let reading):
+            reading.accuracySummary
+        case .idle(let availability):
+            availability.authorization == .notDetermined ? "Permission will be requested when you check in." : nil
+        case .checking, .failed:
+            nil
+        }
+    }
+
+    private func statusText(for availability: RadrootsLocationServicesAvailability) -> String {
+        guard availability.locationServicesEnabled else {
+            return "Location Services are disabled."
+        }
+        switch availability.authorization {
+        case .notDetermined:
+            return "Ready to request location permission."
+        case .authorizedWhenInUse, .authorizedAlways:
+            return "Ready to record the current site."
+        case .denied:
+            return "Location permission is denied."
+        case .restricted:
+            return "Location permission is restricted."
+        case .unavailable:
+            return "Location Services are unavailable."
+        case .unsupported:
+            return "Location Services are unsupported."
+        }
     }
 }
 
