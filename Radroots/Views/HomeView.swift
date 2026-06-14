@@ -102,8 +102,65 @@ private struct CaptureView: View {
 
     var body: some View {
         List {
-            Section("Capture") {
-                FieldActionRow(title: "Photo Evidence", subtitle: "Attach visual proof to field work.", systemImage: "camera.fill")
+            Section("Capture Intake") {
+                CaptureIntakeStatusRow()
+                CaptureIntakeActionButton(
+                    title: "Import Photo",
+                    subtitle: "Attach visual proof from local media.",
+                    systemImage: "photo.on.rectangle",
+                    accessibilityID: "field_ios.capture_intake.import_photo",
+                    isWorking: app.captureIntakeState.operation == .importingPhoto,
+                    isDisabled: app.captureIntakeState.operation != .idle || !app.captureIntakeState.support.photoImportAvailable
+                ) {
+                    await app.importPhotoEvidence()
+                }
+                CaptureIntakeActionButton(
+                    title: "Take Photo",
+                    subtitle: "Capture a new field photo.",
+                    systemImage: "camera.fill",
+                    accessibilityID: "field_ios.capture_intake.capture_photo",
+                    isWorking: app.captureIntakeState.operation == .capturingPhoto,
+                    isDisabled: app.captureIntakeState.operation != .idle || !app.captureIntakeState.support.cameraPhotoAvailable
+                ) {
+                    await app.capturePhotoEvidence()
+                }
+                CaptureIntakeActionButton(
+                    title: "Scan Document",
+                    subtitle: "Create a local PDF scan.",
+                    systemImage: "doc.viewfinder",
+                    accessibilityID: "field_ios.capture_intake.scan_document",
+                    isWorking: app.captureIntakeState.operation == .scanningDocument,
+                    isDisabled: app.captureIntakeState.operation != .idle || !app.captureIntakeState.support.documentScannerAvailable
+                ) {
+                    await app.scanDocumentEvidence()
+                }
+            }
+
+            Section("Latest Capture") {
+                if let latest = app.captureIntakeState.latestRecord {
+                    CaptureRecordRow(record: latest)
+                        .accessibilityIdentifier("field_ios.capture_intake.latest")
+                } else {
+                    Text("No capture records yet")
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("field_ios.capture_intake.empty")
+                }
+                Text("\(app.captureIntakeState.records.count) local records")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("field_ios.capture_intake.count")
+            }
+
+            if let lastError = app.captureIntakeState.lastError {
+                Section("Capture Error") {
+                    Text(lastError)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .accessibilityIdentifier("field_ios.capture_intake.error")
+                }
+            }
+
+            Section("Field Context") {
                 LocationCheckInRow()
                 FieldActionRow(title: "Status Log", subtitle: "Record observations from the field.", systemImage: "square.and.pencil")
                 FieldActionRow(title: "Compliance Note", subtitle: "Prepare traceability notes for review.", systemImage: "checkmark.seal.fill")
@@ -112,6 +169,135 @@ private struct CaptureView: View {
         .listStyle(.insetGrouped)
         .inlineNavigationTitle("Capture")
         .accessibilityIdentifier("field_ios.capture")
+        .task {
+            await app.refreshCaptureIntakeState()
+        }
+    }
+}
+
+private struct CaptureIntakeStatusRow: View {
+    @EnvironmentObject private var app: AppState
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: statusImage)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(statusColor)
+                .frame(width: 34, height: 34)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Capture Ready")
+                    .font(.headline)
+                Text(statusText)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("field_ios.capture_intake.status")
+            }
+            Spacer()
+            if app.captureIntakeState.operation != .idle {
+                ProgressView()
+                    .accessibilityIdentifier("field_ios.capture_intake.progress")
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var supportedCount: Int {
+        [
+            app.captureIntakeState.support.photoImportAvailable,
+            app.captureIntakeState.support.cameraPhotoAvailable,
+            app.captureIntakeState.support.documentScannerAvailable
+        ].filter { $0 }.count
+    }
+
+    private var statusText: String {
+        switch app.captureIntakeState.operation {
+        case .refreshing:
+            "Checking capture support..."
+        case .importingPhoto:
+            "Importing photo..."
+        case .capturingPhoto:
+            "Taking photo..."
+        case .scanningDocument:
+            "Scanning document..."
+        case .idle:
+            supportedCount == 0 ? "Capture is unavailable on this device." : "\(supportedCount) capture options available."
+        }
+    }
+
+    private var statusImage: String {
+        supportedCount == 0 ? "camera.viewfinder" : "checkmark.circle.fill"
+    }
+
+    private var statusColor: Color {
+        supportedCount == 0 ? .secondary : .green
+    }
+}
+
+private struct CaptureIntakeActionButton: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
+    let accessibilityID: String
+    let isWorking: Bool
+    let isDisabled: Bool
+    let action: () async -> Void
+
+    var body: some View {
+        Button {
+            Task {
+                await action()
+            }
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: systemImage)
+                    .font(.title3.weight(.semibold))
+                    .frame(width: 34, height: 34)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if isWorking {
+                    ProgressView()
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+        .disabled(isDisabled)
+        .accessibilityIdentifier(accessibilityID)
+    }
+}
+
+private struct CaptureRecordRow: View {
+    let record: FieldCaptureRecord
+
+    var body: some View {
+        Label {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(record.source.displayName)
+                    .font(.headline)
+                Text(record.summary)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Text("\(record.sizeBytes) bytes")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        } icon: {
+            Image(systemName: record.kind == .pdf ? "doc.richtext.fill" : "photo.fill")
+                .foregroundStyle(.green)
+        }
+        .padding(.vertical, 4)
     }
 }
 
