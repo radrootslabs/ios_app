@@ -94,7 +94,8 @@ public final class AppState: ObservableObject {
             secureIdentityStore = secureStore
             identityMetadataStore = metadataStore
             if BuildConfig.bool(.resetLocalState) == true {
-                try secureStore.resetLocalState(bundleIdentifier: try bundleIdentifier())
+                try FieldLocalState.resetFileRoots(bundleIdentifier: try bundleIdentifier())
+                try secureStore.deleteSelectedSecret()
                 metadataStore.delete()
                 try await resetRuntimeIdentityState(using: service)
                 applyNoIdentity()
@@ -178,7 +179,7 @@ public final class AppState: ObservableObject {
 
     public func resetLocalIdentity() async throws {
         let service = try requireRuntimeService()
-        try secureIdentityStoreOrConfigured().resetLocalState(bundleIdentifier: try bundleIdentifier())
+        try secureIdentityStoreOrConfigured().deleteSelectedSecret()
         try identityMetadataStoreOrConfigured().delete()
         try await resetRuntimeIdentityState(using: service)
         applyNoIdentity()

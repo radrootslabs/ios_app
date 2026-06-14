@@ -14,13 +14,17 @@ struct LoggingSettings: Equatable {
         return LoggingSettings(stdout: stdout, fileEnabled: fileEnabled, fileName: fileName, level: level)
     }
 
-    func apply() throws {
+    func apply(bundleIdentifier: String) throws {
         if let level {
             setenv("RUST_LOG", level, 1)
         }
         if fileEnabled {
-            let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!.path
-            try initLogging(dir: dir, fileName: fileName, isStdout: stdout)
+            let logFileURL = try FieldLocalState.logFileURL(bundleIdentifier: bundleIdentifier, fileName: fileName)
+            try initLogging(
+                dir: logFileURL.deletingLastPathComponent().path,
+                fileName: logFileURL.lastPathComponent,
+                isStdout: stdout
+            )
         } else {
             try initLogging(dir: nil, fileName: fileName, isStdout: stdout)
         }

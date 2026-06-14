@@ -24,6 +24,7 @@
 		505A5731ACDBBB0296134340 /* TradeListingCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 947ADA6D32E42ED2B40A5351 /* TradeListingCreateView.swift */; };
 		5AECD474FB2F91855BDD79C0 /* PostFeedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F21554DA87EEC1E5C5F38365 /* PostFeedViewModel.swift */; };
 		657BEA5AAFF129E10177FE63 /* Nostr.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63189EB90A86A9929BECD9ED /* Nostr.swift */; };
+		6E15D30653861F26AC45B501 /* FieldLocalState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EB0A2CFCBBFA9D204C6992B /* FieldLocalState.swift */; };
 		7C8DD424F3E3E0AB1B133863 /* RadrootsKitBindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC881872F750120A184F45E6 /* RadrootsKitBindings.swift */; };
 		7FD8FB018DA09568303194B2 /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADE61264E2C98E73828E8680 /* Strings.swift */; };
 		8B923F78BF5B680C7F6A7CE3 /* PostFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AE0EB327C10171444553378 /* PostFeedView.swift */; };
@@ -77,6 +78,7 @@
 		93D729E070C32490545FA837 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		947ADA6D32E42ED2B40A5351 /* TradeListingCreateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeListingCreateView.swift; sourceTree = "<group>"; };
 		9AE0EB327C10171444553378 /* PostFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostFeedView.swift; sourceTree = "<group>"; };
+		9EB0A2CFCBBFA9D204C6992B /* FieldLocalState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldLocalState.swift; sourceTree = "<group>"; };
 		A0B0C9861CD86EAD3CAD549E /* View+Nav.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Nav.swift"; sourceTree = "<group>"; };
 		A71EFADBC7D54AF5B9314773 /* BuildConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildConfig.swift; sourceTree = "<group>"; };
 		ADE61264E2C98E73828E8680 /* Strings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Strings.swift; sourceTree = "<group>"; };
@@ -174,6 +176,7 @@
 			children = (
 				A71EFADBC7D54AF5B9314773 /* BuildConfig.swift */,
 				CA942715DB13FFD494FD35A0 /* FieldIdentityPublicMetadataStore.swift */,
+				9EB0A2CFCBBFA9D204C6992B /* FieldLocalState.swift */,
 				E883FDB7004A210C9D7BE27A /* FieldRuntimeService.swift */,
 				8246B707FA9D218414EC4038 /* FieldSecureIdentityStore.swift */,
 				D4DE3DD8C3BB2F63676F463E /* LoggingSettings.swift */,
@@ -401,6 +404,7 @@
 				D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */,
 				4025E63F6603011431B8A0E1 /* DebugDump.swift in Sources */,
 				D4CFDE54747B6D6957977025 /* FieldIdentityPublicMetadataStore.swift in Sources */,
+				6E15D30653861F26AC45B501 /* FieldLocalState.swift in Sources */,
 				D25C1E1DC99F5CF8E99AE970 /* FieldRuntimeService.swift in Sources */,
 				D9BF5BE7E4AB5EACBF342539 /* FieldSecureIdentityStore.swift in Sources */,
 				1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */,

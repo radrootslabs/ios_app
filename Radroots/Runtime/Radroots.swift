@@ -15,7 +15,7 @@ public final class Radroots: ObservableObject {
     ) throws -> FieldRuntimeService {
         let settings = LoggingSettings.load()
         do {
-            try settings.apply()
+            try settings.apply(bundleIdentifier: bundleId)
         } catch {
             try? initLoggingStdout()
         }

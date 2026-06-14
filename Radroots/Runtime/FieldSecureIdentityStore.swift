@@ -134,19 +134,6 @@ struct FieldSecureIdentityStore {
         try store.delete(Self.selectedSecretKey)
     }
 
-    func resetLocalState(bundleIdentifier: String) throws {
-        let trimmedBundleIdentifier = bundleIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedBundleIdentifier.isEmpty else {
-            throw FieldSecureIdentityStoreError.missingBundleIdentifier
-        }
-        try RadrootsAppLocalStateReset.reset(
-            RadrootsAppLocalStateResetRequest(
-                appIdentifier: trimmedBundleIdentifier,
-                keychainServiceNames: [try Self.secureStoreServiceName(servicePrefix: servicePrefix)]
-            )
-        )
-    }
-
     static func secureStoreServiceName(servicePrefix: String) throws -> String {
         try selectedSecretKey.serviceName(servicePrefix: servicePrefix)
     }
