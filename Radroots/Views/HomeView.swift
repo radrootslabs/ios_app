@@ -68,7 +68,9 @@ private struct TodayView: View {
 
             Section("Next Actions") {
                 FieldActionRow(title: "Photo Evidence", subtitle: "Document a crop, delivery, or field condition.", systemImage: "camera.fill")
-                LocationCheckInRow()
+                LocationCheckInRow(
+                    accessibilityIDPrefix: "field_ios.today.location_check_in"
+                )
                 FieldActionRow(title: "Status Log", subtitle: "Capture a short operational update.", systemImage: "text.badge.checkmark")
                 FieldActionRow(title: "Compliance Note", subtitle: "Reserve audit-ready notes for the current workflow.", systemImage: "checkmark.seal.fill")
             }
@@ -173,7 +175,21 @@ private struct CaptureView: View {
             }
 
             Section("Field Context") {
-                LocationCheckInRow()
+                LocationCheckInRow(
+                    accessibilityIDPrefix: "field_ios.location_check_in"
+                )
+                if app.locationCheckInState.showsAppSettingsRecovery {
+                    ExternalActionButton(
+                        title: "Open Settings",
+                        systemImage: "gearshape.fill",
+                        accessibilityID: "field_ios.location_check_in.open_settings"
+                    ) {
+                        await app.openAppSettingsRecovery()
+                    }
+                    if let status = app.externalActionStatus {
+                        ExternalActionStatusText(status: status)
+                    }
+                }
                 FieldActionRow(title: "Status Log", subtitle: "Record observations from the field.", systemImage: "square.and.pencil")
                 FieldActionRow(title: "Compliance Note", subtitle: "Prepare traceability notes for review.", systemImage: "checkmark.seal.fill")
             }
@@ -361,6 +377,7 @@ private struct FieldActionRow: View {
 
 private struct LocationCheckInRow: View {
     @EnvironmentObject private var app: AppState
+    let accessibilityIDPrefix: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -373,21 +390,22 @@ private struct LocationCheckInRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Location Check-in")
                         .font(.headline)
+                        .accessibilityIdentifier("\(accessibilityIDPrefix).card")
                     Text(statusText)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .accessibilityIdentifier("field_ios.location_check_in.status")
+                        .accessibilityIdentifier("\(accessibilityIDPrefix).status")
                     if let detailText {
                         Text(detailText)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
-                            .accessibilityIdentifier("field_ios.location_check_in.detail")
+                            .accessibilityIdentifier("\(accessibilityIDPrefix).detail")
                     }
                 }
                 Spacer()
                 if isChecking {
                     ProgressView()
-                        .accessibilityIdentifier("field_ios.location_check_in.progress")
+                        .accessibilityIdentifier("\(accessibilityIDPrefix).progress")
                 }
             }
 
@@ -402,23 +420,9 @@ private struct LocationCheckInRow: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(isChecking)
-            .accessibilityIdentifier("field_ios.location_check_in.action")
-
-            if showsSettingsRecovery {
-                ExternalActionButton(
-                    title: "Open Settings",
-                    systemImage: "gearshape.fill",
-                    accessibilityID: "field_ios.location_check_in.open_settings"
-                ) {
-                    await app.openAppSettingsRecovery()
-                }
-                if let status = app.externalActionStatus {
-                    ExternalActionStatusText(status: status)
-                }
-            }
+            .accessibilityIdentifier("\(accessibilityIDPrefix).action")
         }
         .padding(.vertical, 4)
-        .accessibilityIdentifier("field_ios.location_check_in.card")
         .task {
             await app.refreshLocationCheckInStatus()
         }
@@ -485,24 +489,6 @@ private struct LocationCheckInRow: View {
         }
     }
 
-    private var showsSettingsRecovery: Bool {
-        guard let availability = app.locationCheckInState.availability else {
-            return false
-        }
-        guard !isChecking else {
-            return false
-        }
-        guard availability.locationServicesEnabled else {
-            return true
-        }
-        switch availability.authorization {
-        case .denied, .restricted, .unavailable:
-            return true
-        case .notDetermined, .authorizedWhenInUse, .authorizedAlways, .unsupported:
-            return false
-        }
-    }
-
     private func statusText(for availability: RadrootsLocationServicesAvailability) -> String {
         guard availability.locationServicesEnabled else {
             return "Location Services are disabled."
@@ -520,6 +506,26 @@ private struct LocationCheckInRow: View {
             return "Location Services are unavailable."
         case .unsupported:
             return "Location Services are unsupported."
+        }
+    }
+}
+
+private extension FieldLocationCheckInState {
+    var showsAppSettingsRecovery: Bool {
+        if case .checking = self {
+            return false
+        }
+        guard let availability else {
+            return false
+        }
+        guard availability.locationServicesEnabled else {
+            return true
+        }
+        switch availability.authorization {
+        case .denied, .restricted, .unavailable:
+            return true
+        case .notDetermined, .authorizedWhenInUse, .authorizedAlways, .unsupported:
+            return false
         }
     }
 }
