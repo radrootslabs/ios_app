@@ -2,6 +2,10 @@ import Foundation
 import RadrootsKit
 import RadrootsKitTesting
 
+public enum FieldExternalActionRecovery: String, Equatable, Sendable {
+    case appSettings
+}
+
 public struct FieldExternalActionRequestRecord: Equatable, Sendable {
     public let kind: RadrootsExternalActionDestinationKind
     public let urlString: String?

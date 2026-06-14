@@ -157,6 +157,18 @@ private struct CaptureView: View {
                         .font(.footnote)
                         .foregroundStyle(.red)
                         .accessibilityIdentifier("field_ios.capture_intake.error")
+                    if app.captureIntakeState.recoveryAction == .appSettings {
+                        ExternalActionButton(
+                            title: "Open Settings",
+                            systemImage: "gearshape.fill",
+                            accessibilityID: "field_ios.capture_intake.open_settings"
+                        ) {
+                            await app.openAppSettingsRecovery()
+                        }
+                        if let status = app.externalActionStatus {
+                            ExternalActionStatusText(status: status)
+                        }
+                    }
                 }
             }
 
@@ -391,6 +403,19 @@ private struct LocationCheckInRow: View {
             .buttonStyle(.borderedProminent)
             .disabled(isChecking)
             .accessibilityIdentifier("field_ios.location_check_in.action")
+
+            if showsSettingsRecovery {
+                ExternalActionButton(
+                    title: "Open Settings",
+                    systemImage: "gearshape.fill",
+                    accessibilityID: "field_ios.location_check_in.open_settings"
+                ) {
+                    await app.openAppSettingsRecovery()
+                }
+                if let status = app.externalActionStatus {
+                    ExternalActionStatusText(status: status)
+                }
+            }
         }
         .padding(.vertical, 4)
         .accessibilityIdentifier("field_ios.location_check_in.card")
@@ -460,6 +485,24 @@ private struct LocationCheckInRow: View {
         }
     }
 
+    private var showsSettingsRecovery: Bool {
+        guard let availability = app.locationCheckInState.availability else {
+            return false
+        }
+        guard !isChecking else {
+            return false
+        }
+        guard availability.locationServicesEnabled else {
+            return true
+        }
+        switch availability.authorization {
+        case .denied, .restricted, .unavailable:
+            return true
+        case .notDetermined, .authorizedWhenInUse, .authorizedAlways, .unsupported:
+            return false
+        }
+    }
+
     private func statusText(for availability: RadrootsLocationServicesAvailability) -> String {
         guard availability.locationServicesEnabled else {
             return "Location Services are disabled."
@@ -478,6 +521,38 @@ private struct LocationCheckInRow: View {
         case .unsupported:
             return "Location Services are unsupported."
         }
+    }
+}
+
+private struct ExternalActionButton: View {
+    let title: String
+    let systemImage: String
+    let accessibilityID: String
+    let action: () async -> Void
+
+    var body: some View {
+        Button {
+            Task {
+                await action()
+            }
+        } label: {
+            Label(title, systemImage: systemImage)
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .accessibilityIdentifier(accessibilityID)
+    }
+}
+
+private struct ExternalActionStatusText: View {
+    let status: String
+
+    var body: some View {
+        Text(status)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .accessibilityIdentifier("field_ios.external_actions.status")
     }
 }
 

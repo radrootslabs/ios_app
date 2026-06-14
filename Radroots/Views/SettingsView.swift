@@ -13,6 +13,26 @@ struct SettingsView: View {
                     .font(.headline)
                 if let npub = app.npub {
                     CopyRow(title: "npub", value: npub)
+                    if app.canOpenNostrProfile {
+                        Button {
+                            Task {
+                                await app.openCurrentNostrProfile()
+                            }
+                        } label: {
+                            Label("Open Nostr Profile", systemImage: "person.crop.circle.badge.arrow.forward")
+                        }
+                        .accessibilityIdentifier("field_ios.settings.open_nostr_profile")
+                    } else {
+                        Text("No Nostr client is available.")
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("field_ios.settings.nostr_profile_unavailable")
+                    }
+                    if let status = app.externalActionStatus {
+                        Text(status)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("field_ios.external_actions.status")
+                    }
                 } else {
                     Text("No local Nostr identity is selected.")
                         .foregroundStyle(.secondary)
@@ -86,6 +106,9 @@ struct SettingsView: View {
         }
         .listStyle(.insetGrouped)
         .inlineNavigationTitle("Settings")
+        .task {
+            await app.refreshNostrProfileExternalActionCapability()
+        }
         .confirmationDialog(
             "Delete saved Nostr identity?",
             isPresented: $showResetConfirmation,

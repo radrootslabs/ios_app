@@ -254,6 +254,7 @@ public final class AppState: ObservableObject {
     public func refreshCaptureIntakeState() async {
         guard let captureIntake else {
             captureIntakeState.lastError = FieldCaptureIntakeError.serviceNotReady.localizedDescription
+            captureIntakeState.recoveryAction = nil
             return
         }
         await refreshCaptureIntakeState(using: captureIntake)
@@ -339,6 +340,7 @@ public final class AppState: ObservableObject {
     private func refreshCaptureIntakeState(using captureIntake: FieldCaptureIntake) async {
         captureIntakeState.operation = .refreshing
         captureIntakeState.lastError = nil
+        captureIntakeState.recoveryAction = nil
         do {
             captureIntakeState.records = try captureIntake.loadRecords()
             captureIntakeState.support = try await captureIntake.support()
@@ -347,6 +349,7 @@ public final class AppState: ObservableObject {
             captureIntakeState.support = .unavailable
             captureIntakeState.operation = .idle
             captureIntakeState.lastError = error.localizedDescription
+            captureIntakeState.recoveryAction = nil
         }
     }
 
@@ -360,14 +363,29 @@ public final class AppState: ObservableObject {
         }
         captureIntakeState.operation = operation
         captureIntakeState.lastError = nil
+        captureIntakeState.recoveryAction = nil
         do {
             let updatedRecords = try await action(captureIntake, captureIntakeState.records)
             captureIntakeState.records = updatedRecords
             captureIntakeState.support = try await captureIntake.support()
             captureIntakeState.operation = .idle
+            captureIntakeState.recoveryAction = nil
         } catch {
             captureIntakeState.operation = .idle
             captureIntakeState.lastError = error.localizedDescription
+            captureIntakeState.recoveryAction = captureRecoveryAction(for: error)
+        }
+    }
+
+    private func captureRecoveryAction(for error: Error) -> FieldExternalActionRecovery? {
+        guard let captureError = error as? RadrootsCaptureIntakeError else {
+            return nil
+        }
+        switch captureError {
+        case .permissionDenied:
+            return .appSettings
+        case .invalidRequest, .unavailable, .userCancelled, .transientFailure, .permanentFailure:
+            return nil
         }
     }
 

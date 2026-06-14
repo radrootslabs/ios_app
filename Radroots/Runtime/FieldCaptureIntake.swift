@@ -125,12 +125,14 @@ public struct FieldCaptureIntakeState: Equatable, Sendable {
     var records: [FieldCaptureRecord]
     var operation: FieldCaptureIntakeOperation
     var lastError: String?
+    var recoveryAction: FieldExternalActionRecovery?
 
     static let idle = FieldCaptureIntakeState(
         support: .unavailable,
         records: [],
         operation: .idle,
-        lastError: nil
+        lastError: nil,
+        recoveryAction: nil
     )
 
     var latestRecord: FieldCaptureRecord? {
