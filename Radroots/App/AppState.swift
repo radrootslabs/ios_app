@@ -40,6 +40,7 @@ public final class AppState: ObservableObject {
     @Published public private(set) var relayConnectingCount: UInt32 = 0
     @Published public private(set) var relayLight: RelayLight = .red
     @Published public private(set) var relayLastError: String?
+    @Published public private(set) var fileAccessProbeValue: String?
 
     public var canShowAppContent: Bool {
         bootstrapPhase == .ready && runtimeIdentityReady && !isLocked
@@ -91,10 +92,16 @@ public final class AppState: ObservableObject {
             let service = try radroots.start()
             let secureStore = try FieldSecureIdentityStore.configured()
             let metadataStore = try FieldIdentityPublicMetadataStore.configured()
+            let appBundleIdentifier = try bundleIdentifier()
+            let resetLocalStateRequested = BuildConfig.bool(.resetLocalState) == true
+            try FieldFileAccessUITestProbe.seedDestructiveResetSentinelIfRequested(
+                bundleIdentifier: appBundleIdentifier,
+                resetLocalStateRequested: resetLocalStateRequested
+            )
             secureIdentityStore = secureStore
             identityMetadataStore = metadataStore
-            if BuildConfig.bool(.resetLocalState) == true {
-                try FieldLocalState.resetFileRoots(bundleIdentifier: try bundleIdentifier())
+            if resetLocalStateRequested {
+                try FieldLocalState.resetFileRoots(bundleIdentifier: appBundleIdentifier)
                 try secureStore.deleteSelectedSecret()
                 metadataStore.delete()
                 try await resetRuntimeIdentityState(using: service)
@@ -108,6 +115,11 @@ public final class AppState: ObservableObject {
                 try await connect(using: service)
                 startPollingStatus()
             }
+            try refreshFileAccessProbe(
+                bundleIdentifier: appBundleIdentifier,
+                resetLocalStateRequested: resetLocalStateRequested,
+                identityResetObserved: false
+            )
             bootstrapPhase = .ready
         } catch {
             statusTask?.cancel()
@@ -189,6 +201,11 @@ public final class AppState: ObservableObject {
         relayLight = .red
         relayLastError = nil
         await refreshRuntimeState(using: service)
+        try refreshFileAccessProbe(
+            bundleIdentifier: try bundleIdentifier(),
+            resetLocalStateRequested: false,
+            identityResetObserved: true
+        )
         statusTask?.cancel()
         statusTask = nil
     }
@@ -408,6 +425,28 @@ public final class AppState: ObservableObject {
             throw FieldSecureIdentityStoreError.missingBundleIdentifier
         }
         return bundleIdentifier
+    }
+
+    private func refreshFileAccessProbe(
+        bundleIdentifier: String,
+        resetLocalStateRequested: Bool,
+        identityResetObserved: Bool
+    ) throws {
+        let loggingSettings = LoggingSettings.load()
+        if identityResetObserved {
+            fileAccessProbeValue = try FieldFileAccessUITestProbe.identityResetValue(
+                bundleIdentifier: bundleIdentifier,
+                loggingFileEnabled: loggingSettings.fileEnabled,
+                loggingFileName: loggingSettings.fileName
+            )
+        } else {
+            fileAccessProbeValue = try FieldFileAccessUITestProbe.startupValue(
+                bundleIdentifier: bundleIdentifier,
+                resetLocalStateRequested: resetLocalStateRequested,
+                loggingFileEnabled: loggingSettings.fileEnabled,
+                loggingFileName: loggingSettings.fileName
+            )
+        }
     }
 
     private func setLocked(_ value: Bool) {

@@ -28,6 +28,15 @@ public struct AppEntry<Main: View>: View {
             }
         }
         .accessibilityIdentifier("field_ios.app_entry")
+        .overlay(alignment: .topLeading) {
+            if let probeValue = appState.fileAccessProbeValue {
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .accessibilityElement()
+                    .accessibilityIdentifier("field_ios.file_access.probe")
+                    .accessibilityValue(probeValue)
+            }
+        }
     }
 }
 
