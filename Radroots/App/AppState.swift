@@ -1,4 +1,5 @@
 import Foundation
+import RadrootsKit
 
 enum FieldAppRuntimeError: LocalizedError {
     case runtimeNotReady
@@ -215,6 +216,32 @@ public final class AppState: ObservableObject {
             throw FieldAppRuntimeError.runtimeNotReady
         }
         return service
+    }
+
+    func prepareDiagnosticsDocumentExport() throws -> RadrootsPreparedExportDocument {
+        try documentInterchange().prepareDiagnosticsExport(
+            infoJSONString: infoJSONString,
+            relays: RelaySettings.relays(),
+            connectedCount: relayConnectedCount,
+            connectingCount: relayConnectingCount,
+            lastError: relayLastError
+        )
+    }
+
+    func prepareRelayConfigDocumentExport() throws -> RadrootsPreparedExportDocument {
+        try documentInterchange().prepareRelayConfigExport(relays: RelaySettings.relays())
+    }
+
+    func importedRelayConfig(from importedDocument: RadrootsImportedDocument) throws -> [String] {
+        try documentInterchange().importedRelayConfig(from: importedDocument)
+    }
+
+    func publicPostShareRequest(content: String) throws -> RadrootsShareRequest {
+        try documentInterchange().publicPostShareRequest(content: content)
+    }
+
+    private func documentInterchange() throws -> FieldDocumentInterchange {
+        try FieldDocumentInterchange(bundleIdentifier: bundleIdentifier())
     }
 
     private var isFailed: Bool {
