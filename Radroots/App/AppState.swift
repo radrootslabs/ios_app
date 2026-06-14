@@ -240,6 +240,14 @@ public final class AppState: ObservableObject {
         try documentInterchange().publicPostShareRequest(content: content)
     }
 
+    func documentFileAccess() throws -> RadrootsAppleFileAccess {
+        try FieldLocalState.fileAccess(bundleIdentifier: bundleIdentifier())
+    }
+
+    func releasePreparedDocumentExport(_ preparedExport: RadrootsPreparedExportDocument) {
+        try? documentFileAccess().releasePreparedExport(preparedExport)
+    }
+
     private func documentInterchange() throws -> FieldDocumentInterchange {
         try FieldDocumentInterchange(bundleIdentifier: bundleIdentifier())
     }

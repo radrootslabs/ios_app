@@ -1,6 +1,8 @@
+import RadrootsKit
 import SwiftUI
 
 struct PostDetailView: View {
+    @EnvironmentObject private var app: AppState
     let post: NostrPostEventMetadata
     @State private var showCopied = false
 
@@ -30,8 +32,18 @@ struct PostDetailView: View {
         .inlineNavigationTitle("Post")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                ShareLink(item: post.post.content) {
-                    Image(systemName: "square.and.arrow.up")
+                if let shareRequest = try? app.publicPostShareRequest(content: post.post.content),
+                   let shareLink = try? RadrootsSharePresentationLink(request: shareRequest, label: {
+                       Image(systemName: "square.and.arrow.up")
+                   }) {
+                    shareLink
+                        .accessibilityIdentifier("field_ios.post.share")
+                } else {
+                    Button {} label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .disabled(true)
+                    .accessibilityIdentifier("field_ios.post.share_unavailable")
                 }
             }
         }

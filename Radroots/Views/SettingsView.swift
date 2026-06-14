@@ -1,3 +1,4 @@
+import RadrootsKit
 import SwiftUI
 
 struct SettingsView: View {
@@ -132,9 +133,34 @@ private struct IdentityStateRow: View {
 
 private struct RuntimeDiagnosticsView: View {
     @EnvironmentObject private var app: AppState
+    @State private var preparedExport: RadrootsPreparedExportDocument?
+    @State private var activeExport: RadrootsPreparedExportDocument?
+    @State private var exportMessage: String?
+    @State private var exportError: String?
 
     var body: some View {
         List {
+            Section("Export") {
+                Button {
+                    prepareExport()
+                } label: {
+                    Label("Export Diagnostics", systemImage: "square.and.arrow.up")
+                }
+                .accessibilityIdentifier("field_ios.diagnostics.export")
+
+                if let exportMessage {
+                    Text(exportMessage)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("field_ios.diagnostics.export_status")
+                }
+                if let exportError {
+                    Text(exportError)
+                        .foregroundStyle(.red)
+                        .font(.footnote)
+                        .accessibilityIdentifier("field_ios.diagnostics.export_error")
+                }
+            }
+
             Section("Relay") {
                 LabeledContent("Connected", value: "\(app.relayConnectedCount)")
                 LabeledContent("Connecting", value: "\(app.relayConnectingCount)")
@@ -153,6 +179,35 @@ private struct RuntimeDiagnosticsView: View {
         }
         .listStyle(.insetGrouped)
         .inlineNavigationTitle("Diagnostics")
+        .radrootsDocumentExporter(preparedExport: $preparedExport) { result in
+            handleExportCompletion(result)
+        }
         .accessibilityIdentifier("field_ios.diagnostics")
+    }
+
+    private func prepareExport() {
+        exportMessage = nil
+        exportError = nil
+        do {
+            let export = try app.prepareDiagnosticsDocumentExport()
+            activeExport = export
+            preparedExport = export
+        } catch {
+            exportError = error.localizedDescription
+        }
+    }
+
+    private func handleExportCompletion(_ result: Result<RadrootsExportDocumentResult, Error>) {
+        if let activeExport {
+            app.releasePreparedDocumentExport(activeExport)
+        }
+        activeExport = nil
+        switch result {
+        case .success(let exportResult):
+            exportMessage = "Exported \(exportResult.exportedFilename)"
+            exportError = nil
+        case .failure(let error):
+            exportError = error.localizedDescription
+        }
     }
 }
