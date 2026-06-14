@@ -13,6 +13,7 @@
 		1C6EA551530A46CA77BD9E1C /* FieldLocationCheckIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F3541389124A31F5D701A45 /* FieldLocationCheckIn.swift */; };
 		1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0274A0260D1C04F40C71AF /* HomeView.swift */; };
 		275D4D574BF3B3C1DD746CE7 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C71A93F98C7B93188748B99B /* ProfileView.swift */; };
+		299A6111507F657670856F36 /* FieldCaptureIntake.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CC1D11E2E296B4B54E7E8A9 /* FieldCaptureIntake.swift */; };
 		2B3886FD26434A54F3726591 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8D19AA8D515FC8F5D2407378 /* Localizable.strings */; };
 		2B6ACA26689B355CECBFFB57 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A7641E5C643B4B36CFEDA8 /* SetupView.swift */; };
 		33A800AA701C354099623B24 /* MarketView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08C0B870E44C7B152A7FABE0 /* MarketView.swift */; };
@@ -26,6 +27,7 @@
 		505A5731ACDBBB0296134340 /* TradeListingCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 947ADA6D32E42ED2B40A5351 /* TradeListingCreateView.swift */; };
 		5AECD474FB2F91855BDD79C0 /* PostFeedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F21554DA87EEC1E5C5F38365 /* PostFeedViewModel.swift */; };
 		657BEA5AAFF129E10177FE63 /* Nostr.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63189EB90A86A9929BECD9ED /* Nostr.swift */; };
+		6E11DAC51E648F1E4EDFBE68 /* RadrootsKitTesting in Frameworks */ = {isa = PBXBuildFile; productRef = F2A002A084F2E04B096C93C7 /* RadrootsKitTesting */; };
 		6E15D30653861F26AC45B501 /* FieldLocalState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EB0A2CFCBBFA9D204C6992B /* FieldLocalState.swift */; };
 		7C8DD424F3E3E0AB1B133863 /* RadrootsKitBindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC881872F750120A184F45E6 /* RadrootsKitBindings.swift */; };
 		7E650F6DA30931E310F842E2 /* FieldFileAccessUITestProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 491D57E540BAB04F24619737 /* FieldFileAccessUITestProbe.swift */; };
@@ -75,8 +77,10 @@
 		63189EB90A86A9929BECD9ED /* Nostr.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostr.swift; sourceTree = "<group>"; };
 		676B89EB116B60AE8C2B4313 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		6FBB081610305940C7849C7C /* RelaySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelaySettings.swift; sourceTree = "<group>"; };
+		7515B8FD2A65990C3E3E93CE /* apple_kit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = apple_kit; path = ../../../../domains/radroots/apple_kit; sourceTree = SOURCE_ROOT; };
 		7BCA99336E305EC789152DDE /* radroots.local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.local.xcconfig; sourceTree = "<group>"; };
 		7C294E8EF50F5E1E73F5C135 /* Common.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
+		7CC1D11E2E296B4B54E7E8A9 /* FieldCaptureIntake.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldCaptureIntake.swift; sourceTree = "<group>"; };
 		7D69D200DB1F5FA7AA561CD7 /* TradeListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeListing.swift; sourceTree = "<group>"; };
 		8246B707FA9D218414EC4038 /* FieldSecureIdentityStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldSecureIdentityStore.swift; sourceTree = "<group>"; };
 		8F0F21496E7A8490EB14AC5B /* Radroots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Radroots.swift; sourceTree = "<group>"; };
@@ -118,6 +122,7 @@
 			files = (
 				04AA409CFECBA11BFC175C5C /* RadrootsFFI.xcframework in Frameworks */,
 				F3E40E5A76B4EA19AC7603D2 /* RadrootsKit in Frameworks */,
+				6E11DAC51E648F1E4EDFBE68 /* RadrootsKitTesting in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -183,6 +188,7 @@
 			isa = PBXGroup;
 			children = (
 				A71EFADBC7D54AF5B9314773 /* BuildConfig.swift */,
+				7CC1D11E2E296B4B54E7E8A9 /* FieldCaptureIntake.swift */,
 				E4F2BDC19EF9435162BFF5EC /* FieldDocumentInterchange.swift */,
 				EF05B944D348DAA4EF28B463 /* FieldDocumentInterchangeUITestProbe.swift */,
 				491D57E540BAB04F24619737 /* FieldFileAccessUITestProbe.swift */,
@@ -219,6 +225,14 @@
 				C5BAA3C6E2D410F0C8475D89 /* Modifiers */,
 			);
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		9458C318B571871852A3FD1B /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				7515B8FD2A65990C3E3E93CE /* apple_kit */,
+			);
+			name = Packages;
 			sourceTree = "<group>";
 		};
 		97FA23F0FD7E25C1AF2585FB /* Frameworks */ = {
@@ -261,6 +275,7 @@
 		C4F02317699AB4FA59315D05 = {
 			isa = PBXGroup;
 			children = (
+				9458C318B571871852A3FD1B /* Packages */,
 				5FD6379AE27C57D02E8C7EE1 /* Radroots */,
 				97FA23F0FD7E25C1AF2585FB /* Frameworks */,
 				6240123423927396E47D6B3E /* Products */,
@@ -330,6 +345,7 @@
 			name = Radroots;
 			packageProductDependencies = (
 				2DAD90EBF8EB00ACDD7611CD /* RadrootsKit */,
+				F2A002A084F2E04B096C93C7 /* RadrootsKitTesting */,
 			);
 			productName = Radroots;
 			productReference = 93AA285819DD1269C3EAD80A /* Radroots.app */;
@@ -356,7 +372,7 @@
 			mainGroup = C4F02317699AB4FA59315D05;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				6BC345C2400A6F7ED798D79A /* XCRemoteSwiftPackageReference "apple_kit" */,
+				D71BF9693060631950EFC310 /* XCLocalSwiftPackageReference "../../../../domains/radroots/apple_kit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6240123423927396E47D6B3E /* Products */;
@@ -415,6 +431,7 @@
 				9121BD4A3E7C6EF2B21F540F /* CopyButton.swift in Sources */,
 				D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */,
 				4025E63F6603011431B8A0E1 /* DebugDump.swift in Sources */,
+				299A6111507F657670856F36 /* FieldCaptureIntake.swift in Sources */,
 				3FC570AC038C3DC575E5A3E7 /* FieldDocumentInterchange.swift in Sources */,
 				E432FD39ECC8F03764EEED81 /* FieldDocumentInterchangeUITestProbe.swift in Sources */,
 				7E650F6DA30931E310F842E2 /* FieldFileAccessUITestProbe.swift in Sources */,
@@ -652,22 +669,21 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		6BC345C2400A6F7ED798D79A /* XCRemoteSwiftPackageReference "apple_kit" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "git@github.com:radrootslabs/apple_kit.git";
-			requirement = {
-				branch = master;
-				kind = branch;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		D71BF9693060631950EFC310 /* XCLocalSwiftPackageReference "../../../../domains/radroots/apple_kit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../../../domains/radroots/apple_kit;
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		2DAD90EBF8EB00ACDD7611CD /* RadrootsKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 6BC345C2400A6F7ED798D79A /* XCRemoteSwiftPackageReference "apple_kit" */;
 			productName = RadrootsKit;
+		};
+		F2A002A084F2E04B096C93C7 /* RadrootsKitTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RadrootsKitTesting;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

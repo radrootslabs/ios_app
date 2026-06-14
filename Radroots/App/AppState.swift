@@ -46,6 +46,7 @@ public final class AppState: ObservableObject {
     @Published public private(set) var locationCheckInState: FieldLocationCheckInState = .idle(
         RadrootsLocationServicesAvailability(locationServicesEnabled: false, authorization: .unavailable)
     )
+    @Published public private(set) var captureIntakeState: FieldCaptureIntakeState = .idle
 
     public var canShowAppContent: Bool {
         bootstrapPhase == .ready && runtimeIdentityReady && !isLocked
@@ -76,6 +77,7 @@ public final class AppState: ObservableObject {
     private var statusTask: Task<Void, Never>?
     private var secureIdentityStore: FieldSecureIdentityStore?
     private var identityMetadataStore: FieldIdentityPublicMetadataStore?
+    private var captureIntake: FieldCaptureIntake?
     private let locationCheckIn = FieldLocationCheckIn.configured()
 
     public init(radroots: Radroots = Radroots()) {
@@ -116,6 +118,8 @@ public final class AppState: ObservableObject {
             } else {
                 loadStoredIdentityMetadata(metadataStore)
             }
+            let captureIntake = try FieldCaptureIntake.configured(bundleIdentifier: appBundleIdentifier)
+            self.captureIntake = captureIntake
             await refreshRuntimeState(using: service)
             if runtimeIdentityReady && !isLocked {
                 try await connect(using: service)
@@ -128,6 +132,7 @@ public final class AppState: ObservableObject {
             )
             try refreshDocumentInterchangeProbe(bundleIdentifier: appBundleIdentifier)
             await refreshLocationCheckInStatus()
+            await refreshCaptureIntakeState(using: captureIntake)
             bootstrapPhase = .ready
         } catch {
             statusTask?.cancel()
@@ -237,6 +242,32 @@ public final class AppState: ObservableObject {
         locationCheckInState = await locationCheckIn.checkIn()
     }
 
+    public func refreshCaptureIntakeState() async {
+        guard let captureIntake else {
+            captureIntakeState.lastError = FieldCaptureIntakeError.serviceNotReady.localizedDescription
+            return
+        }
+        await refreshCaptureIntakeState(using: captureIntake)
+    }
+
+    public func importPhotoEvidence() async {
+        await performCaptureIntakeOperation(.importingPhoto) { captureIntake, records in
+            try await captureIntake.importPhoto(records: records)
+        }
+    }
+
+    public func capturePhotoEvidence() async {
+        await performCaptureIntakeOperation(.capturingPhoto) { captureIntake, records in
+            try await captureIntake.capturePhoto(records: records)
+        }
+    }
+
+    public func scanDocumentEvidence() async {
+        await performCaptureIntakeOperation(.scanningDocument) { captureIntake, records in
+            try await captureIntake.scanDocument(records: records)
+        }
+    }
+
     func prepareDiagnosticsDocumentExport() throws -> RadrootsPreparedExportDocument {
         try documentInterchange().prepareDiagnosticsExport(
             infoJSONString: infoJSONString,
@@ -269,6 +300,41 @@ public final class AppState: ObservableObject {
 
     private func documentInterchange() throws -> FieldDocumentInterchange {
         try FieldDocumentInterchange(bundleIdentifier: bundleIdentifier())
+    }
+
+    private func refreshCaptureIntakeState(using captureIntake: FieldCaptureIntake) async {
+        captureIntakeState.operation = .refreshing
+        captureIntakeState.lastError = nil
+        do {
+            captureIntakeState.records = try captureIntake.loadRecords()
+            captureIntakeState.support = try await captureIntake.support()
+            captureIntakeState.operation = .idle
+        } catch {
+            captureIntakeState.support = .unavailable
+            captureIntakeState.operation = .idle
+            captureIntakeState.lastError = error.localizedDescription
+        }
+    }
+
+    private func performCaptureIntakeOperation(
+        _ operation: FieldCaptureIntakeOperation,
+        action: (FieldCaptureIntake, [FieldCaptureRecord]) async throws -> [FieldCaptureRecord]
+    ) async {
+        guard let captureIntake else {
+            captureIntakeState.lastError = FieldCaptureIntakeError.serviceNotReady.localizedDescription
+            return
+        }
+        captureIntakeState.operation = operation
+        captureIntakeState.lastError = nil
+        do {
+            let updatedRecords = try await action(captureIntake, captureIntakeState.records)
+            captureIntakeState.records = updatedRecords
+            captureIntakeState.support = try await captureIntake.support()
+            captureIntakeState.operation = .idle
+        } catch {
+            captureIntakeState.operation = .idle
+            captureIntakeState.lastError = error.localizedDescription
+        }
     }
 
     private var isFailed: Bool {
