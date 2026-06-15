@@ -43,6 +43,7 @@ public final class AppState: ObservableObject {
     @Published public private(set) var relayLastError: String?
     @Published public private(set) var fileAccessProbeValue: String?
     @Published public private(set) var documentInterchangeProbeValue: String?
+    @Published public private(set) var telemetryProbeValue: String?
     @Published public private(set) var externalActionStatus: String?
     @Published public private(set) var userPresenceStatus: String?
     @Published public private(set) var canOpenNostrProfile: Bool = false
@@ -79,6 +80,7 @@ public final class AppState: ObservableObject {
 
     private let lockKey = "field_ios.identity_locked"
     private var statusTask: Task<Void, Never>?
+    private var telemetryProbeTask: Task<Void, Never>?
     private var secureIdentityStore: FieldSecureIdentityStore?
     private var identityMetadataStore: FieldIdentityPublicMetadataStore?
     private var captureIntake: FieldCaptureIntake?
@@ -95,6 +97,7 @@ public final class AppState: ObservableObject {
 
     deinit {
         statusTask?.cancel()
+        telemetryProbeTask?.cancel()
     }
 
     public func start() async throws {
@@ -148,12 +151,16 @@ public final class AppState: ObservableObject {
                 runtimeIdentityReady: runtimeIdentityReady,
                 locked: isLocked
             )
+            startTelemetryProbeRefreshForUITest()
         } catch {
             statusTask?.cancel()
             statusTask = nil
+            telemetryProbeTask?.cancel()
+            telemetryProbeTask = nil
             let message = error.localizedDescription
             bootstrapPhase = .failed(message)
             telemetry.appStartupFailed(error)
+            startTelemetryProbeRefreshForUITest()
             throw error
         }
     }
@@ -772,6 +779,19 @@ public final class AppState: ObservableObject {
             connectingCount: relayConnectingCount,
             lastError: relayLastError
         )
+        guard FieldDocumentInterchangeUITestProbe.isRequested else {
+            return
+        }
+        let diagnosticsExport = try prepareDiagnosticsDocumentExport()
+        releasePreparedDocumentExport(diagnosticsExport)
+        let relayConfigExport = try prepareRelayConfigDocumentExport()
+        releasePreparedDocumentExport(relayConfigExport)
+        if let relayImportDocument = try FieldDocumentInterchangeUITestProbe.relayImportDocument(
+            bundleIdentifier: bundleIdentifier
+        ) {
+            _ = try importedRelayConfig(from: relayImportDocument)
+        }
+        _ = try publicPostShareRequest(content: "  public field update  ")
     }
 
     private func requestExternalAction(
@@ -810,6 +830,23 @@ public final class AppState: ObservableObject {
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
         }
+    }
+
+    private func startTelemetryProbeRefreshForUITest() {
+        guard FieldTelemetryUITestProbe.isRequested else {
+            return
+        }
+        telemetryProbeTask?.cancel()
+        telemetryProbeTask = Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.refreshTelemetryProbeValue()
+                try? await Task.sleep(nanoseconds: 250_000_000)
+            }
+        }
+    }
+
+    private func refreshTelemetryProbeValue() async {
+        telemetryProbeValue = await FieldTelemetryUITestProbe.value(recordedBy: telemetry)
     }
 
     private func shortNpub(_ value: String) -> String {

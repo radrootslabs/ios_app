@@ -16,6 +16,24 @@ enum FieldDocumentInterchangeUITestProbe {
         ProcessInfo.processInfo.environment[enabledKey] == "true"
     }
 
+    static func relayImportDocument(bundleIdentifier: String) throws -> RadrootsImportedDocument? {
+        guard isRequested else {
+            return nil
+        }
+        let data = relayImportFixtureData()
+        try FieldLocalState.fileAccess(bundleIdentifier: bundleIdentifier).write(
+            .inline(data),
+            to: importFixture
+        )
+        return try RadrootsImportedDocument(
+            file: importFixture,
+            originalURL: nil,
+            suggestedFilename: "radroots-relays.json",
+            mediaType: "application/json",
+            sizeBytes: UInt64(data.count)
+        )
+    }
+
     static func startupValue(
         bundleIdentifier: String,
         infoJSONString: String,

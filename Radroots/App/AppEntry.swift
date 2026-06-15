@@ -43,6 +43,13 @@ public struct AppEntry<Main: View>: View {
                     .accessibilityIdentifier("field_ios.document_interchange.probe")
                     .accessibilityValue(probeValue)
             }
+            if let probeValue = appState.telemetryProbeValue {
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .accessibilityElement()
+                    .accessibilityIdentifier("field_ios.telemetry.probe")
+                    .accessibilityValue(probeValue)
+            }
         }
     }
 }
