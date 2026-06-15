@@ -23,7 +23,6 @@
 		3A7FA9E5BCC7590B2EAC5349 /* RelaySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBB081610305940C7849C7C /* RelaySettings.swift */; };
 		3B6020E24A2DAD8ADFC2F155 /* BuildConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A71EFADBC7D54AF5B9314773 /* BuildConfig.swift */; };
 		3FC570AC038C3DC575E5A3E7 /* FieldDocumentInterchange.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4F2BDC19EF9435162BFF5EC /* FieldDocumentInterchange.swift */; };
-		4025E63F6603011431B8A0E1 /* DebugDump.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F9BFC3C8CE2F86FB7DB74B /* DebugDump.swift */; };
 		4B44B723FF06ECC363A486BA /* TradeListingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26BAE32CD1D46033DDA1A5BB /* TradeListingDetailView.swift */; };
 		505A5731ACDBBB0296134340 /* TradeListingCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 947ADA6D32E42ED2B40A5351 /* TradeListingCreateView.swift */; };
 		5AECD474FB2F91855BDD79C0 /* PostFeedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F21554DA87EEC1E5C5F38365 /* PostFeedViewModel.swift */; };
@@ -37,11 +36,11 @@
 		8B923F78BF5B680C7F6A7CE3 /* PostFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AE0EB327C10171444553378 /* PostFeedView.swift */; };
 		8F6D0970610DF68816DE1A98 /* Radroots.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F0F21496E7A8490EB14AC5B /* Radroots.swift */; };
 		9121BD4A3E7C6EF2B21F540F /* CopyButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C7DE4207398DE242519F9C /* CopyButton.swift */; };
+		9346DA48630668A65D37E14A /* FieldTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4E53FD4C4AADF63855888A /* FieldTelemetry.swift */; };
 		A1B921027DA7ACD7343BE250 /* SectionWideButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17CA8F5611075F60F214A00 /* SectionWideButton.swift */; };
 		B8A3BBDE3A1FC0248512BF76 /* LoggingSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4DE3DD8C3BB2F63676F463E /* LoggingSettings.swift */; };
 		B971351ABE8E79A472B4DC7D /* View+Nav.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B0C9861CD86EAD3CAD549E /* View+Nav.swift */; };
 		C22DB0F3EB2E69A34DF941E0 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2818363B157125491FB84A1E /* App.swift */; };
-		C512BD267A3E2B8F10FABB3B /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FE790CA1CD31208947913B9 /* Logger.swift */; };
 		C8AB3389F7430A5C79AD7DF8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */; };
 		D25C1E1DC99F5CF8E99AE970 /* FieldRuntimeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E883FDB7004A210C9D7BE27A /* FieldRuntimeService.swift */; };
 		D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41A4289F43625DD65E6C4B25 /* CopyRow.swift */; };
@@ -70,7 +69,7 @@
 		26BAE32CD1D46033DDA1A5BB /* TradeListingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeListingDetailView.swift; sourceTree = "<group>"; };
 		2818363B157125491FB84A1E /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		2F3541389124A31F5D701A45 /* FieldLocationCheckIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldLocationCheckIn.swift; sourceTree = "<group>"; };
-		2FE790CA1CD31208947913B9 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
+		3B4E53FD4C4AADF63855888A /* FieldTelemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldTelemetry.swift; sourceTree = "<group>"; };
 		3E6187FA7C4786EC662718B2 /* FieldExternalActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldExternalActions.swift; sourceTree = "<group>"; };
 		41A4289F43625DD65E6C4B25 /* CopyRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyRow.swift; sourceTree = "<group>"; };
 		466BFA2F60BE3113EDD1BA3B /* TradeOrderRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeOrderRequestView.swift; sourceTree = "<group>"; };
@@ -110,7 +109,6 @@
 		DC881872F750120A184F45E6 /* RadrootsKitBindings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsKitBindings.swift; sourceTree = "<group>"; };
 		E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		E4F2BDC19EF9435162BFF5EC /* FieldDocumentInterchange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldDocumentInterchange.swift; sourceTree = "<group>"; };
-		E7F9BFC3C8CE2F86FB7DB74B /* DebugDump.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugDump.swift; sourceTree = "<group>"; };
 		E883FDB7004A210C9D7BE27A /* FieldRuntimeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldRuntimeService.swift; sourceTree = "<group>"; };
 		EF05B944D348DAA4EF28B463 /* FieldDocumentInterchangeUITestProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldDocumentInterchangeUITestProbe.swift; sourceTree = "<group>"; };
 		F21554DA87EEC1E5C5F38365 /* PostFeedViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostFeedViewModel.swift; sourceTree = "<group>"; };
@@ -202,6 +200,7 @@
 				2F3541389124A31F5D701A45 /* FieldLocationCheckIn.swift */,
 				E883FDB7004A210C9D7BE27A /* FieldRuntimeService.swift */,
 				8246B707FA9D218414EC4038 /* FieldSecureIdentityStore.swift */,
+				3B4E53FD4C4AADF63855888A /* FieldTelemetry.swift */,
 				D65835E1C633C7B946C64D11 /* FieldUserPresenceGate.swift */,
 				D4DE3DD8C3BB2F63676F463E /* LoggingSettings.swift */,
 				63189EB90A86A9929BECD9ED /* Nostr.swift */,
@@ -227,7 +226,6 @@
 				D46F444AD1818932F03AC6B6 /* Components */,
 				9D22575D1FAD99FE8B6FCE6C /* Extensions */,
 				65EC1C4AF7DC676E78603D52 /* Localisation */,
-				F16A19713274742D956C3A4D /* Logging */,
 				C5BAA3C6E2D410F0C8475D89 /* Modifiers */,
 			);
 			path = Shared;
@@ -321,15 +319,6 @@
 				C5BC6846E71297290E1EAA29 /* Localizations */,
 			);
 			path = Resources;
-			sourceTree = "<group>";
-		};
-		F16A19713274742D956C3A4D /* Logging */ = {
-			isa = PBXGroup;
-			children = (
-				E7F9BFC3C8CE2F86FB7DB74B /* DebugDump.swift */,
-				2FE790CA1CD31208947913B9 /* Logger.swift */,
-			);
-			path = Logging;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -436,7 +425,6 @@
 				E3864E34D67BAD0744B93180 /* Bundle+Build.swift in Sources */,
 				9121BD4A3E7C6EF2B21F540F /* CopyButton.swift in Sources */,
 				D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */,
-				4025E63F6603011431B8A0E1 /* DebugDump.swift in Sources */,
 				299A6111507F657670856F36 /* FieldCaptureIntake.swift in Sources */,
 				3FC570AC038C3DC575E5A3E7 /* FieldDocumentInterchange.swift in Sources */,
 				E432FD39ECC8F03764EEED81 /* FieldDocumentInterchangeUITestProbe.swift in Sources */,
@@ -447,9 +435,9 @@
 				1C6EA551530A46CA77BD9E1C /* FieldLocationCheckIn.swift in Sources */,
 				D25C1E1DC99F5CF8E99AE970 /* FieldRuntimeService.swift in Sources */,
 				D9BF5BE7E4AB5EACBF342539 /* FieldSecureIdentityStore.swift in Sources */,
+				9346DA48630668A65D37E14A /* FieldTelemetry.swift in Sources */,
 				25654E50F9519809A237759D /* FieldUserPresenceGate.swift in Sources */,
 				1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */,
-				C512BD267A3E2B8F10FABB3B /* Logger.swift in Sources */,
 				B8A3BBDE3A1FC0248512BF76 /* LoggingSettings.swift in Sources */,
 				33A800AA701C354099623B24 /* MarketView.swift in Sources */,
 				657BEA5AAFF129E10177FE63 /* Nostr.swift in Sources */,

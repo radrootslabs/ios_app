@@ -29,23 +29,4 @@ struct LoggingSettings: Equatable {
             try initLogging(dir: nil, fileName: fileName, isStdout: stdout)
         }
     }
-
-    func logEffectiveConfigs() {
-        let keys: [BuildConfigKey] = [
-            .envFile,
-            .runtimeMode,
-            .loggingStdout,
-            .loggingFilter,
-            .loggingFileEnabled,
-            .loggingFileName,
-            .nostrRelayUrls,
-            .keychainServicePrefix,
-            .resetLocalState,
-            .tradeRhiPubkey,
-        ]
-        let dict = BuildConfig.effectiveDictionary(keys: keys)
-        let json = (try? JSONSerialization.data(withJSONObject: dict, options: [.sortedKeys])) ?? Data()
-        let text = String(data: json, encoding: .utf8) ?? String(describing: dict)
-        try? logInfo(msg: "radroots.config \(text)")
-    }
 }

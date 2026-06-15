@@ -71,6 +71,7 @@ public final class AppState: ObservableObject {
     }
 
     public let radroots: Radroots
+    private let telemetry: FieldTelemetry
 
     public var runtimeService: FieldRuntimeService? {
         radroots.runtimeService
@@ -85,8 +86,9 @@ public final class AppState: ObservableObject {
     private let externalActions = FieldExternalActions.configured()
     private let userPresenceGate = FieldUserPresenceGate.configured()
 
-    public init(radroots: Radroots = Radroots()) {
+    init(radroots: Radroots = Radroots(), telemetry: FieldTelemetry = .shared) {
         self.radroots = radroots
+        self.telemetry = telemetry
         self.isLocked = UserDefaults.standard.bool(forKey: lockKey)
     }
 
@@ -102,7 +104,7 @@ public final class AppState: ObservableObject {
             if startupFailureWasRequested {
                 throw FieldAppRuntimeError.forcedStartupFailure
             }
-            let service = try radroots.start()
+            let service = try radroots.start(telemetry: telemetry)
             let secureStore = try FieldSecureIdentityStore.configured()
             let metadataStore = try FieldIdentityPublicMetadataStore.configured()
             let appBundleIdentifier = try bundleIdentifier()

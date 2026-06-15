@@ -7,19 +7,22 @@ public final class Radroots: ObservableObject {
 
     public init() {}
 
-    public func start(
+    func start(
         bundleId: String = Bundle.main.bundleIdentifier ?? "unknown",
         version: String = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "0",
         build: String = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "0",
-        buildSha: String? = nil
+        buildSha: String? = nil,
+        telemetry: FieldTelemetry = .shared
     ) throws -> FieldRuntimeService {
         let settings = LoggingSettings.load()
+        var loggingFallbackUsed = false
         do {
             try settings.apply(bundleIdentifier: bundleId)
         } catch {
             try? initLoggingStdout()
+            loggingFallbackUsed = true
         }
-        settings.logEffectiveConfigs()
+        telemetry.runtimeLoggingInitialized(settings: settings, fallbackUsed: loggingFallbackUsed)
 
         let rt = try RadrootsRuntime()
         let resolvedSha = buildSha ?? (Bundle.main.object(forInfoDictionaryKey: "GIT_SHA") as? String)
