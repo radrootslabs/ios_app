@@ -12,6 +12,7 @@
 		04AA409CFECBA11BFC175C5C /* RadrootsFFI.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD7B47A576C4D5CE9318D3E6 /* RadrootsFFI.xcframework */; };
 		1C6EA551530A46CA77BD9E1C /* FieldLocationCheckIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F3541389124A31F5D701A45 /* FieldLocationCheckIn.swift */; };
 		1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0274A0260D1C04F40C71AF /* HomeView.swift */; };
+		25654E50F9519809A237759D /* FieldUserPresenceGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65835E1C633C7B946C64D11 /* FieldUserPresenceGate.swift */; };
 		275D4D574BF3B3C1DD746CE7 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C71A93F98C7B93188748B99B /* ProfileView.swift */; };
 		299A6111507F657670856F36 /* FieldCaptureIntake.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CC1D11E2E296B4B54E7E8A9 /* FieldCaptureIntake.swift */; };
 		2B3886FD26434A54F3726591 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8D19AA8D515FC8F5D2407378 /* Localizable.strings */; };
@@ -105,6 +106,7 @@
 		CCF0F7B3C57D8D770F178329 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D448C9655B708CA3FA8712B9 /* AppEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEntry.swift; sourceTree = "<group>"; };
 		D4DE3DD8C3BB2F63676F463E /* LoggingSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggingSettings.swift; sourceTree = "<group>"; };
+		D65835E1C633C7B946C64D11 /* FieldUserPresenceGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldUserPresenceGate.swift; sourceTree = "<group>"; };
 		DC881872F750120A184F45E6 /* RadrootsKitBindings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsKitBindings.swift; sourceTree = "<group>"; };
 		E1D12A016D1377CDFBFB0F9B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		E4F2BDC19EF9435162BFF5EC /* FieldDocumentInterchange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldDocumentInterchange.swift; sourceTree = "<group>"; };
@@ -200,6 +202,7 @@
 				2F3541389124A31F5D701A45 /* FieldLocationCheckIn.swift */,
 				E883FDB7004A210C9D7BE27A /* FieldRuntimeService.swift */,
 				8246B707FA9D218414EC4038 /* FieldSecureIdentityStore.swift */,
+				D65835E1C633C7B946C64D11 /* FieldUserPresenceGate.swift */,
 				D4DE3DD8C3BB2F63676F463E /* LoggingSettings.swift */,
 				63189EB90A86A9929BECD9ED /* Nostr.swift */,
 				8F0F21496E7A8490EB14AC5B /* Radroots.swift */,
@@ -444,6 +447,7 @@
 				1C6EA551530A46CA77BD9E1C /* FieldLocationCheckIn.swift in Sources */,
 				D25C1E1DC99F5CF8E99AE970 /* FieldRuntimeService.swift in Sources */,
 				D9BF5BE7E4AB5EACBF342539 /* FieldSecureIdentityStore.swift in Sources */,
+				25654E50F9519809A237759D /* FieldUserPresenceGate.swift in Sources */,
 				1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */,
 				C512BD267A3E2B8F10FABB3B /* Logger.swift in Sources */,
 				B8A3BBDE3A1FC0248512BF76 /* LoggingSettings.swift in Sources */,
