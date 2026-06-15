@@ -47,6 +47,12 @@ struct SettingsView: View {
                     value: app.runtimeIdentityReady ? "Unlocked" : "Locked",
                     identifier: "field_ios.settings.runtime_identity"
                 )
+                if let userPresenceStatus = app.userPresenceStatus {
+                    Text(userPresenceStatus)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("field_ios.user_presence.status")
+                }
 
                 NavigationLink {
                     ProfileView()
@@ -101,6 +107,7 @@ struct SettingsView: View {
                 if let resetError {
                     Text(resetError)
                         .foregroundStyle(.red)
+                        .accessibilityIdentifier("field_ios.settings.reset_error")
                 }
             }
         }

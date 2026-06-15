@@ -41,6 +41,7 @@ struct SetupView: View {
                 }
 
                 SetupErrorText(errorMessage)
+                UserPresenceStatusText(app.userPresenceStatus)
 
                 if isWorking {
                     ProgressView()
@@ -183,6 +184,25 @@ private struct SetupErrorText: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
                 .accessibilityIdentifier("field_ios.setup.error")
+        }
+    }
+}
+
+private struct UserPresenceStatusText: View {
+    let message: String?
+
+    init(_ message: String?) {
+        self.message = message
+    }
+
+    var body: some View {
+        if let message {
+            Text(message)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+                .accessibilityIdentifier("field_ios.user_presence.status")
         }
     }
 }

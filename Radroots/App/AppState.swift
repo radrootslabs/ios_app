@@ -44,6 +44,7 @@ public final class AppState: ObservableObject {
     @Published public private(set) var fileAccessProbeValue: String?
     @Published public private(set) var documentInterchangeProbeValue: String?
     @Published public private(set) var externalActionStatus: String?
+    @Published public private(set) var userPresenceStatus: String?
     @Published public private(set) var canOpenNostrProfile: Bool = false
     @Published public private(set) var locationCheckInState: FieldLocationCheckInState = .idle(
         RadrootsLocationServicesAvailability(locationServicesEnabled: false, authorization: .unavailable)
@@ -82,6 +83,7 @@ public final class AppState: ObservableObject {
     private var captureIntake: FieldCaptureIntake?
     private let locationCheckIn = FieldLocationCheckIn.configured()
     private let externalActions = FieldExternalActions.configured()
+    private let userPresenceGate = FieldUserPresenceGate.configured()
 
     public init(radroots: Radroots = Radroots()) {
         self.radroots = radroots
@@ -161,6 +163,7 @@ public final class AppState: ObservableObject {
 
     public func continueWithLocalIdentity() async throws {
         let service = try requireRuntimeService()
+        try await requireUserPresence(for: .unlockIdentity)
         try await restoreStoredIdentity(using: service)
         setLocked(false)
         await refreshRuntimeState(using: service)
@@ -170,6 +173,7 @@ public final class AppState: ObservableObject {
 
     public func createLocalIdentity() async throws {
         let service = try requireRuntimeService()
+        try await requireUserPresence(for: .saveIdentity)
         try await createHostCustodyIdentity(using: service)
         setLocked(false)
         await refreshRuntimeState(using: service)
@@ -181,6 +185,7 @@ public final class AppState: ObservableObject {
         let trimmed = secretKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let service = try requireRuntimeService()
+        try await requireUserPresence(for: .saveIdentity)
         let record = try await secureIdentityStoreOrConfigured().importSecret(
             trimmed,
             label: "Imported Field Identity",
@@ -207,6 +212,7 @@ public final class AppState: ObservableObject {
 
     public func resetLocalIdentity() async throws {
         let service = try requireRuntimeService()
+        try await requireUserPresence(for: .deleteIdentity)
         try secureIdentityStoreOrConfigured().deleteSelectedSecret()
         try identityMetadataStoreOrConfigured().delete()
         try await resetRuntimeIdentityState(using: service)
@@ -531,6 +537,16 @@ public final class AppState: ObservableObject {
             using: service
         )
         try persistIdentity(record)
+    }
+
+    private func requireUserPresence(for action: FieldUserPresenceAction) async throws {
+        do {
+            let record = try await userPresenceGate.requirePresence(for: action)
+            userPresenceStatus = record.statusText
+        } catch {
+            userPresenceStatus = error.localizedDescription
+            throw error
+        }
     }
 
     private func createHostCustodyIdentity(using service: FieldRuntimeService) async throws {
