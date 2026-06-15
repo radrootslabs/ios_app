@@ -85,6 +85,7 @@ public final class AppState: ObservableObject {
     private let locationCheckIn = FieldLocationCheckIn.configured()
     private let externalActions = FieldExternalActions.configured()
     private let userPresenceGate = FieldUserPresenceGate.configured()
+    private var lastTelemetryRelayStatus: FieldTelemetryRelayStatus?
 
     init(radroots: Radroots = Radroots(), telemetry: FieldTelemetry = .shared) {
         self.radroots = radroots
@@ -98,6 +99,7 @@ public final class AppState: ObservableObject {
 
     public func start() async throws {
         guard bootstrapPhase == .idle || isFailed else { return }
+        telemetry.appStartupBegan()
         bootstrapPhase = .starting
         do {
             try await holdBootstrapSplashForUITestIfRequested()
@@ -141,11 +143,17 @@ public final class AppState: ObservableObject {
             await refreshLocationCheckInStatus()
             await refreshCaptureIntakeState(using: captureIntake)
             bootstrapPhase = .ready
+            telemetry.appStartupSucceeded(
+                storedIdentityAvailable: storedIdentityAvailable,
+                runtimeIdentityReady: runtimeIdentityReady,
+                locked: isLocked
+            )
         } catch {
             statusTask?.cancel()
             statusTask = nil
             let message = error.localizedDescription
             bootstrapPhase = .failed(message)
+            telemetry.appStartupFailed(error)
             throw error
         }
     }
@@ -165,42 +173,61 @@ public final class AppState: ObservableObject {
 
     public func continueWithLocalIdentity() async throws {
         let service = try requireRuntimeService()
-        try await requireUserPresence(for: .unlockIdentity)
-        try await restoreStoredIdentity(using: service)
-        setLocked(false)
-        await refreshRuntimeState(using: service)
-        await refreshNostrProfileExternalActionCapability()
-        startConnectingAndPollingStatus(using: service)
+        do {
+            try await requireUserPresence(for: .unlockIdentity)
+            try await restoreStoredIdentity(using: service)
+            setLocked(false)
+            await refreshRuntimeState(using: service)
+            await refreshNostrProfileExternalActionCapability()
+            startConnectingAndPollingStatus(using: service)
+            telemetry.identityCustody(action: "unlock", outcome: "success")
+        } catch {
+            telemetry.identityCustody(action: "unlock", outcome: FieldTelemetry.userPresenceOutcome(for: error))
+            throw error
+        }
     }
 
     public func createLocalIdentity() async throws {
         let service = try requireRuntimeService()
-        try await requireUserPresence(for: .saveIdentity)
-        try await createHostCustodyIdentity(using: service)
-        setLocked(false)
-        await refreshRuntimeState(using: service)
-        await refreshNostrProfileExternalActionCapability()
-        startConnectingAndPollingStatus(using: service)
+        do {
+            try await requireUserPresence(for: .saveIdentity)
+            try await createHostCustodyIdentity(using: service)
+            setLocked(false)
+            await refreshRuntimeState(using: service)
+            await refreshNostrProfileExternalActionCapability()
+            startConnectingAndPollingStatus(using: service)
+            telemetry.identityCustody(action: "create", outcome: "success")
+        } catch {
+            telemetry.identityCustody(action: "create", outcome: FieldTelemetry.userPresenceOutcome(for: error))
+            throw error
+        }
     }
 
     public func importNostrSecret(_ secretKey: String) async throws {
         let trimmed = secretKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let service = try requireRuntimeService()
-        try await requireUserPresence(for: .saveIdentity)
-        let record = try await secureIdentityStoreOrConfigured().importSecret(
-            trimmed,
-            label: "Imported Field Identity",
-            using: service
-        )
-        try persistIdentity(record)
-        setLocked(false)
-        await refreshRuntimeState(using: service)
-        await refreshNostrProfileExternalActionCapability()
-        startConnectingAndPollingStatus(using: service)
+        do {
+            try await requireUserPresence(for: .saveIdentity)
+            let record = try await secureIdentityStoreOrConfigured().importSecret(
+                trimmed,
+                label: "Imported Field Identity",
+                using: service
+            )
+            try persistIdentity(record)
+            setLocked(false)
+            await refreshRuntimeState(using: service)
+            await refreshNostrProfileExternalActionCapability()
+            startConnectingAndPollingStatus(using: service)
+            telemetry.identityCustody(action: "import", outcome: "success")
+        } catch {
+            telemetry.identityCustody(action: "import", outcome: FieldTelemetry.userPresenceOutcome(for: error))
+            throw error
+        }
     }
 
     public func signOut() {
+        telemetry.identityCustody(action: "lock", outcome: "success")
         setLocked(true)
         statusTask?.cancel()
         statusTask = nil
@@ -214,26 +241,32 @@ public final class AppState: ObservableObject {
 
     public func resetLocalIdentity() async throws {
         let service = try requireRuntimeService()
-        try await requireUserPresence(for: .deleteIdentity)
-        try secureIdentityStoreOrConfigured().deleteSelectedSecret()
-        try identityMetadataStoreOrConfigured().delete()
-        try await resetRuntimeIdentityState(using: service)
-        applyNoIdentity()
-        setLocked(false)
-        relayConnectedCount = 0
-        relayConnectingCount = 0
-        relayLight = .red
-        relayLastError = nil
-        canOpenNostrProfile = false
-        externalActionStatus = nil
-        await refreshRuntimeState(using: service)
-        try refreshFileAccessProbe(
-            bundleIdentifier: try bundleIdentifier(),
-            resetLocalStateRequested: false,
-            identityResetObserved: true
-        )
-        statusTask?.cancel()
-        statusTask = nil
+        do {
+            try await requireUserPresence(for: .deleteIdentity)
+            try secureIdentityStoreOrConfigured().deleteSelectedSecret()
+            try identityMetadataStoreOrConfigured().delete()
+            try await resetRuntimeIdentityState(using: service)
+            applyNoIdentity()
+            setLocked(false)
+            relayConnectedCount = 0
+            relayConnectingCount = 0
+            relayLight = .red
+            relayLastError = nil
+            canOpenNostrProfile = false
+            externalActionStatus = nil
+            await refreshRuntimeState(using: service)
+            try refreshFileAccessProbe(
+                bundleIdentifier: try bundleIdentifier(),
+                resetLocalStateRequested: false,
+                identityResetObserved: true
+            )
+            statusTask?.cancel()
+            statusTask = nil
+            telemetry.identityCustody(action: "delete", outcome: "success")
+        } catch {
+            telemetry.identityCustody(action: "delete", outcome: FieldTelemetry.userPresenceOutcome(for: error))
+            throw error
+        }
     }
 
     public func requireRuntimeService() throws -> FieldRuntimeService {
@@ -320,25 +353,67 @@ public final class AppState: ObservableObject {
     }
 
     func prepareDiagnosticsDocumentExport() throws -> RadrootsPreparedExportDocument {
-        try documentInterchange().prepareDiagnosticsExport(
-            infoJSONString: infoJSONString,
-            relays: RelaySettings.relays(),
-            connectedCount: relayConnectedCount,
-            connectingCount: relayConnectingCount,
-            lastError: relayLastError
-        )
+        do {
+            let relays = try RelaySettings.relays()
+            let document = try documentInterchange().prepareDiagnosticsExport(
+                infoJSONString: infoJSONString,
+                relays: relays,
+                connectedCount: relayConnectedCount,
+                connectingCount: relayConnectingCount,
+                lastError: relayLastError
+            )
+            telemetry.documentInterchange(operation: "diagnostics_export", outcome: "success", relayCount: relays.count)
+            return document
+        } catch {
+            telemetry.documentInterchange(
+                operation: "diagnostics_export",
+                outcome: FieldTelemetry.documentInterchangeOutcome(for: error)
+            )
+            throw error
+        }
     }
 
     func prepareRelayConfigDocumentExport() throws -> RadrootsPreparedExportDocument {
-        try documentInterchange().prepareRelayConfigExport(relays: RelaySettings.relays())
+        do {
+            let relays = try RelaySettings.relays()
+            let document = try documentInterchange().prepareRelayConfigExport(relays: relays)
+            telemetry.documentInterchange(operation: "relay_config_export", outcome: "success", relayCount: relays.count)
+            return document
+        } catch {
+            telemetry.documentInterchange(
+                operation: "relay_config_export",
+                outcome: FieldTelemetry.documentInterchangeOutcome(for: error)
+            )
+            throw error
+        }
     }
 
     func importedRelayConfig(from importedDocument: RadrootsImportedDocument) throws -> [String] {
-        try documentInterchange().importedRelayConfig(from: importedDocument)
+        do {
+            let relays = try documentInterchange().importedRelayConfig(from: importedDocument)
+            telemetry.documentInterchange(operation: "relay_config_import", outcome: "success", relayCount: relays.count)
+            return relays
+        } catch {
+            telemetry.documentInterchange(
+                operation: "relay_config_import",
+                outcome: FieldTelemetry.documentInterchangeOutcome(for: error)
+            )
+            throw error
+        }
     }
 
     func publicPostShareRequest(content: String) throws -> RadrootsShareRequest {
-        try documentInterchange().publicPostShareRequest(content: content)
+        do {
+            let request = try documentInterchange().publicPostShareRequest(content: content)
+            telemetry.documentInterchange(operation: "public_share_prepare", outcome: "success")
+            return request
+        } catch {
+            telemetry.documentInterchange(
+                operation: "public_share_prepare",
+                outcome: FieldTelemetry.documentInterchangeOutcome(for: error)
+            )
+            throw error
+        }
     }
 
     func documentFileAccess() throws -> RadrootsAppleFileAccess {
@@ -361,11 +436,21 @@ public final class AppState: ObservableObject {
             captureIntakeState.records = try captureIntake.loadRecords()
             captureIntakeState.support = try await captureIntake.support()
             captureIntakeState.operation = .idle
+            telemetry.captureSupportRefreshed(
+                support: captureIntakeState.support,
+                recordCount: captureIntakeState.records.count,
+                outcome: "success"
+            )
         } catch {
             captureIntakeState.support = .unavailable
             captureIntakeState.operation = .idle
             captureIntakeState.lastError = error.localizedDescription
             captureIntakeState.recoveryAction = nil
+            telemetry.captureSupportRefreshed(
+                support: captureIntakeState.support,
+                recordCount: captureIntakeState.records.count,
+                outcome: FieldTelemetry.captureOutcome(for: error)
+            )
         }
     }
 
@@ -386,10 +471,22 @@ public final class AppState: ObservableObject {
             captureIntakeState.support = try await captureIntake.support()
             captureIntakeState.operation = .idle
             captureIntakeState.recoveryAction = nil
+            telemetry.captureOperation(
+                operation: operation,
+                outcome: "success",
+                recordCount: captureIntakeState.records.count,
+                recoveryAction: nil
+            )
         } catch {
             captureIntakeState.operation = .idle
             captureIntakeState.lastError = error.localizedDescription
             captureIntakeState.recoveryAction = captureRecoveryAction(for: error)
+            telemetry.captureOperation(
+                operation: operation,
+                outcome: FieldTelemetry.captureOutcome(for: error),
+                recordCount: captureIntakeState.records.count,
+                recoveryAction: captureIntakeState.recoveryAction
+            )
         }
     }
 
@@ -490,6 +587,21 @@ public final class AppState: ObservableObject {
         case .red:
             relayLight = .red
         }
+        let telemetryStatus = FieldTelemetryRelayStatus(
+            connectedCount: relayConnectedCount,
+            connectingCount: relayConnectingCount,
+            configuredRelayCount: (try? RelaySettings.relays().count) ?? 0,
+            light: relayLight.telemetryValue
+        )
+        if telemetryStatus != lastTelemetryRelayStatus {
+            lastTelemetryRelayStatus = telemetryStatus
+            telemetry.relayStatusChanged(
+                connectedCount: telemetryStatus.connectedCount,
+                connectingCount: telemetryStatus.connectingCount,
+                configuredRelayCount: telemetryStatus.configuredRelayCount,
+                light: telemetryStatus.light
+            )
+        }
     }
 
     private func apply(identity snapshot: NostrIdentitySnapshot) {
@@ -545,8 +657,10 @@ public final class AppState: ObservableObject {
         do {
             let record = try await userPresenceGate.requirePresence(for: action)
             userPresenceStatus = record.statusText
+            telemetry.userPresence(action: action, outcome: "success")
         } catch {
             userPresenceStatus = error.localizedDescription
+            telemetry.userPresence(action: action, outcome: FieldTelemetry.userPresenceOutcome(for: error))
             throw error
         }
     }
@@ -666,8 +780,14 @@ public final class AppState: ObservableObject {
         do {
             let record = try await action()
             externalActionStatus = record.statusText
+            telemetry.externalAction(operation: "open", kind: record.kind, outcome: "success")
         } catch {
             externalActionStatus = error.localizedDescription
+            telemetry.externalAction(
+                operation: "open",
+                kind: nil,
+                outcome: FieldTelemetry.externalActionOutcome(for: error)
+            )
         }
     }
 
@@ -695,5 +815,25 @@ public final class AppState: ObservableObject {
     private func shortNpub(_ value: String) -> String {
         guard value.count > 18 else { return value }
         return "\(value.prefix(12))...\(value.suffix(6))"
+    }
+}
+
+private struct FieldTelemetryRelayStatus: Equatable {
+    let connectedCount: UInt32
+    let connectingCount: UInt32
+    let configuredRelayCount: Int
+    let light: String
+}
+
+private extension AppState.RelayLight {
+    var telemetryValue: String {
+        switch self {
+        case .red:
+            "red"
+        case .yellow:
+            "yellow"
+        case .green:
+            "green"
+        }
     }
 }
