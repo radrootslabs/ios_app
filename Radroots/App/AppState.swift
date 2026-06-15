@@ -125,8 +125,7 @@ public final class AppState: ObservableObject {
             self.captureIntake = captureIntake
             await refreshRuntimeState(using: service)
             if runtimeIdentityReady && !isLocked {
-                try await connect(using: service)
-                startPollingStatus()
+                startConnectingAndPollingStatus(using: service)
             }
             await refreshNostrProfileExternalActionCapability()
             try refreshFileAccessProbe(
@@ -164,20 +163,18 @@ public final class AppState: ObservableObject {
         let service = try requireRuntimeService()
         try await restoreStoredIdentity(using: service)
         setLocked(false)
-        try await connect(using: service)
         await refreshRuntimeState(using: service)
         await refreshNostrProfileExternalActionCapability()
-        startPollingStatus()
+        startConnectingAndPollingStatus(using: service)
     }
 
     public func createLocalIdentity() async throws {
         let service = try requireRuntimeService()
         try await createHostCustodyIdentity(using: service)
         setLocked(false)
-        try await connect(using: service)
         await refreshRuntimeState(using: service)
         await refreshNostrProfileExternalActionCapability()
-        startPollingStatus()
+        startConnectingAndPollingStatus(using: service)
     }
 
     public func importNostrSecret(_ secretKey: String) async throws {
@@ -191,10 +188,9 @@ public final class AppState: ObservableObject {
         )
         try persistIdentity(record)
         setLocked(false)
-        try await connect(using: service)
         await refreshRuntimeState(using: service)
         await refreshNostrProfileExternalActionCapability()
-        startPollingStatus()
+        startConnectingAndPollingStatus(using: service)
     }
 
     public func signOut() {
@@ -240,7 +236,19 @@ public final class AppState: ObservableObject {
     }
 
     public func refreshLocationCheckInStatus() async {
-        locationCheckInState = await locationCheckIn.status()
+        switch locationCheckInState {
+        case .idle:
+            break
+        case .checking, .checkedIn, .failed:
+            return
+        }
+        let refreshedState = await locationCheckIn.status()
+        switch locationCheckInState {
+        case .idle:
+            locationCheckInState = refreshedState
+        case .checking, .checkedIn, .failed:
+            return
+        }
     }
 
     public func performLocationCheckIn() async {
@@ -650,11 +658,17 @@ public final class AppState: ObservableObject {
         UserDefaults.standard.set(value, forKey: lockKey)
     }
 
-    private func startPollingStatus() {
+    private func startConnectingAndPollingStatus(using service: FieldRuntimeService) {
         statusTask?.cancel()
         statusTask = Task { [weak self] in
+            do {
+                try await self?.connect(using: service)
+            } catch {
+                self?.relayLastError = error.localizedDescription
+                self?.relayLight = .red
+            }
             while !Task.isCancelled {
-                await self?.refreshRuntimeState()
+                await self?.refreshRuntimeState(using: service)
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
         }

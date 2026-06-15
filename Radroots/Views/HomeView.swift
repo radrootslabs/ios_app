@@ -414,11 +414,25 @@ private struct LocationCheckInRow: View {
                     await app.performLocationCheckIn()
                 }
             } label: {
-                Label(actionTitle, systemImage: "location.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(maxWidth: .infinity)
+                HStack(spacing: 14) {
+                    Image(systemName: "location.fill")
+                        .font(.title3.weight(.semibold))
+                        .frame(width: 34, height: 34)
+                        .accessibilityHidden(true)
+                    Text(actionTitle)
+                        .font(.headline)
+                    Spacer()
+                    if isChecking {
+                        ProgressView()
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .padding(.vertical, 4)
             }
-            .buttonStyle(.borderedProminent)
             .disabled(isChecking)
             .accessibilityIdentifier("\(accessibilityIDPrefix).action")
         }
