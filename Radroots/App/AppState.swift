@@ -41,6 +41,8 @@ public final class AppState: ObservableObject {
     @Published public private(set) var relayConnectingCount: UInt32 = 0
     @Published public private(set) var relayLight: RelayLight = .red
     @Published public private(set) var relayLastError: String?
+    @Published public private(set) var configuredRelayURLs: [String] = []
+    @Published public private(set) var relaySettingsSourceLabel: String = RelaySettingsSource.buildConfig.displayName
     @Published public private(set) var fileAccessProbeValue: String?
     @Published public private(set) var documentInterchangeProbeValue: String?
     @Published public private(set) var telemetryProbeValue: String?
@@ -131,6 +133,7 @@ public final class AppState: ObservableObject {
             if resetLocalStateRequested {
                 await backgroundExecution.cancelAll()
                 try FieldLocalState.resetFileRoots(bundleIdentifier: appBundleIdentifier)
+                try RelaySettings.clearUserImportedRelays(bundleIdentifier: appBundleIdentifier)
                 try secureStore.deleteSelectedSecret()
                 metadataStore.delete()
                 try await resetRuntimeIdentityState(using: service)
@@ -139,6 +142,7 @@ public final class AppState: ObservableObject {
             } else {
                 loadStoredIdentityMetadata(metadataStore)
             }
+            try refreshRelaySettingsSnapshot(bundleIdentifier: appBundleIdentifier)
             let captureIntake = try FieldCaptureIntake.configured(bundleIdentifier: appBundleIdentifier)
             self.captureIntake = captureIntake
             try await backgroundExecution.start()
@@ -153,7 +157,7 @@ public final class AppState: ObservableObject {
                 resetLocalStateRequested: resetLocalStateRequested,
                 identityResetObserved: false
             )
-            try refreshDocumentInterchangeProbe(bundleIdentifier: appBundleIdentifier)
+            try await refreshDocumentInterchangeProbe(bundleIdentifier: appBundleIdentifier)
             await refreshLocationCheckInStatus()
             await refreshCaptureIntakeState(using: captureIntake)
             bootstrapPhase = .ready
@@ -389,7 +393,7 @@ public final class AppState: ObservableObject {
 
     func prepareDiagnosticsDocumentExport() throws -> RadrootsPreparedExportDocument {
         do {
-            let relays = try RelaySettings.relays()
+            let relays = try effectiveRelaySettings().relays
             let document = try documentInterchange().prepareDiagnosticsExport(
                 infoJSONString: infoJSONString,
                 relays: relays,
@@ -410,7 +414,7 @@ public final class AppState: ObservableObject {
 
     func prepareRelayConfigDocumentExport() throws -> RadrootsPreparedExportDocument {
         do {
-            let relays = try RelaySettings.relays()
+            let relays = try effectiveRelaySettings().relays
             let document = try documentInterchange().prepareRelayConfigExport(relays: relays)
             telemetry.documentInterchange(operation: "relay_config_export", outcome: "success", relayCount: relays.count)
             return document
@@ -428,6 +432,38 @@ public final class AppState: ObservableObject {
             let relays = try documentInterchange().importedRelayConfig(from: importedDocument)
             telemetry.documentInterchange(operation: "relay_config_import", outcome: "success", relayCount: relays.count)
             return relays
+        } catch {
+            telemetry.documentInterchange(
+                operation: "relay_config_import",
+                outcome: FieldTelemetry.documentInterchangeOutcome(for: error)
+            )
+            throw error
+        }
+    }
+
+    func applyImportedRelayConfig(from importedDocument: RadrootsImportedDocument) async throws -> [String] {
+        do {
+            let relays = try documentInterchange().importedRelayConfig(from: importedDocument)
+            let snapshot = try RelaySettings.storeUserImportedRelays(
+                relays,
+                bundleIdentifier: bundleIdentifier()
+            )
+            apply(relaySettings: snapshot)
+            if let service = runtimeService, runtimeIdentityReady && !isLocked {
+                relayConnectedCount = 0
+                relayConnectingCount = 0
+                relayLight = .yellow
+                relayLastError = nil
+                try await service.nostrSetDefaultRelays(snapshot.relays)
+                try await service.nostrConnectIfKeyPresent()
+                await refreshRelayStatus(using: service)
+                await backgroundExecution?.updateRuntimeState(
+                    service: service,
+                    identityUnlocked: true
+                )
+            }
+            telemetry.documentInterchange(operation: "relay_config_import", outcome: "success", relayCount: relays.count)
+            return snapshot.relays
         } catch {
             telemetry.documentInterchange(
                 operation: "relay_config_import",
@@ -461,6 +497,21 @@ public final class AppState: ObservableObject {
 
     private func documentInterchange() throws -> FieldDocumentInterchange {
         try FieldDocumentInterchange(bundleIdentifier: bundleIdentifier())
+    }
+
+    private func refreshRelaySettingsSnapshot(bundleIdentifier: String) throws {
+        apply(relaySettings: try RelaySettings.effectiveSnapshot(bundleIdentifier: bundleIdentifier))
+    }
+
+    private func effectiveRelaySettings() throws -> RelaySettingsSnapshot {
+        let snapshot = try RelaySettings.effectiveSnapshot(bundleIdentifier: bundleIdentifier())
+        apply(relaySettings: snapshot)
+        return snapshot
+    }
+
+    private func apply(relaySettings snapshot: RelaySettingsSnapshot) {
+        configuredRelayURLs = snapshot.relays
+        relaySettingsSourceLabel = snapshot.source.displayName
     }
 
     private func refreshCaptureIntakeState(using captureIntake: FieldCaptureIntake) async {
@@ -591,7 +642,7 @@ public final class AppState: ObservableObject {
     }
 
     private func configureRelays(using service: FieldRuntimeService) async throws {
-        try await service.nostrSetDefaultRelays(try RelaySettings.relays())
+        try await service.nostrSetDefaultRelays(try effectiveRelaySettings().relays)
     }
 
     private func connect(using service: FieldRuntimeService) async throws {
@@ -637,7 +688,7 @@ public final class AppState: ObservableObject {
         let telemetryStatus = FieldTelemetryRelayStatus(
             connectedCount: relayConnectedCount,
             connectingCount: relayConnectingCount,
-            configuredRelayCount: (try? RelaySettings.relays().count) ?? 0,
+            configuredRelayCount: configuredRelayURLs.count,
             light: relayLight.telemetryValue
         )
         if telemetryStatus != lastTelemetryRelayStatus {
@@ -811,11 +862,11 @@ public final class AppState: ObservableObject {
         }
     }
 
-    private func refreshDocumentInterchangeProbe(bundleIdentifier: String) throws {
+    private func refreshDocumentInterchangeProbe(bundleIdentifier: String) async throws {
         documentInterchangeProbeValue = try FieldDocumentInterchangeUITestProbe.startupValue(
             bundleIdentifier: bundleIdentifier,
             infoJSONString: infoJSONString,
-            relays: RelaySettings.relays(),
+            relays: effectiveRelaySettings().relays,
             connectedCount: relayConnectedCount,
             connectingCount: relayConnectingCount,
             lastError: relayLastError
@@ -830,7 +881,14 @@ public final class AppState: ObservableObject {
         if let relayImportDocument = try FieldDocumentInterchangeUITestProbe.relayImportDocument(
             bundleIdentifier: bundleIdentifier
         ) {
-            _ = try importedRelayConfig(from: relayImportDocument)
+            let importedRelays = try await applyImportedRelayConfig(from: relayImportDocument)
+            documentInterchangeProbeValue = [
+                documentInterchangeProbeValue,
+                "relay_import_applied=true",
+                "relay_settings_source=\(relaySettingsSourceLabel)",
+                "relay_settings_count=\(importedRelays.count)",
+                "relay_settings_contains_production=\(importedRelays.contains("wss://radroots.org"))"
+            ].compactMap { $0 }.joined(separator: ";")
         }
         _ = try publicPostShareRequest(content: "  public field update  ")
     }

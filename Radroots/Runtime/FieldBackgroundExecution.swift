@@ -410,7 +410,8 @@ actor FieldBackgroundExecution {
             return true
         }
         do {
-            try await runtimeService.nostrSetDefaultRelays(try RelaySettings.relays())
+            let relaySettings = try RelaySettings.effectiveSnapshot(bundleIdentifier: roots.appIdentifier)
+            try await runtimeService.nostrSetDefaultRelays(relaySettings.relays)
             try await runtimeService.nostrConnectIfKeyPresent()
             let status = await runtimeService.nostrConnectionStatus()
             telemetry.backgroundExecution(

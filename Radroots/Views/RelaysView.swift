@@ -12,7 +12,7 @@ struct RelaysView: View {
     @State private var documentError: String?
 
     private var configuredRelays: [String] {
-        (try? RelaySettings.relays()) ?? []
+        app.configuredRelayURLs
     }
 
     var body: some View {
@@ -39,6 +39,8 @@ struct RelaysView: View {
             }
 
             Section("Configured Relays") {
+                LabeledContent("Source", value: app.relaySettingsSourceLabel)
+                    .accessibilityIdentifier("field_ios.relays.settings_source")
                 if configuredRelays.isEmpty {
                     Text("No relays configured")
                         .foregroundStyle(.secondary)
@@ -154,13 +156,20 @@ struct RelaysView: View {
     }
 
     private func handleRelayImportCompletion(_ result: Result<RadrootsDocumentImportResult, Error>) {
+        Task {
+            await applyRelayImportCompletion(result)
+        }
+    }
+
+    @MainActor
+    private func applyRelayImportCompletion(_ result: Result<RadrootsDocumentImportResult, Error>) async {
         do {
             let importResult = try result.get()
             guard let document = importResult.documents.first else {
                 throw FieldDocumentInterchangeError.invalidRelayConfigDocument
             }
-            importedRelays = try app.importedRelayConfig(from: document)
-            documentMessage = "Imported \(importedRelays.count) relay config entries"
+            importedRelays = try await app.applyImportedRelayConfig(from: document)
+            documentMessage = "Imported and applied \(importedRelays.count) relay config entries"
             documentError = nil
         } catch {
             documentError = error.localizedDescription

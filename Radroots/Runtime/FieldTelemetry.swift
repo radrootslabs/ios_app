@@ -318,6 +318,10 @@ final class FieldTelemetry: @unchecked Sendable {
             switch error {
             case .noRelaysConfigured:
                 return "relay_config_missing"
+            case .invalidRelayURL:
+                return "invalid_relay_url"
+            case .invalidStoredRelaySettings:
+                return "invalid_relay_settings"
             }
         }
         switch error {
@@ -425,6 +429,10 @@ final class FieldTelemetry: @unchecked Sendable {
             switch error {
             case .noRelaysConfigured:
                 return "relay_config_missing"
+            case .invalidRelayURL:
+                return "invalid_relay_url"
+            case .invalidStoredRelaySettings:
+                return "invalid_relay_settings"
             }
         default:
             return "failure"
