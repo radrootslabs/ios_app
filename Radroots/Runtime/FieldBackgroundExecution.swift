@@ -100,38 +100,52 @@ actor FieldBackgroundExecution {
             roots: roots,
             telemetry: telemetry,
             registerHandlers: { handlers in
-                _ = try await scheduler.register(
+                let refreshRegistered = try await scheduler.register(
                     RadrootsAppleBackgroundTaskRegistration(
                         identifier: identifiers.refresh,
                         kind: .appRefresh,
                         handler: handlers.refresh
                     )
                 )
-                _ = try await scheduler.register(
+                let processingRegistered = try await scheduler.register(
                     RadrootsAppleBackgroundTaskRegistration(
                         identifier: identifiers.processing,
                         kind: .processing,
                         handler: handlers.processing
                     )
                 )
+                guard refreshRegistered && processingRegistered else {
+                    throw RadrootsBackgroundTaskError.schedulerFailure(
+                        "background task handler registration was rejected"
+                    )
+                }
             }
         )
     }
 
     func start() async throws {
         if !hasRegisteredHandlers {
-            try await registerHandlers(
-                FieldBackgroundExecutionHandlers(
-                    refresh: { [weak self] in
-                        await self?.performMaintenance(reason: "refresh_task") ?? false
-                    },
-                    processing: { [weak self] in
-                        await self?.performMaintenance(reason: "processing_task") ?? false
-                    }
+            do {
+                try await registerHandlers(
+                    FieldBackgroundExecutionHandlers(
+                        refresh: { [weak self] in
+                            await self?.performMaintenance(reason: "refresh_task") ?? false
+                        },
+                        processing: { [weak self] in
+                            await self?.performMaintenance(reason: "processing_task") ?? false
+                        }
+                    )
                 )
-            )
-            hasRegisteredHandlers = true
-            telemetry.backgroundExecution(operation: "handler_registration", outcome: "success", taskCount: 2)
+                hasRegisteredHandlers = true
+                telemetry.backgroundExecution(operation: "handler_registration", outcome: "success", taskCount: 2)
+            } catch {
+                hasRegisteredHandlers = false
+                telemetry.backgroundExecution(
+                    operation: "handler_registration",
+                    outcome: FieldTelemetry.backgroundExecutionOutcome(for: error)
+                )
+                throw error
+            }
         }
         _ = try await schedulePermittedTasks(reason: "startup")
     }
@@ -144,6 +158,11 @@ actor FieldBackgroundExecution {
     @discardableResult
     func schedulePermittedTasks(reason: String) async throws -> [RadrootsBackgroundTaskSnapshot] {
         do {
+            guard hasRegisteredHandlers else {
+                throw RadrootsBackgroundTaskError.schedulerFailure(
+                    "background task handlers are not registered"
+                )
+            }
             let refresh = try RadrootsBackgroundTaskRequest(
                 identifier: identifiers.refresh,
                 kind: .appRefresh,

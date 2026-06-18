@@ -168,6 +168,8 @@ public final class AppState: ObservableObject {
             statusTask = nil
             telemetryProbeTask?.cancel()
             telemetryProbeTask = nil
+            await FieldBackgroundURLSessionEvents.shared.completePendingAfterStartupFailure()
+            backgroundExecution = nil
             let message = error.localizedDescription
             bootstrapPhase = .failed(message)
             telemetry.appStartupFailed(error)
