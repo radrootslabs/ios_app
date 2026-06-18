@@ -196,6 +196,17 @@ actor FieldBackgroundExecution {
         }
     }
 
+    func handleEventsForBackgroundURLSession(
+        identifier: String,
+        completionHandler: @escaping @Sendable () -> Void
+    ) async {
+        await transfer.handleEventsForBackgroundURLSession(
+            identifier: identifier,
+            completionHandler: completionHandler
+        )
+        telemetry.backgroundExecution(operation: "background_url_session_events", outcome: "success")
+    }
+
     func uiTestProbeValue() async -> String? {
         guard FieldBackgroundExecutionUITestProbe.isRequested else {
             return nil

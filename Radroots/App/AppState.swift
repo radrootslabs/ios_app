@@ -121,6 +121,7 @@ public final class AppState: ObservableObject {
                 telemetry: telemetry
             )
             self.backgroundExecution = backgroundExecution
+            await FieldBackgroundURLSessionEvents.shared.attach(backgroundExecution)
             try FieldFileAccessUITestProbe.seedDestructiveResetSentinelIfRequested(
                 bundleIdentifier: appBundleIdentifier,
                 resetLocalStateRequested: resetLocalStateRequested
