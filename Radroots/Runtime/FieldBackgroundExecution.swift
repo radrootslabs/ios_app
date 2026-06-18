@@ -189,6 +189,19 @@ actor FieldBackgroundExecution {
         }
     }
 
+    func uiTestProbeValue() async -> String? {
+        guard FieldBackgroundExecutionUITestProbe.isRequested else {
+            return nil
+        }
+        do {
+            return try await buildUITestProbeValue()
+        } catch {
+            return FieldBackgroundExecutionUITestProbe.failureValue(
+                outcome: FieldTelemetry.backgroundExecutionOutcome(for: error)
+            )
+        }
+    }
+
     @discardableResult
     func performMaintenance(reason: String) async -> Bool {
         let transferCount = await inspectTransferSnapshots(reason: reason)
@@ -204,6 +217,82 @@ actor FieldBackgroundExecution {
             reason: reason
         )
         return succeeded
+    }
+
+    private func buildUITestProbeValue() async throws -> String {
+        let registered = hasRegisteredHandlers
+        let scheduledTaskCount = await fakeSubmittedRequestCount()
+        let pendingBeforeMaintenance = try await scheduler.pendingTasks().count
+        let transferSnapshotCount = try await seedUITestTransferSnapshot()
+        let stagedBlobRemoved = try await seedUITestStagedBlobAndRunMaintenance()
+        let pendingBeforeCancel = try await scheduler.pendingTasks().count
+        await cancelAll()
+        let pendingAfterCancel = try await scheduler.pendingTasks().count
+        let cancellationObserved = await fakeCancelAllCount() > 0
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        let events = await telemetry.recordedEventsForUITest()
+        return FieldBackgroundExecutionUITestProbe.value(
+            registered: registered,
+            scheduledTaskCount: scheduledTaskCount,
+            pendingBeforeMaintenance: pendingBeforeMaintenance,
+            pendingBeforeCancel: pendingBeforeCancel,
+            pendingAfterCancel: pendingAfterCancel,
+            cancellationObserved: cancellationObserved,
+            stagedBlobRemoved: stagedBlobRemoved,
+            transferSnapshotCount: transferSnapshotCount,
+            events: events
+        )
+    }
+
+    private func seedUITestTransferSnapshot() async throws -> Int {
+        guard let fakeTransfer = transfer as? RadrootsFakeBackgroundTransfer else {
+            return try await transfer.snapshots().count
+        }
+        let request = try RadrootsBackgroundTransferRequest(
+            remoteURL: URL(string: "https://radroots.org/field-ios-background-probe")!,
+            method: .get,
+            operation: .download(
+                destination: .file(
+                    RadrootsFileReference(
+                        scope: .cache,
+                        relativePath: "ui_tests/background_execution/probe-download.bin"
+                    )
+                )
+            ),
+            metadata: ["purpose": "background_execution_probe"]
+        )
+        _ = try await fakeTransfer.enqueue(request)
+        return try await fakeTransfer.snapshots().count
+    }
+
+    private func seedUITestStagedBlobAndRunMaintenance() async throws -> Bool {
+        let fileAccess = RadrootsAppleFileAccess(roots: roots)
+        let blob = try fileAccess.stageBlob(
+            Data("field-ios-background-probe".utf8),
+            mediaType: "text/plain",
+            filenameHint: "background-probe.txt"
+        )
+        let blobURL = try roots.stagedBlobURL(for: blob)
+        try FileManager.default.setAttributes(
+            [.modificationDate: Date(timeIntervalSince1970: 0)],
+            ofItemAtPath: blobURL.path
+        )
+        _ = await performMaintenance(reason: "ui_test_probe")
+        return !FileManager.default.fileExists(atPath: blobURL.path)
+    }
+
+    private func fakeSubmittedRequestCount() async -> Int {
+        guard let fakeScheduler = scheduler as? RadrootsFakeBackgroundTaskScheduler else {
+            return (try? await scheduler.pendingTasks().count) ?? 0
+        }
+        return await fakeScheduler.submittedRequestCount
+    }
+
+    private func fakeCancelAllCount() async -> Int {
+        guard let fakeScheduler = scheduler as? RadrootsFakeBackgroundTaskScheduler else {
+            return 0
+        }
+        return await fakeScheduler.cancelAllCount
     }
 
     private func inspectTransferSnapshots(reason: String) async -> Int? {

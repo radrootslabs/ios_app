@@ -50,6 +50,13 @@ public struct AppEntry<Main: View>: View {
                     .accessibilityIdentifier("field_ios.telemetry.probe")
                     .accessibilityValue(probeValue)
             }
+            if let probeValue = appState.backgroundExecutionProbeValue {
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .accessibilityElement()
+                    .accessibilityIdentifier("field_ios.background_execution.probe")
+                    .accessibilityValue(probeValue)
+            }
         }
     }
 }

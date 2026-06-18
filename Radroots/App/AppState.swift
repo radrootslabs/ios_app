@@ -44,6 +44,7 @@ public final class AppState: ObservableObject {
     @Published public private(set) var fileAccessProbeValue: String?
     @Published public private(set) var documentInterchangeProbeValue: String?
     @Published public private(set) var telemetryProbeValue: String?
+    @Published public private(set) var backgroundExecutionProbeValue: String?
     @Published public private(set) var externalActionStatus: String?
     @Published public private(set) var userPresenceStatus: String?
     @Published public private(set) var canOpenNostrProfile: Bool = false
@@ -140,6 +141,7 @@ public final class AppState: ObservableObject {
             let captureIntake = try FieldCaptureIntake.configured(bundleIdentifier: appBundleIdentifier)
             self.captureIntake = captureIntake
             try await backgroundExecution.start()
+            await refreshBackgroundExecutionProbe(using: backgroundExecution)
             await refreshRuntimeState(using: service)
             if runtimeIdentityReady && !isLocked {
                 startConnectingAndPollingStatus(using: service)
@@ -875,6 +877,10 @@ public final class AppState: ObservableObject {
 
     private func refreshTelemetryProbeValue() async {
         telemetryProbeValue = await FieldTelemetryUITestProbe.value(recordedBy: telemetry)
+    }
+
+    private func refreshBackgroundExecutionProbe(using backgroundExecution: FieldBackgroundExecution) async {
+        backgroundExecutionProbeValue = await backgroundExecution.uiTestProbeValue()
     }
 
     private func shortNpub(_ value: String) -> String {

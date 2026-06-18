@@ -17,6 +17,7 @@
 		299A6111507F657670856F36 /* FieldCaptureIntake.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CC1D11E2E296B4B54E7E8A9 /* FieldCaptureIntake.swift */; };
 		2B3886FD26434A54F3726591 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8D19AA8D515FC8F5D2407378 /* Localizable.strings */; };
 		2B6ACA26689B355CECBFFB57 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A7641E5C643B4B36CFEDA8 /* SetupView.swift */; };
+		2FAE0FC43EB547F2CE7A567D /* FieldBackgroundExecutionUITestProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59AC0543EF8335D691D56BD3 /* FieldBackgroundExecutionUITestProbe.swift */; };
 		33A800AA701C354099623B24 /* MarketView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08C0B870E44C7B152A7FABE0 /* MarketView.swift */; };
 		35D8223F5E169DDB4E3E87C0 /* TradeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6D224B525028DE5D8C8E28D /* TradeSettings.swift */; };
 		360F23EFE80FDBDC6983FB15 /* AppEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D448C9655B708CA3FA8712B9 /* AppEntry.swift */; };
@@ -78,6 +79,7 @@
 		491D57E540BAB04F24619737 /* FieldFileAccessUITestProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldFileAccessUITestProbe.swift; sourceTree = "<group>"; };
 		4BC4B7D0BB4C6D8E4B0AA4AD /* radroots.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.xcconfig; sourceTree = "<group>"; };
 		54EE5A34FE2086899F5B7568 /* radroots.git.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.git.xcconfig; sourceTree = "<group>"; };
+		59AC0543EF8335D691D56BD3 /* FieldBackgroundExecutionUITestProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldBackgroundExecutionUITestProbe.swift; sourceTree = "<group>"; };
 		63189EB90A86A9929BECD9ED /* Nostr.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostr.swift; sourceTree = "<group>"; };
 		676B89EB116B60AE8C2B4313 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		6FBB081610305940C7849C7C /* RelaySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelaySettings.swift; sourceTree = "<group>"; };
@@ -195,6 +197,7 @@
 			children = (
 				A71EFADBC7D54AF5B9314773 /* BuildConfig.swift */,
 				C614F2A8813E63C85261F492 /* FieldBackgroundExecution.swift */,
+				59AC0543EF8335D691D56BD3 /* FieldBackgroundExecutionUITestProbe.swift */,
 				7CC1D11E2E296B4B54E7E8A9 /* FieldCaptureIntake.swift */,
 				E4F2BDC19EF9435162BFF5EC /* FieldDocumentInterchange.swift */,
 				EF05B944D348DAA4EF28B463 /* FieldDocumentInterchangeUITestProbe.swift */,
@@ -432,6 +435,7 @@
 				9121BD4A3E7C6EF2B21F540F /* CopyButton.swift in Sources */,
 				D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */,
 				ABBA5CC10933CA087E14A0E8 /* FieldBackgroundExecution.swift in Sources */,
+				2FAE0FC43EB547F2CE7A567D /* FieldBackgroundExecutionUITestProbe.swift in Sources */,
 				299A6111507F657670856F36 /* FieldCaptureIntake.swift in Sources */,
 				3FC570AC038C3DC575E5A3E7 /* FieldDocumentInterchange.swift in Sources */,
 				E432FD39ECC8F03764EEED81 /* FieldDocumentInterchangeUITestProbe.swift in Sources */,
