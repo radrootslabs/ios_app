@@ -31,18 +31,24 @@ struct FieldBackgroundExecutionHandlers: Sendable {
 }
 
 actor FieldBackgroundExecution {
+    private static let stagedBlobRetention: TimeInterval = 24 * 60 * 60
+
     private let identifiers: FieldBackgroundTaskIdentifiers
     private let scheduler: any RadrootsBackgroundTaskScheduler
     private let transfer: any RadrootsBackgroundTransfer
+    private let roots: RadrootsAppleFileRoots
     private let telemetry: FieldTelemetry
     private let now: @Sendable () -> Date
     private let registerHandlers: @Sendable (FieldBackgroundExecutionHandlers) async throws -> Void
+    private var runtimeService: FieldRuntimeService?
+    private var identityUnlocked = false
     private var hasRegisteredHandlers = false
 
     init(
         identifiers: FieldBackgroundTaskIdentifiers,
         scheduler: any RadrootsBackgroundTaskScheduler,
         transfer: any RadrootsBackgroundTransfer,
+        roots: RadrootsAppleFileRoots,
         telemetry: FieldTelemetry,
         now: @escaping @Sendable () -> Date = Date.init,
         registerHandlers: @escaping @Sendable (FieldBackgroundExecutionHandlers) async throws -> Void
@@ -50,6 +56,7 @@ actor FieldBackgroundExecution {
         self.identifiers = identifiers
         self.scheduler = scheduler
         self.transfer = transfer
+        self.roots = roots
         self.telemetry = telemetry
         self.now = now
         self.registerHandlers = registerHandlers
@@ -60,6 +67,7 @@ actor FieldBackgroundExecution {
         telemetry: FieldTelemetry
     ) throws -> FieldBackgroundExecution {
         let identifiers = try FieldBackgroundTaskIdentifiers(bundleIdentifier: bundleIdentifier)
+        let roots = try FieldLocalState.roots(bundleIdentifier: bundleIdentifier)
         if uiTestWasRequested {
             let scheduler = RadrootsFakeBackgroundTaskScheduler()
             let transfer = RadrootsFakeBackgroundTransfer()
@@ -67,12 +75,12 @@ actor FieldBackgroundExecution {
                 identifiers: identifiers,
                 scheduler: scheduler,
                 transfer: transfer,
+                roots: roots,
                 telemetry: telemetry,
                 registerHandlers: { _ in }
             )
         }
         let scheduler = RadrootsAppleBackgroundTaskScheduler()
-        let roots = try FieldLocalState.roots(bundleIdentifier: bundleIdentifier)
         let transfer = try RadrootsAppleBackgroundTransfer(
             roots: roots,
             sessionIdentifier: identifiers.transferSessionIdentifier
@@ -81,6 +89,7 @@ actor FieldBackgroundExecution {
             identifiers: identifiers,
             scheduler: scheduler,
             transfer: transfer,
+            roots: roots,
             telemetry: telemetry,
             registerHandlers: { handlers in
                 _ = try await scheduler.register(
@@ -105,8 +114,12 @@ actor FieldBackgroundExecution {
         if !hasRegisteredHandlers {
             try await registerHandlers(
                 FieldBackgroundExecutionHandlers(
-                    refresh: { true },
-                    processing: { true }
+                    refresh: { [weak self] in
+                        await self?.performMaintenance(reason: "refresh_task") ?? false
+                    },
+                    processing: { [weak self] in
+                        await self?.performMaintenance(reason: "processing_task") ?? false
+                    }
                 )
             )
             hasRegisteredHandlers = true
@@ -115,24 +128,38 @@ actor FieldBackgroundExecution {
         _ = try await schedulePermittedTasks(reason: "startup")
     }
 
+    func updateRuntimeState(service: FieldRuntimeService?, identityUnlocked: Bool) {
+        self.runtimeService = service
+        self.identityUnlocked = identityUnlocked
+    }
+
     @discardableResult
     func schedulePermittedTasks(reason: String) async throws -> [RadrootsBackgroundTaskSnapshot] {
-        let refresh = try RadrootsBackgroundTaskRequest(
-            identifier: identifiers.refresh,
-            kind: .appRefresh,
-            earliestBeginDate: now().addingTimeInterval(15 * 60)
-        )
-        let processing = try RadrootsBackgroundTaskRequest(
-            identifier: identifiers.processing,
-            kind: .processing,
-            earliestBeginDate: now().addingTimeInterval(60 * 60)
-        )
-        let snapshots = [
-            try await scheduler.submit(refresh),
-            try await scheduler.submit(processing)
-        ]
-        telemetry.backgroundExecution(operation: "schedule", outcome: "success", taskCount: snapshots.count, reason: reason)
-        return snapshots
+        do {
+            let refresh = try RadrootsBackgroundTaskRequest(
+                identifier: identifiers.refresh,
+                kind: .appRefresh,
+                earliestBeginDate: now().addingTimeInterval(15 * 60)
+            )
+            let processing = try RadrootsBackgroundTaskRequest(
+                identifier: identifiers.processing,
+                kind: .processing,
+                earliestBeginDate: now().addingTimeInterval(60 * 60)
+            )
+            let snapshots = [
+                try await scheduler.submit(refresh),
+                try await scheduler.submit(processing)
+            ]
+            telemetry.backgroundExecution(operation: "schedule", outcome: "success", taskCount: snapshots.count, reason: reason)
+            return snapshots
+        } catch {
+            telemetry.backgroundExecution(
+                operation: "schedule",
+                outcome: FieldTelemetry.backgroundExecutionOutcome(for: error),
+                reason: reason
+            )
+            throw error
+        }
     }
 
     func cancelAll() async {
@@ -159,6 +186,109 @@ actor FieldBackgroundExecution {
         } catch {
             telemetry.backgroundExecution(operation: "transfer_snapshots", outcome: FieldTelemetry.backgroundExecutionOutcome(for: error))
             return []
+        }
+    }
+
+    @discardableResult
+    func performMaintenance(reason: String) async -> Bool {
+        let transferCount = await inspectTransferSnapshots(reason: reason)
+        let sweptCount = sweepExpiredStagedBlobs(reason: reason)
+        let relaySucceeded = await refreshRelaysIfAllowed(reason: reason)
+        let succeeded = transferCount != nil && sweptCount != nil && relaySucceeded
+        telemetry.backgroundExecution(
+            operation: "maintenance",
+            outcome: succeeded ? "success" : "partial_failure",
+            stagedBlobCount: sweptCount,
+            transferCount: transferCount,
+            identityUnlocked: identityUnlocked,
+            reason: reason
+        )
+        return succeeded
+    }
+
+    private func inspectTransferSnapshots(reason: String) async -> Int? {
+        do {
+            let snapshots = try await transfer.snapshots()
+            telemetry.backgroundExecution(
+                operation: "transfer_inspect",
+                outcome: "success",
+                transferCount: snapshots.count,
+                reason: reason
+            )
+            return snapshots.count
+        } catch {
+            telemetry.backgroundExecution(
+                operation: "transfer_inspect",
+                outcome: FieldTelemetry.backgroundExecutionOutcome(for: error),
+                reason: reason
+            )
+            return nil
+        }
+    }
+
+    private func sweepExpiredStagedBlobs(reason: String) -> Int? {
+        do {
+            let fileAccess = RadrootsAppleFileAccess(roots: roots)
+            let swept = try fileAccess.sweepStagedBlobs(
+                olderThan: now().addingTimeInterval(-Self.stagedBlobRetention)
+            )
+            telemetry.backgroundExecution(
+                operation: "staged_blob_sweep",
+                outcome: "success",
+                stagedBlobCount: swept.count,
+                reason: reason
+            )
+            return swept.count
+        } catch {
+            telemetry.backgroundExecution(
+                operation: "staged_blob_sweep",
+                outcome: FieldTelemetry.backgroundExecutionOutcome(for: error),
+                reason: reason
+            )
+            return nil
+        }
+    }
+
+    private func refreshRelaysIfAllowed(reason: String) async -> Bool {
+        guard identityUnlocked else {
+            telemetry.backgroundExecution(
+                operation: "relay_refresh",
+                outcome: "skipped_locked",
+                identityUnlocked: false,
+                reason: reason
+            )
+            return true
+        }
+        guard let runtimeService else {
+            telemetry.backgroundExecution(
+                operation: "relay_refresh",
+                outcome: "skipped_runtime_unavailable",
+                identityUnlocked: true,
+                reason: reason
+            )
+            return true
+        }
+        do {
+            try await runtimeService.nostrSetDefaultRelays(try RelaySettings.relays())
+            try await runtimeService.nostrConnectIfKeyPresent()
+            let status = await runtimeService.nostrConnectionStatus()
+            telemetry.backgroundExecution(
+                operation: "relay_refresh",
+                outcome: "success",
+                relayConnectedCount: status.connected,
+                relayConnectingCount: status.connecting,
+                identityUnlocked: true,
+                reason: reason
+            )
+            return true
+        } catch {
+            telemetry.backgroundExecution(
+                operation: "relay_refresh",
+                outcome: FieldTelemetry.backgroundExecutionOutcome(for: error),
+                identityUnlocked: true,
+                reason: reason
+            )
+            return false
         }
     }
 

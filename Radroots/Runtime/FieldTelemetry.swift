@@ -225,16 +225,50 @@ final class FieldTelemetry: @unchecked Sendable {
         operation: String,
         outcome: String,
         taskCount: Int? = nil,
+        stagedBlobCount: Int? = nil,
+        transferCount: Int? = nil,
+        relayConnectedCount: UInt32? = nil,
+        relayConnectingCount: UInt32? = nil,
+        identityUnlocked: Bool? = nil,
         reason: String? = nil
     ) {
+        let expectedOutcome = outcome == "success" || outcome.hasPrefix("skipped")
+        var fields: [RadrootsTelemetryField] = []
+        if let field = try? RadrootsTelemetryField.string("outcome", outcome) {
+            fields.append(field)
+        }
+        if let taskCount,
+           let field = try? RadrootsTelemetryField.integer("task_count", taskCount) {
+            fields.append(field)
+        }
+        if let stagedBlobCount,
+           let field = try? RadrootsTelemetryField.integer("staged_blob_count", stagedBlobCount) {
+            fields.append(field)
+        }
+        if let transferCount,
+           let field = try? RadrootsTelemetryField.integer("transfer_count", transferCount) {
+            fields.append(field)
+        }
+        if let relayConnectedCount,
+           let field = try? RadrootsTelemetryField.integer("relay_connected_count", Int64(relayConnectedCount)) {
+            fields.append(field)
+        }
+        if let relayConnectingCount,
+           let field = try? RadrootsTelemetryField.integer("relay_connecting_count", Int64(relayConnectingCount)) {
+            fields.append(field)
+        }
+        if let identityUnlocked,
+           let field = try? RadrootsTelemetryField.bool("identity_unlocked", identityUnlocked) {
+            fields.append(field)
+        }
+        if let reason,
+           let field = try? RadrootsTelemetryField.string("reason", reason) {
+            fields.append(field)
+        }
         record(
             name: "field_ios.background_execution.\(operation)",
-            level: outcome == "success" ? .info : .warning,
-            fields: [
-                try? .string("outcome", outcome),
-                taskCount.map { try? .integer("task_count", $0) } ?? nil,
-                reason.map { try? .string("reason", $0) } ?? nil
-            ].compactMap { $0 }
+            level: expectedOutcome ? .info : .warning,
+            fields: fields
         )
     }
 
@@ -381,6 +415,24 @@ final class FieldTelemetry: @unchecked Sendable {
                 return "transfer_failure"
             case .persistenceFailure:
                 return "persistence_failure"
+            }
+        case let error as RadrootsAppleFileError:
+            switch error {
+            case .invalidRequest:
+                return "invalid_request"
+            case .notFound:
+                return "not_found"
+            case .permissionDenied:
+                return "permission_denied"
+            case .transientFailure:
+                return "transient_failure"
+            case .permanentFailure:
+                return "permanent_failure"
+            }
+        case let error as RelaySettingsError:
+            switch error {
+            case .noRelaysConfigured:
+                return "relay_config_missing"
             }
         default:
             return "failure"

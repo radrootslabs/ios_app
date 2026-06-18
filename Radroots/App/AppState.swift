@@ -115,6 +115,11 @@ public final class AppState: ObservableObject {
             let metadataStore = try FieldIdentityPublicMetadataStore.configured()
             let appBundleIdentifier = try bundleIdentifier()
             let resetLocalStateRequested = BuildConfig.bool(.resetLocalState) == true
+            let backgroundExecution = try FieldBackgroundExecution.configured(
+                bundleIdentifier: appBundleIdentifier,
+                telemetry: telemetry
+            )
+            self.backgroundExecution = backgroundExecution
             try FieldFileAccessUITestProbe.seedDestructiveResetSentinelIfRequested(
                 bundleIdentifier: appBundleIdentifier,
                 resetLocalStateRequested: resetLocalStateRequested
@@ -122,6 +127,7 @@ public final class AppState: ObservableObject {
             secureIdentityStore = secureStore
             identityMetadataStore = metadataStore
             if resetLocalStateRequested {
+                await backgroundExecution.cancelAll()
                 try FieldLocalState.resetFileRoots(bundleIdentifier: appBundleIdentifier)
                 try secureStore.deleteSelectedSecret()
                 metadataStore.delete()
@@ -133,11 +139,6 @@ public final class AppState: ObservableObject {
             }
             let captureIntake = try FieldCaptureIntake.configured(bundleIdentifier: appBundleIdentifier)
             self.captureIntake = captureIntake
-            let backgroundExecution = try FieldBackgroundExecution.configured(
-                bundleIdentifier: appBundleIdentifier,
-                telemetry: telemetry
-            )
-            self.backgroundExecution = backgroundExecution
             try await backgroundExecution.start()
             await refreshRuntimeState(using: service)
             if runtimeIdentityReady && !isLocked {
@@ -193,7 +194,8 @@ public final class AppState: ObservableObject {
 
     public func appDidEnterBackground() {
         Task {
-            try? await backgroundExecution?.schedulePermittedTasks(reason: "background")
+            _ = try? await backgroundExecution?.schedulePermittedTasks(reason: "background")
+            await backgroundExecution?.performMaintenance(reason: "background")
         }
     }
 
@@ -269,6 +271,8 @@ public final class AppState: ObservableObject {
         let service = try requireRuntimeService()
         do {
             try await requireUserPresence(for: .deleteIdentity)
+            await backgroundExecution?.updateRuntimeState(service: service, identityUnlocked: false)
+            await backgroundExecution?.cancelAll()
             try secureIdentityStoreOrConfigured().deleteSelectedSecret()
             try identityMetadataStoreOrConfigured().delete()
             try await resetRuntimeIdentityState(using: service)
@@ -598,6 +602,10 @@ public final class AppState: ObservableObject {
             relayLastError = error.localizedDescription
         }
         await refreshRelayStatus(using: service)
+        await backgroundExecution?.updateRuntimeState(
+            service: service,
+            identityUnlocked: runtimeIdentityReady && !isLocked
+        )
     }
 
     private func refreshRelayStatus(using service: FieldRuntimeService) async {
@@ -722,6 +730,7 @@ public final class AppState: ObservableObject {
         }
         hasKey = storedIdentityAvailable
         await refreshRelayStatus(using: service)
+        await backgroundExecution?.updateRuntimeState(service: service, identityUnlocked: false)
     }
 
     private func apply(storedIdentity metadata: FieldIdentityPublicMetadata) {
