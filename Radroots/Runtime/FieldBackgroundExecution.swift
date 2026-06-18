@@ -71,12 +71,19 @@ actor FieldBackgroundExecution {
         if uiTestWasRequested {
             let scheduler = RadrootsFakeBackgroundTaskScheduler()
             let transfer = RadrootsFakeBackgroundTransfer()
+            let now: @Sendable () -> Date
+            if FieldBackgroundExecutionUITestProbe.isRequested {
+                now = { Date.distantFuture }
+            } else {
+                now = Date.init
+            }
             return FieldBackgroundExecution(
                 identifiers: identifiers,
                 scheduler: scheduler,
                 transfer: transfer,
                 roots: roots,
                 telemetry: telemetry,
+                now: now,
                 registerHandlers: { _ in }
             )
         }
@@ -123,7 +130,7 @@ actor FieldBackgroundExecution {
                 )
             )
             hasRegisteredHandlers = true
-            telemetry.backgroundExecution(operation: "register", outcome: "success", taskCount: 2)
+            telemetry.backgroundExecution(operation: "handler_registration", outcome: "success", taskCount: 2)
         }
         _ = try await schedulePermittedTasks(reason: "startup")
     }
@@ -272,13 +279,15 @@ actor FieldBackgroundExecution {
             mediaType: "text/plain",
             filenameHint: "background-probe.txt"
         )
-        let blobURL = try roots.stagedBlobURL(for: blob)
-        try FileManager.default.setAttributes(
-            [.modificationDate: Date(timeIntervalSince1970: 0)],
-            ofItemAtPath: blobURL.path
-        )
         _ = await performMaintenance(reason: "ui_test_probe")
-        return !FileManager.default.fileExists(atPath: blobURL.path)
+        do {
+            _ = try fileAccess.readStagedBlob(blob)
+            return false
+        } catch RadrootsAppleFileError.notFound {
+            return true
+        } catch {
+            throw error
+        }
     }
 
     private func fakeSubmittedRequestCount() async -> Int {

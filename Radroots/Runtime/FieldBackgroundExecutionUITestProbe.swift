@@ -32,7 +32,7 @@ enum FieldBackgroundExecutionUITestProbe {
             "cancellation_observed=\(cancellationObserved)",
             "staged_blob_removed=\(stagedBlobRemoved)",
             "transfer_snapshot_count=\(transferSnapshotCount)",
-            "background_register_seen=\(eventNames.contains("field_ios.background_execution.register"))",
+            "background_register_seen=\(eventNames.contains("field_ios.background_execution.handler_registration"))",
             "background_schedule_seen=\(eventNames.contains("field_ios.background_execution.schedule"))",
             "background_cancel_all_seen=\(eventNames.contains("field_ios.background_execution.cancel_all"))",
             "background_transfer_inspect_seen=\(eventNames.contains("field_ios.background_execution.transfer_inspect"))",
