@@ -28,6 +28,7 @@ public struct AppEntry<Main: View>: View {
             }
         }
         .accessibilityIdentifier("field_ios.app_entry")
+        #if DEBUG
         .overlay(alignment: .topLeading) {
             if let probeValue = appState.fileAccessProbeValue {
                 Color.clear
@@ -58,6 +59,7 @@ public struct AppEntry<Main: View>: View {
                     .accessibilityValue(probeValue)
             }
         }
+        #endif
     }
 }
 

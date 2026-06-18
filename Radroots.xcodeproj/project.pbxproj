@@ -28,7 +28,6 @@
 		505A5731ACDBBB0296134340 /* TradeListingCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 947ADA6D32E42ED2B40A5351 /* TradeListingCreateView.swift */; };
 		5AECD474FB2F91855BDD79C0 /* PostFeedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F21554DA87EEC1E5C5F38365 /* PostFeedViewModel.swift */; };
 		657BEA5AAFF129E10177FE63 /* Nostr.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63189EB90A86A9929BECD9ED /* Nostr.swift */; };
-		6E11DAC51E648F1E4EDFBE68 /* RadrootsKitTesting in Frameworks */ = {isa = PBXBuildFile; productRef = F2A002A084F2E04B096C93C7 /* RadrootsKitTesting */; };
 		6E15D30653861F26AC45B501 /* FieldLocalState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EB0A2CFCBBFA9D204C6992B /* FieldLocalState.swift */; };
 		7C8DD424F3E3E0AB1B133863 /* RadrootsKitBindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC881872F750120A184F45E6 /* RadrootsKitBindings.swift */; };
 		7E650F6DA30931E310F842E2 /* FieldFileAccessUITestProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 491D57E540BAB04F24619737 /* FieldFileAccessUITestProbe.swift */; };
@@ -50,6 +49,7 @@
 		D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41A4289F43625DD65E6C4B25 /* CopyRow.swift */; };
 		D3E08BD0EB07C4E687BDAEF0 /* FieldBackgroundURLSessionEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA5C6DE4731C46D53B757E3 /* FieldBackgroundURLSessionEvents.swift */; };
 		D4CFDE54747B6D6957977025 /* FieldIdentityPublicMetadataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA942715DB13FFD494FD35A0 /* FieldIdentityPublicMetadataStore.swift */; };
+		D57452A5B550E4832913AF02 /* FieldUITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 901B3694434DC803B37651E8 /* FieldUITestSupport.swift */; };
 		D5C58A98C950D45AD027962A /* TradeListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D69D200DB1F5FA7AA561CD7 /* TradeListing.swift */; };
 		D62E9461833A0AA5E622A1E6 /* ToastModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227028B4EBDC6703999FB9DA /* ToastModifier.swift */; };
 		D9BF5BE7E4AB5EACBF342539 /* FieldSecureIdentityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8246B707FA9D218414EC4038 /* FieldSecureIdentityStore.swift */; };
@@ -95,6 +95,7 @@
 		8DA5C6DE4731C46D53B757E3 /* FieldBackgroundURLSessionEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldBackgroundURLSessionEvents.swift; sourceTree = "<group>"; };
 		8E6A1827AB4419F806CD848F /* FieldTelemetryUITestProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldTelemetryUITestProbe.swift; sourceTree = "<group>"; };
 		8F0F21496E7A8490EB14AC5B /* Radroots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Radroots.swift; sourceTree = "<group>"; };
+		901B3694434DC803B37651E8 /* FieldUITestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldUITestSupport.swift; sourceTree = "<group>"; };
 		93AA285819DD1269C3EAD80A /* Radroots.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Radroots.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		93D729E070C32490545FA837 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		947ADA6D32E42ED2B40A5351 /* TradeListingCreateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeListingCreateView.swift; sourceTree = "<group>"; };
@@ -134,7 +135,6 @@
 			files = (
 				04AA409CFECBA11BFC175C5C /* RadrootsFFI.xcframework in Frameworks */,
 				F3E40E5A76B4EA19AC7603D2 /* RadrootsKit in Frameworks */,
-				6E11DAC51E648F1E4EDFBE68 /* RadrootsKitTesting in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,6 +216,7 @@
 				8246B707FA9D218414EC4038 /* FieldSecureIdentityStore.swift */,
 				3B4E53FD4C4AADF63855888A /* FieldTelemetry.swift */,
 				8E6A1827AB4419F806CD848F /* FieldTelemetryUITestProbe.swift */,
+				901B3694434DC803B37651E8 /* FieldUITestSupport.swift */,
 				D65835E1C633C7B946C64D11 /* FieldUserPresenceGate.swift */,
 				D4DE3DD8C3BB2F63676F463E /* LoggingSettings.swift */,
 				63189EB90A86A9929BECD9ED /* Nostr.swift */,
@@ -355,7 +356,6 @@
 			name = Radroots;
 			packageProductDependencies = (
 				2DAD90EBF8EB00ACDD7611CD /* RadrootsKit */,
-				F2A002A084F2E04B096C93C7 /* RadrootsKitTesting */,
 			);
 			productName = Radroots;
 			productReference = 93AA285819DD1269C3EAD80A /* Radroots.app */;
@@ -455,6 +455,7 @@
 				D9BF5BE7E4AB5EACBF342539 /* FieldSecureIdentityStore.swift in Sources */,
 				9346DA48630668A65D37E14A /* FieldTelemetry.swift in Sources */,
 				CC5561169A29B5B2B6423959 /* FieldTelemetryUITestProbe.swift in Sources */,
+				D57452A5B550E4832913AF02 /* FieldUITestSupport.swift in Sources */,
 				25654E50F9519809A237759D /* FieldUserPresenceGate.swift in Sources */,
 				1E5B41A3E1F9A7D68F63B079 /* HomeView.swift in Sources */,
 				B8A3BBDE3A1FC0248512BF76 /* LoggingSettings.swift in Sources */,
@@ -696,10 +697,6 @@
 		2DAD90EBF8EB00ACDD7611CD /* RadrootsKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RadrootsKit;
-		};
-		F2A002A084F2E04B096C93C7 /* RadrootsKitTesting */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = RadrootsKitTesting;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

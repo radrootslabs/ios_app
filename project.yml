@@ -34,8 +34,6 @@ targets:
       - framework: Radroots/Frameworks/RadrootsFFI.xcframework
         embed: false
       - package: RadrootsKit
-      - package: RadrootsKit
-        product: RadrootsKitTesting
     preBuildScripts:
       - name: Generate git SHA xcconfig
         basedOnDependencyAnalysis: false

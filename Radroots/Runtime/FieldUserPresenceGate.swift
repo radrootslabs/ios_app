@@ -1,6 +1,5 @@
 import Foundation
 import RadrootsKit
-import RadrootsKitTesting
 
 enum FieldUserPresenceAction: Equatable, Sendable {
     case unlockIdentity
@@ -54,9 +53,11 @@ final class FieldUserPresenceGate: Sendable {
     }
 
     static func configured() -> FieldUserPresenceGate {
-        if uiTestWasRequested {
+        #if DEBUG
+        if FieldUITestHarness.isRequested {
             return FieldUserPresenceGate(userPresence: uiTestUserPresence())
         }
+        #endif
         return FieldUserPresenceGate(userPresence: RadrootsAppleUserPresence())
     }
 
@@ -69,29 +70,15 @@ final class FieldUserPresenceGate: Sendable {
         return FieldUserPresenceRequestRecord(action: action, statusText: action.verifiedStatusText)
     }
 
-    private static var uiTestWasRequested: Bool {
-        let arguments = ProcessInfo.processInfo.arguments
-        let environment = ProcessInfo.processInfo.environment
-        return environment["RADROOTS_FIELD_IOS_UI_TEST"] == "true" ||
-            arguments.contains("--radroots-field-ios-ui-test")
-    }
-
+    #if DEBUG
     private static func uiTestUserPresence() -> any RadrootsUserPresence {
         let outcomes = uiTestOutcomes()
         let status = uiTestStatus()
-        if outcomes.count <= 1 {
-            return RadrootsFakeUserPresence(
-                status: status,
-                verificationOutcome: outcomes.first?.result ?? .success(true)
-            )
-        }
-        return FieldSequentialUserPresence(status: status, outcomes: outcomes.map(\.result))
+        return FieldUITestUserPresence(status: status, outcomes: outcomes.map(\.result))
     }
 
     private static func uiTestStatus() -> RadrootsUserPresenceStatus {
-        let raw = ProcessInfo.processInfo.environment["RADROOTS_FIELD_IOS_UI_TEST_USER_PRESENCE_STATUS"]?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
+        let raw = FieldUITestHarness.string("RADROOTS_FIELD_IOS_UI_TEST_USER_PRESENCE_STATUS")?.lowercased()
         switch raw {
         case "unavailable":
             return .unavailable
@@ -115,8 +102,7 @@ final class FieldUserPresenceGate: Sendable {
     }
 
     private static func uiTestOutcomes() -> [FieldUserPresenceUITestOutcome] {
-        let raw = ProcessInfo.processInfo.environment["RADROOTS_FIELD_IOS_UI_TEST_USER_PRESENCE_OUTCOME"]?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let raw = FieldUITestHarness.string("RADROOTS_FIELD_IOS_UI_TEST_USER_PRESENCE_OUTCOME") ?? ""
         let parts = raw
             .split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
@@ -126,38 +112,10 @@ final class FieldUserPresenceGate: Sendable {
         }
         return parts.map { FieldUserPresenceUITestOutcome(rawValue: $0) ?? .denied }
     }
+    #endif
 }
 
-private actor FieldSequentialUserPresence: RadrootsUserPresence {
-    private let statusValue: RadrootsUserPresenceStatus
-    private let outcomes: [Result<Bool, RadrootsUserPresenceError>]
-    private var requestCount: Int
-
-    init(
-        status: RadrootsUserPresenceStatus,
-        outcomes: [Result<Bool, RadrootsUserPresenceError>]
-    ) {
-        self.statusValue = status
-        self.outcomes = outcomes
-        self.requestCount = 0
-    }
-
-    func currentStatus() async throws -> RadrootsUserPresenceStatus {
-        statusValue
-    }
-
-    func verify(_ request: RadrootsUserPresenceRequest) async throws -> RadrootsUserPresenceResult {
-        let outcome = outcomes[min(requestCount, outcomes.count - 1)]
-        requestCount += 1
-        switch outcome {
-        case .success(let verified):
-            return RadrootsUserPresenceResult(policy: request.policy, verified: verified)
-        case .failure(let error):
-            throw error
-        }
-    }
-}
-
+#if DEBUG
 private enum FieldUserPresenceUITestOutcome: String {
     case success
     case unverified
@@ -189,3 +147,4 @@ private enum FieldUserPresenceUITestOutcome: String {
         }
     }
 }
+#endif

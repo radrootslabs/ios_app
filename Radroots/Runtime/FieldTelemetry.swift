@@ -1,22 +1,21 @@
 import Foundation
 import RadrootsKit
-import RadrootsKitTesting
 
 final class FieldTelemetry: @unchecked Sendable {
     static let shared = FieldTelemetry.configured()
 
     private let sink: any RadrootsTelemetry
     private let minimumLevel: RadrootsTelemetryLevel
-    private let recordingTelemetry: RadrootsRecordingTelemetry?
+    private let recordedEventsProvider: (@Sendable () async -> [RadrootsTelemetryEvent])?
 
     init(
         sink: any RadrootsTelemetry,
         minimumLevel: RadrootsTelemetryLevel = .info,
-        recordingTelemetry: RadrootsRecordingTelemetry? = nil
+        recordedEventsProvider: (@Sendable () async -> [RadrootsTelemetryEvent])? = nil
     ) {
         self.sink = sink
         self.minimumLevel = minimumLevel
-        self.recordingTelemetry = recordingTelemetry
+        self.recordedEventsProvider = recordedEventsProvider
     }
 
     static func configured(
@@ -25,14 +24,16 @@ final class FieldTelemetry: @unchecked Sendable {
     ) -> FieldTelemetry {
         let minimumLevel = telemetryMinimumLevel(from: loggingSettings.level)
         let appleTelemetry = RadrootsAppleLoggerTelemetry(subsystem: bundleIdentifier)
-        if uiTestWasRequested {
-            let recorder = RadrootsRecordingTelemetry()
+        #if DEBUG
+        if FieldUITestHarness.isRequested {
+            let recorder = FieldUITestRecordingTelemetry()
             return FieldTelemetry(
                 sink: RadrootsMultiplexTelemetry([appleTelemetry, recorder]),
                 minimumLevel: minimumLevel,
-                recordingTelemetry: recorder
+                recordedEventsProvider: { await recorder.recordedEvents }
             )
         }
+        #endif
         return FieldTelemetry(sink: appleTelemetry, minimumLevel: minimumLevel)
     }
 
@@ -273,17 +274,10 @@ final class FieldTelemetry: @unchecked Sendable {
     }
 
     func recordedEventsForUITest() async -> [RadrootsTelemetryEvent] {
-        guard let recordingTelemetry else {
+        guard let recordedEventsProvider else {
             return []
         }
-        return await recordingTelemetry.recordedEvents
-    }
-
-    private static var uiTestWasRequested: Bool {
-        let environment = ProcessInfo.processInfo.environment
-        let arguments = ProcessInfo.processInfo.arguments
-        return environment["RADROOTS_FIELD_IOS_UI_TEST"] == "true" ||
-            arguments.contains("--radroots-field-ios-ui-test")
+        return await recordedEventsProvider()
     }
 
     private static func telemetryMinimumLevel(from filter: String?) -> RadrootsTelemetryLevel {

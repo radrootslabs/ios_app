@@ -1,6 +1,5 @@
 import Foundation
 import RadrootsKit
-import RadrootsKitTesting
 
 struct FieldBackgroundTaskIdentifiers: Equatable, Sendable {
     let refresh: RadrootsBackgroundTaskIdentifier
@@ -68,9 +67,10 @@ actor FieldBackgroundExecution {
     ) throws -> FieldBackgroundExecution {
         let identifiers = try FieldBackgroundTaskIdentifiers(bundleIdentifier: bundleIdentifier)
         let roots = try FieldLocalState.roots(bundleIdentifier: bundleIdentifier)
-        if uiTestWasRequested {
-            let scheduler = RadrootsFakeBackgroundTaskScheduler()
-            let transfer = RadrootsFakeBackgroundTransfer()
+        #if DEBUG
+        if FieldUITestHarness.isRequested {
+            let scheduler = FieldUITestBackgroundTaskScheduler()
+            let transfer = FieldUITestBackgroundTransfer()
             let now: @Sendable () -> Date
             if FieldBackgroundExecutionUITestProbe.isRequested {
                 now = { Date.distantFuture }
@@ -87,6 +87,7 @@ actor FieldBackgroundExecution {
                 registerHandlers: { _ in }
             )
         }
+        #endif
         let scheduler = RadrootsAppleBackgroundTaskScheduler()
         let transfer = try RadrootsAppleBackgroundTransfer(
             roots: roots,
@@ -263,7 +264,8 @@ actor FieldBackgroundExecution {
     }
 
     private func seedUITestTransferSnapshot() async throws -> Int {
-        guard let fakeTransfer = transfer as? RadrootsFakeBackgroundTransfer else {
+        #if DEBUG
+        guard let fakeTransfer = transfer as? FieldUITestBackgroundTransfer else {
             return try await transfer.snapshots().count
         }
         let request = try RadrootsBackgroundTransferRequest(
@@ -281,6 +283,9 @@ actor FieldBackgroundExecution {
         )
         _ = try await fakeTransfer.enqueue(request)
         return try await fakeTransfer.snapshots().count
+        #else
+        return try await transfer.snapshots().count
+        #endif
     }
 
     private func seedUITestStagedBlobAndRunMaintenance() async throws -> Bool {
@@ -302,17 +307,25 @@ actor FieldBackgroundExecution {
     }
 
     private func fakeSubmittedRequestCount() async -> Int {
-        guard let fakeScheduler = scheduler as? RadrootsFakeBackgroundTaskScheduler else {
+        #if DEBUG
+        guard let fakeScheduler = scheduler as? FieldUITestBackgroundTaskScheduler else {
             return (try? await scheduler.pendingTasks().count) ?? 0
         }
         return await fakeScheduler.submittedRequestCount
+        #else
+        return (try? await scheduler.pendingTasks().count) ?? 0
+        #endif
     }
 
     private func fakeCancelAllCount() async -> Int {
-        guard let fakeScheduler = scheduler as? RadrootsFakeBackgroundTaskScheduler else {
+        #if DEBUG
+        guard let fakeScheduler = scheduler as? FieldUITestBackgroundTaskScheduler else {
             return 0
         }
         return await fakeScheduler.cancelAllCount
+        #else
+        return 0
+        #endif
     }
 
     private func inspectTransferSnapshots(reason: String) async -> Int? {
@@ -401,10 +414,4 @@ actor FieldBackgroundExecution {
         }
     }
 
-    private static var uiTestWasRequested: Bool {
-        let environment = ProcessInfo.processInfo.environment
-        let arguments = ProcessInfo.processInfo.arguments
-        return environment["RADROOTS_FIELD_IOS_UI_TEST"] == "true" ||
-            arguments.contains("--radroots-field-ios-ui-test")
-    }
 }

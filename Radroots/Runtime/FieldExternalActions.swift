@@ -1,6 +1,5 @@
 import Foundation
 import RadrootsKit
-import RadrootsKitTesting
 
 public enum FieldExternalActionRecovery: String, Equatable, Sendable {
     case appSettings
@@ -37,10 +36,12 @@ final class FieldExternalActions: Sendable {
     }
 
     static func configured() -> FieldExternalActions {
-        guard uiTestWasRequested else {
-            return FieldExternalActions(actions: RadrootsAppleExternalActions())
+        #if DEBUG
+        if FieldUITestHarness.isRequested {
+            return FieldExternalActions(actions: uiTestExternalActions())
         }
-        return FieldExternalActions(actions: uiTestExternalActions())
+        #endif
+        return FieldExternalActions(actions: RadrootsAppleExternalActions())
     }
 
     func canOpenPublicNostrProfile(npub: String) async -> Bool {
@@ -66,35 +67,26 @@ final class FieldExternalActions: Sendable {
         try RadrootsExternalActionDestination.nostr("nostr:\(npub)")
     }
 
-    private static var uiTestWasRequested: Bool {
-        let arguments = ProcessInfo.processInfo.arguments
-        let environment = ProcessInfo.processInfo.environment
-        return environment["RADROOTS_FIELD_IOS_UI_TEST"] == "true" ||
-            arguments.contains("--radroots-field-ios-ui-test")
-    }
-
-    private static func uiTestExternalActions() -> RadrootsFakeExternalActions {
-        RadrootsFakeExternalActions(
+    #if DEBUG
+    private static func uiTestExternalActions() -> FieldUITestExternalActions {
+        FieldUITestExternalActions(
             defaultCanOpen: uiTestCanOpen,
             openOutcome: uiTestOpenOutcome
         )
     }
 
     private static var uiTestCanOpen: Bool {
-        let environment = ProcessInfo.processInfo.environment
-        if let raw = environment["RADROOTS_FIELD_IOS_UI_TEST_EXTERNAL_ACTIONS_NOSTR_CAN_OPEN"] {
-            return parseBool(raw) ?? true
+        if FieldUITestHarness.string("RADROOTS_FIELD_IOS_UI_TEST_EXTERNAL_ACTIONS_NOSTR_CAN_OPEN") != nil {
+            return FieldUITestHarness.bool("RADROOTS_FIELD_IOS_UI_TEST_EXTERNAL_ACTIONS_NOSTR_CAN_OPEN", default: true)
         }
-        if let raw = environment["RADROOTS_FIELD_IOS_UI_TEST_EXTERNAL_ACTIONS_CAN_OPEN"] {
-            return parseBool(raw) ?? true
+        if FieldUITestHarness.string("RADROOTS_FIELD_IOS_UI_TEST_EXTERNAL_ACTIONS_CAN_OPEN") != nil {
+            return FieldUITestHarness.bool("RADROOTS_FIELD_IOS_UI_TEST_EXTERNAL_ACTIONS_CAN_OPEN", default: true)
         }
         return true
     }
 
     private static var uiTestOpenOutcome: Result<Void, RadrootsExternalActionError> {
-        let raw = ProcessInfo.processInfo.environment["RADROOTS_FIELD_IOS_UI_TEST_EXTERNAL_ACTIONS_OPEN_OUTCOME"]?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
+        let raw = FieldUITestHarness.string("RADROOTS_FIELD_IOS_UI_TEST_EXTERNAL_ACTIONS_OPEN_OUTCOME")?.lowercased()
         switch raw {
         case nil, "", "success":
             return .success(())
@@ -106,15 +98,5 @@ final class FieldExternalActions: Sendable {
             return .failure(.blockedByPolicy("unsupported UI-test external action outcome"))
         }
     }
-
-    private static func parseBool(_ raw: String) -> Bool? {
-        switch raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-        case "1", "true", "yes":
-            true
-        case "0", "false", "no":
-            false
-        default:
-            nil
-        }
-    }
+    #endif
 }

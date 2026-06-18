@@ -1,6 +1,5 @@
 import Foundation
 import RadrootsKit
-import RadrootsKitTesting
 
 enum FieldCaptureIntakeError: LocalizedError {
     case serviceNotReady
@@ -170,9 +169,11 @@ final class FieldCaptureIntake: @unchecked Sendable {
 
     static func configured(bundleIdentifier: String) throws -> FieldCaptureIntake {
         let fileAccess = try FieldLocalState.fileAccess(bundleIdentifier: bundleIdentifier)
-        if uiTestWasRequested {
+        #if DEBUG
+        if FieldUITestHarness.isRequested {
             return try uiTestConfigured(fileAccess: fileAccess)
         }
+        #endif
         return FieldCaptureIntake(
             fileAccess: fileAccess,
             mediaPicker: RadrootsAppleMediaPicker(fileAccess: fileAccess),
@@ -274,12 +275,7 @@ final class FieldCaptureIntake: @unchecked Sendable {
         )
     }
 
-    private static var uiTestWasRequested: Bool {
-        let environment = ProcessInfo.processInfo.environment
-        return environment["RADROOTS_FIELD_IOS_UI_TEST"] == "true" ||
-            ProcessInfo.processInfo.arguments.contains("--radroots-field-ios-ui-test")
-    }
-
+    #if DEBUG
     private static func uiTestConfigured(fileAccess: RadrootsAppleFileAccess) throws -> FieldCaptureIntake {
         let importedAsset = try uiTestMediaAsset(
             fileAccess: fileAccess,
@@ -315,12 +311,12 @@ final class FieldCaptureIntake: @unchecked Sendable {
         )
         return FieldCaptureIntake(
             fileAccess: fileAccess,
-            mediaPicker: RadrootsFakeMediaPicker(
+            mediaPicker: FieldUITestMediaPicker(
                 support: mediaSupport,
                 importOutcome: importOutcome,
                 captureOutcome: captureOutcome
             ),
-            documentScanner: RadrootsFakeDocumentScanner(
+            documentScanner: FieldUITestDocumentScanner(
                 support: scannerSupport,
                 scanOutcome: scannerOutcome
             )
@@ -424,11 +420,13 @@ final class FieldCaptureIntake: @unchecked Sendable {
 
     private static func uiTestOutcome(_ key: String) -> FieldCaptureUITestOutcome {
         FieldCaptureUITestOutcome(
-            rawValue: ProcessInfo.processInfo.environment[key]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            rawValue: FieldUITestHarness.string(key) ?? ""
         ) ?? .success
     }
+    #endif
 }
 
+#if DEBUG
 private enum FieldCaptureUITestOutcome: String {
     case success
     case cancelled
@@ -440,3 +438,4 @@ private enum FieldCaptureUITestOutcome: String {
         self == .unavailable
     }
 }
+#endif

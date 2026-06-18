@@ -543,21 +543,26 @@ public final class AppState: ObservableObject {
     }
 
     private var uiTestWasRequested: Bool {
-        let arguments = ProcessInfo.processInfo.arguments
-        let environment = ProcessInfo.processInfo.environment
-        return environment["RADROOTS_FIELD_IOS_UI_TEST"] == "true" ||
-            arguments.contains("--radroots-field-ios-ui-test")
+        #if DEBUG
+        return FieldUITestHarness.isRequested
+        #else
+        return false
+        #endif
     }
 
     private var uiTestBootstrapSplashHoldNanoseconds: UInt64? {
+        #if DEBUG
         guard uiTestWasRequested else { return nil }
-        guard let raw = ProcessInfo.processInfo.environment["RADROOTS_FIELD_IOS_UI_TEST_BOOTSTRAP_SPLASH_HOLD_SECONDS"],
+        guard let raw = FieldUITestHarness.string("RADROOTS_FIELD_IOS_UI_TEST_BOOTSTRAP_SPLASH_HOLD_SECONDS"),
               let seconds = Double(raw),
               seconds.isFinite,
               seconds > 0 else {
             return nil
         }
         return UInt64(seconds * 1_000_000_000)
+        #else
+        return nil
+        #endif
     }
 
     private func holdBootstrapSplashForUITestIfRequested() async throws {
@@ -566,18 +571,21 @@ public final class AppState: ObservableObject {
     }
 
     private var startupFailureWasRequested: Bool {
+        #if DEBUG
         guard uiTestWasRequested else {
             return false
         }
         let arguments = ProcessInfo.processInfo.arguments
-        let environment = ProcessInfo.processInfo.environment
         if BuildConfig.string(.runtimeMode) == "ui-test-startup-failure" {
             return true
         }
-        if environment["RADROOTS_FIELD_IOS_FORCE_STARTUP_FAILURE"] == "true" {
+        if FieldUITestHarness.bool("RADROOTS_FIELD_IOS_FORCE_STARTUP_FAILURE", default: false) {
             return true
         }
         return arguments.contains("--radroots-field-ios-force-startup-failure")
+        #else
+        return false
+        #endif
     }
 
     private func configureRelays(using service: FieldRuntimeService) async throws {
