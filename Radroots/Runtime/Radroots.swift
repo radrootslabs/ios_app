@@ -15,14 +15,12 @@ public final class Radroots: ObservableObject {
         telemetry: FieldTelemetry = .shared
     ) throws -> FieldRuntimeService {
         let settings = LoggingSettings.load()
-        var loggingFallbackUsed = false
         do {
             try settings.apply(bundleIdentifier: bundleId)
         } catch {
-            try? initLoggingStdout()
-            loggingFallbackUsed = true
+            throw FieldRuntimeLoggingError.initializationFailed(error.localizedDescription)
         }
-        telemetry.runtimeLoggingInitialized(settings: settings, fallbackUsed: loggingFallbackUsed)
+        telemetry.runtimeLoggingInitialized(settings: settings)
 
         let rt = try RadrootsRuntime()
         let resolvedSha = buildSha ?? (Bundle.main.object(forInfoDictionaryKey: "GIT_SHA") as? String)

@@ -1,5 +1,16 @@
 import Foundation
 
+enum FieldRuntimeLoggingError: LocalizedError {
+    case initializationFailed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .initializationFailed(let message):
+            "Runtime logging initialization failed: \(message)"
+        }
+    }
+}
+
 struct LoggingSettings: Equatable {
     var stdout: Bool
     var fileEnabled: Bool

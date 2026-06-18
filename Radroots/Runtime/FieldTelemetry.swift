@@ -77,18 +77,14 @@ final class FieldTelemetry: @unchecked Sendable {
         await sink.record(event)
     }
 
-    func runtimeLoggingInitialized(
-        settings: LoggingSettings,
-        fallbackUsed: Bool
-    ) {
+    func runtimeLoggingInitialized(settings: LoggingSettings) {
         record(
             name: "field_ios.runtime.logging_initialized",
-            level: fallbackUsed ? .warning : .info,
+            level: .info,
             fields: [
                 try? .bool("stdout_enabled", settings.stdout),
                 try? .bool("file_enabled", settings.fileEnabled),
                 try? .string("logging_filter", settings.level ?? "unset"),
-                try? .bool("fallback_used", fallbackUsed)
             ].compactMap { $0 }
         )
     }
@@ -327,6 +323,8 @@ final class FieldTelemetry: @unchecked Sendable {
         switch error {
         case FieldUserPresenceGateError.notVerified:
             return "unverified"
+        case is FieldRuntimeLoggingError:
+            return "logging_initialization_failed"
         case let error as RadrootsUserPresenceError:
             return userPresenceOutcome(for: error)
         case let error as RadrootsCaptureIntakeError:

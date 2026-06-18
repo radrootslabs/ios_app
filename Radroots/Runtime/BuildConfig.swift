@@ -16,12 +16,12 @@ enum BuildConfigKey: String {
 
 enum BuildConfig {
     static func string(_ key: BuildConfigKey) -> String? {
-        envString(key) ?? infoString(key).map { stripOuterQuotes($0) }
+        debugLaunchOverrideString(key) ?? infoString(key).map { stripOuterQuotes($0) }
     }
 
     static func bool(_ key: BuildConfigKey) -> Bool? {
-        if let env = ProcessInfo.processInfo.environment[key.rawValue],
-           let parsed = parseBool(env) {
+        if let raw = debugLaunchOverrideString(key),
+           let parsed = parseBool(raw) {
             return parsed
         }
         if let v = infoValue(for: key.rawValue) {
@@ -33,7 +33,7 @@ enum BuildConfig {
     }
 
     static func array(_ key: BuildConfigKey, splitBy set: CharacterSet = .whitespacesAndNewlines) -> [String]? {
-        if let raw = envString(key) {
+        if let raw = debugLaunchOverrideString(key) {
             return parseArray(raw, splitBy: set)
         }
         if let direct = infoArray(key) {
@@ -64,12 +64,6 @@ enum BuildConfig {
             }
         }
         return out
-    }
-
-    private static func envString(_ key: BuildConfigKey) -> String? {
-        ProcessInfo.processInfo.environment[key.rawValue]
-            .flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .flatMap { $0.isEmpty ? nil : stripOuterQuotes($0) }
     }
 
     private static func parseArray(_ value: String, splitBy set: CharacterSet) -> [String]? {
@@ -133,4 +127,18 @@ enum BuildConfig {
         }
         return s
     }
+
+    #if DEBUG
+    private static func debugLaunchOverrideString(_ key: BuildConfigKey) -> String? {
+        guard FieldUITestHarness.isRequested else {
+            return nil
+        }
+        return FieldUITestHarness.string(key.rawValue)
+            .flatMap { $0.isEmpty ? nil : stripOuterQuotes($0) }
+    }
+    #else
+    private static func debugLaunchOverrideString(_ key: BuildConfigKey) -> String? {
+        nil
+    }
+    #endif
 }
