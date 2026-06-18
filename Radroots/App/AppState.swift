@@ -84,6 +84,7 @@ public final class AppState: ObservableObject {
     private var secureIdentityStore: FieldSecureIdentityStore?
     private var identityMetadataStore: FieldIdentityPublicMetadataStore?
     private var captureIntake: FieldCaptureIntake?
+    private var backgroundExecution: FieldBackgroundExecution?
     private let locationCheckIn = FieldLocationCheckIn.configured()
     private let externalActions = FieldExternalActions.configured()
     private let userPresenceGate = FieldUserPresenceGate.configured()
@@ -132,6 +133,12 @@ public final class AppState: ObservableObject {
             }
             let captureIntake = try FieldCaptureIntake.configured(bundleIdentifier: appBundleIdentifier)
             self.captureIntake = captureIntake
+            let backgroundExecution = try FieldBackgroundExecution.configured(
+                bundleIdentifier: appBundleIdentifier,
+                telemetry: telemetry
+            )
+            self.backgroundExecution = backgroundExecution
+            try await backgroundExecution.start()
             await refreshRuntimeState(using: service)
             if runtimeIdentityReady && !isLocked {
                 startConnectingAndPollingStatus(using: service)
@@ -175,6 +182,18 @@ public final class AppState: ObservableObject {
     public func refresh() {
         Task {
             await refreshRuntimeState()
+        }
+    }
+
+    public func appDidBecomeActive() {
+        Task {
+            try? await backgroundExecution?.schedulePermittedTasks(reason: "active")
+        }
+    }
+
+    public func appDidEnterBackground() {
+        Task {
+            try? await backgroundExecution?.schedulePermittedTasks(reason: "background")
         }
     }
 

@@ -38,6 +38,7 @@
 		9121BD4A3E7C6EF2B21F540F /* CopyButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C7DE4207398DE242519F9C /* CopyButton.swift */; };
 		9346DA48630668A65D37E14A /* FieldTelemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4E53FD4C4AADF63855888A /* FieldTelemetry.swift */; };
 		A1B921027DA7ACD7343BE250 /* SectionWideButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17CA8F5611075F60F214A00 /* SectionWideButton.swift */; };
+		ABBA5CC10933CA087E14A0E8 /* FieldBackgroundExecution.swift in Sources */ = {isa = PBXBuildFile; fileRef = C614F2A8813E63C85261F492 /* FieldBackgroundExecution.swift */; };
 		B8A3BBDE3A1FC0248512BF76 /* LoggingSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4DE3DD8C3BB2F63676F463E /* LoggingSettings.swift */; };
 		B971351ABE8E79A472B4DC7D /* View+Nav.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B0C9861CD86EAD3CAD549E /* View+Nav.swift */; };
 		C22DB0F3EB2E69A34DF941E0 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2818363B157125491FB84A1E /* App.swift */; };
@@ -100,6 +101,7 @@
 		BD7B47A576C4D5CE9318D3E6 /* RadrootsFFI.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = RadrootsFFI.xcframework; path = Radroots/Frameworks/RadrootsFFI.xcframework; sourceTree = "<group>"; };
 		C17CA8F5611075F60F214A00 /* SectionWideButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionWideButton.swift; sourceTree = "<group>"; };
 		C1D9496F9F05A4E79E73A247 /* RelaysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelaysView.swift; sourceTree = "<group>"; };
+		C614F2A8813E63C85261F492 /* FieldBackgroundExecution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldBackgroundExecution.swift; sourceTree = "<group>"; };
 		C71A93F98C7B93188748B99B /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		CA8AAF0C0F1723860A8481E0 /* PostCreateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostCreateView.swift; sourceTree = "<group>"; };
 		CA942715DB13FFD494FD35A0 /* FieldIdentityPublicMetadataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldIdentityPublicMetadataStore.swift; sourceTree = "<group>"; };
@@ -192,6 +194,7 @@
 			isa = PBXGroup;
 			children = (
 				A71EFADBC7D54AF5B9314773 /* BuildConfig.swift */,
+				C614F2A8813E63C85261F492 /* FieldBackgroundExecution.swift */,
 				7CC1D11E2E296B4B54E7E8A9 /* FieldCaptureIntake.swift */,
 				E4F2BDC19EF9435162BFF5EC /* FieldDocumentInterchange.swift */,
 				EF05B944D348DAA4EF28B463 /* FieldDocumentInterchangeUITestProbe.swift */,
@@ -428,6 +431,7 @@
 				E3864E34D67BAD0744B93180 /* Bundle+Build.swift in Sources */,
 				9121BD4A3E7C6EF2B21F540F /* CopyButton.swift in Sources */,
 				D3834AF9A4E1327B7DA557F3 /* CopyRow.swift in Sources */,
+				ABBA5CC10933CA087E14A0E8 /* FieldBackgroundExecution.swift in Sources */,
 				299A6111507F657670856F36 /* FieldCaptureIntake.swift in Sources */,
 				3FC570AC038C3DC575E5A3E7 /* FieldDocumentInterchange.swift in Sources */,
 				E432FD39ECC8F03764EEED81 /* FieldDocumentInterchangeUITestProbe.swift in Sources */,

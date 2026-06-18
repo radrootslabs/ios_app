@@ -221,6 +221,23 @@ final class FieldTelemetry: @unchecked Sendable {
         )
     }
 
+    func backgroundExecution(
+        operation: String,
+        outcome: String,
+        taskCount: Int? = nil,
+        reason: String? = nil
+    ) {
+        record(
+            name: "field_ios.background_execution.\(operation)",
+            level: outcome == "success" ? .info : .warning,
+            fields: [
+                try? .string("outcome", outcome),
+                taskCount.map { try? .integer("task_count", $0) } ?? nil,
+                reason.map { try? .string("reason", $0) } ?? nil
+            ].compactMap { $0 }
+        )
+    }
+
     func recordedEventsForUITest() async -> [RadrootsTelemetryEvent] {
         guard let recordingTelemetry else {
             return []
@@ -340,6 +357,33 @@ final class FieldTelemetry: @unchecked Sendable {
             return "permanent_failure"
         case .invalidRequest:
             return "invalid_request"
+        }
+    }
+
+    static func backgroundExecutionOutcome(for error: Error) -> String {
+        switch error {
+        case let error as RadrootsBackgroundTaskError:
+            switch error {
+            case .invalidRequest:
+                return "invalid_request"
+            case .unavailable:
+                return "unavailable"
+            case .schedulerFailure:
+                return "scheduler_failure"
+            }
+        case let error as RadrootsBackgroundTransferError:
+            switch error {
+            case .invalidRequest:
+                return "invalid_request"
+            case .unavailable:
+                return "unavailable"
+            case .transferFailure:
+                return "transfer_failure"
+            case .persistenceFailure:
+                return "persistence_failure"
+            }
+        default:
+            return "failure"
         }
     }
 
