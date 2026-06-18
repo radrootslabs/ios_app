@@ -45,6 +45,7 @@ public final class AppState: ObservableObject {
     @Published public private(set) var relaySettingsSourceLabel: String = RelaySettingsSource.buildConfig.displayName
     @Published public private(set) var fileAccessProbeValue: String?
     @Published public private(set) var documentInterchangeProbeValue: String?
+    @Published public private(set) var identityPolicyProbeValue: String?
     @Published public private(set) var telemetryProbeValue: String?
     @Published public private(set) var backgroundExecutionProbeValue: String?
     @Published public private(set) var externalActionStatus: String?
@@ -116,6 +117,9 @@ public final class AppState: ObservableObject {
             let service = try radroots.start(telemetry: telemetry)
             let secureStore = try FieldSecureIdentityStore.configured()
             let metadataStore = try FieldIdentityPublicMetadataStore.configured()
+            #if DEBUG
+            identityPolicyProbeValue = try FieldIdentityPolicyUITestProbe.value()
+            #endif
             let appBundleIdentifier = try bundleIdentifier()
             let resetLocalStateRequested = BuildConfig.bool(.resetLocalState) == true
             let backgroundExecution = try FieldBackgroundExecution.configured(
