@@ -10,6 +10,7 @@ enum FieldSecureIdentityStoreError: LocalizedError {
     case missingSecureStoreAccessPolicy
     case invalidSecureStoreAccessPolicy(String)
     case randomSecretGenerationFailed(Int32)
+    case forcedImportRestoreFailure
 
     var errorDescription: String? {
         switch self {
@@ -27,6 +28,8 @@ enum FieldSecureIdentityStoreError: LocalizedError {
             "Invalid RADROOTS_FIELD_IOS_KEYCHAIN_ACCESS_POLICY: \(value)."
         case .randomSecretGenerationFailed(let status):
             "Secure Nostr identity generation failed with status \(status)."
+        case .forcedImportRestoreFailure:
+            "Forced identity import restore failure."
         }
     }
 }
@@ -100,16 +103,32 @@ struct FieldSecureIdentityStore {
         using service: FieldRuntimeService
     ) async throws -> NostrIdentityRecord {
         let trimmed = try normalizedSecret(secret)
+        let previousSecret = try loadSelectedSecretHex()
         _ = try await service.nostrIdentityValidateHostCustodySecret(secretKey: trimmed)
-        try saveSelectedSecret(trimmed)
+        let stagedRecord = try await restoreHostCustodySecret(
+            trimmed,
+            label: label,
+            makeSelected: false,
+            using: service
+        )
         do {
-            return try await service.nostrIdentityRestoreHostCustodySecret(
-                secretKey: trimmed,
+            try saveSelectedSecret(trimmed)
+        } catch {
+            await restorePreviousRuntimeIdentity(previousSecret, using: service)
+            await removeStagedIdentityIfNeeded(stagedRecord, previousSecret: previousSecret, using: service)
+            throw error
+        }
+        do {
+            return try await restoreHostCustodySecret(
+                trimmed,
                 label: label,
-                makeSelected: true
+                makeSelected: true,
+                using: service
             )
         } catch {
-            try? deleteSelectedSecret()
+            try? restorePreviousSelectedSecret(previousSecret)
+            await restorePreviousRuntimeIdentity(previousSecret, using: service)
+            await removeStagedIdentityIfNeeded(stagedRecord, previousSecret: previousSecret, using: service)
             throw error
         }
     }
@@ -166,6 +185,57 @@ struct FieldSecureIdentityStore {
         )
     }
 
+    private func restorePreviousSelectedSecret(_ previousSecret: String?) throws {
+        if let previousSecret {
+            try saveSelectedSecret(previousSecret)
+        } else {
+            try deleteSelectedSecret()
+        }
+    }
+
+    private func restoreHostCustodySecret(
+        _ secret: String,
+        label: String?,
+        makeSelected: Bool,
+        using service: FieldRuntimeService
+    ) async throws -> NostrIdentityRecord {
+        #if DEBUG
+        try FieldSecureIdentityImportRestoreFailureUITestHook.throwIfRequested(makeSelected: makeSelected)
+        #endif
+        return try await service.nostrIdentityRestoreHostCustodySecret(
+            secretKey: secret,
+            label: label,
+            makeSelected: makeSelected
+        )
+    }
+
+    private func restorePreviousRuntimeIdentity(
+        _ previousSecret: String?,
+        using service: FieldRuntimeService
+    ) async {
+        guard let previousSecret else {
+            return
+        }
+        _ = try? await service.nostrIdentityRestoreHostCustodySecret(
+            secretKey: previousSecret,
+            label: nil,
+            makeSelected: true
+        )
+    }
+
+    private func removeStagedIdentityIfNeeded(
+        _ stagedRecord: NostrIdentityRecord,
+        previousSecret: String?,
+        using service: FieldRuntimeService
+    ) async {
+        if let previousSecret,
+           let previous = try? await service.nostrIdentityValidateHostCustodySecret(secretKey: previousSecret),
+           previous.id == stagedRecord.id {
+            return
+        }
+        try? await service.nostrIdentityRemove(identityId: stagedRecord.id)
+    }
+
     private func normalizedSecret(_ secret: String) throws -> String {
         let trimmed = secret.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -178,3 +248,26 @@ struct FieldSecureIdentityStore {
         RadrootsSecureStoreKey(namespace: namespace, name: selectedSecretName)
     }
 }
+
+#if DEBUG
+private enum FieldSecureIdentityImportRestoreFailureUITestHook {
+    private static let phaseKey = "RADROOTS_FIELD_IOS_UI_TEST_IDENTITY_IMPORT_RESTORE_FAILURE_PHASE"
+
+    static func throwIfRequested(makeSelected: Bool) throws {
+        guard FieldUITestHarness.isRequested,
+              let rawPhase = FieldUITestHarness.string(phaseKey)?.lowercased() else {
+            return
+        }
+        switch rawPhase {
+        case "any":
+            throw FieldSecureIdentityStoreError.forcedImportRestoreFailure
+        case "stage" where !makeSelected:
+            throw FieldSecureIdentityStoreError.forcedImportRestoreFailure
+        case "select" where makeSelected:
+            throw FieldSecureIdentityStoreError.forcedImportRestoreFailure
+        default:
+            return
+        }
+    }
+}
+#endif

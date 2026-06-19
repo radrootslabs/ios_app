@@ -51,6 +51,13 @@ public struct AppEntry<Main: View>: View {
                     .accessibilityIdentifier("field_ios.identity_policy.probe")
                     .accessibilityValue(probeValue)
             }
+            if let probeValue = appState.identityImportFailureProbeValue {
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .accessibilityElement()
+                    .accessibilityIdentifier("field_ios.identity_import_failure.probe")
+                    .accessibilityValue(probeValue)
+            }
             if let probeValue = appState.telemetryProbeValue {
                 Color.clear
                     .frame(width: 1, height: 1)

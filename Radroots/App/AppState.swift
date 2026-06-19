@@ -46,6 +46,7 @@ public final class AppState: ObservableObject {
     @Published public private(set) var fileAccessProbeValue: String?
     @Published public private(set) var documentInterchangeProbeValue: String?
     @Published public private(set) var identityPolicyProbeValue: String?
+    @Published public private(set) var identityImportFailureProbeValue: String?
     @Published public private(set) var telemetryProbeValue: String?
     @Published public private(set) var backgroundExecutionProbeValue: String?
     @Published public private(set) var externalActionStatus: String?
@@ -152,6 +153,12 @@ public final class AppState: ObservableObject {
             try await backgroundExecution.start()
             await refreshBackgroundExecutionProbe(using: backgroundExecution)
             await refreshRuntimeState(using: service)
+            #if DEBUG
+            identityImportFailureProbeValue = await FieldIdentityImportFailureUITestProbe.value(
+                secureStore: secureStore,
+                service: service
+            )
+            #endif
             if runtimeIdentityReady && !isLocked {
                 startConnectingAndPollingStatus(using: service)
             }
