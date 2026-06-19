@@ -63,7 +63,6 @@
 		EB7C19F62D7DAB9C044D53AA /* PostDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3C0EFACAD213A69C12D5064 /* PostDetailView.swift */; };
 		F32EFF00A8A852F76657FEE1 /* PostCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA8AAF0C0F1723860A8481E0 /* PostCreateView.swift */; };
 		F3E40E5A76B4EA19AC7603D2 /* RadrootsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2DAD90EBF8EB00ACDD7611CD /* RadrootsKit */; };
-		FD9B01F8F5DD1F05A64FD556 /* TradeOrderRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 466BFA2F60BE3113EDD1BA3B /* TradeOrderRequestView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -82,7 +81,6 @@
 		3B4E53FD4C4AADF63855888A /* FieldTelemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldTelemetry.swift; sourceTree = "<group>"; };
 		3E6187FA7C4786EC662718B2 /* FieldExternalActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldExternalActions.swift; sourceTree = "<group>"; };
 		41A4289F43625DD65E6C4B25 /* CopyRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyRow.swift; sourceTree = "<group>"; };
-		466BFA2F60BE3113EDD1BA3B /* TradeOrderRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeOrderRequestView.swift; sourceTree = "<group>"; };
 		481E7791F4F6CF82FA3117C1 /* FieldIdentityImportFailureUITestProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldIdentityImportFailureUITestProbe.swift; sourceTree = "<group>"; };
 		491D57E540BAB04F24619737 /* FieldFileAccessUITestProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldFileAccessUITestProbe.swift; sourceTree = "<group>"; };
 		4BC4B7D0BB4C6D8E4B0AA4AD /* radroots.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.xcconfig; sourceTree = "<group>"; };
@@ -296,7 +294,6 @@
 				16A7641E5C643B4B36CFEDA8 /* SetupView.swift */,
 				947ADA6D32E42ED2B40A5351 /* TradeListingCreateView.swift */,
 				26BAE32CD1D46033DDA1A5BB /* TradeListingDetailView.swift */,
-				466BFA2F60BE3113EDD1BA3B /* TradeOrderRequestView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -492,7 +489,6 @@
 				D5C58A98C950D45AD027962A /* TradeListing.swift in Sources */,
 				505A5731ACDBBB0296134340 /* TradeListingCreateView.swift in Sources */,
 				4B44B723FF06ECC363A486BA /* TradeListingDetailView.swift in Sources */,
-				FD9B01F8F5DD1F05A64FD556 /* TradeOrderRequestView.swift in Sources */,
 				35D8223F5E169DDB4E3E87C0 /* TradeSettings.swift in Sources */,
 				B971351ABE8E79A472B4DC7D /* View+Nav.swift in Sources */,
 			);
