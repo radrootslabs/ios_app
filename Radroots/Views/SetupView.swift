@@ -133,7 +133,7 @@ struct SetupView: View {
                 try await app.continueWithLocalIdentity()
                 onSuccess?()
             } catch {
-                errorMessage = error.localizedDescription
+                errorMessage = error.fieldRuntimeMessage
             }
             isWorking = false
         }
@@ -147,7 +147,7 @@ struct SetupView: View {
                 try await app.createLocalIdentity()
                 onSuccess?()
             } catch {
-                errorMessage = error.localizedDescription
+                errorMessage = error.fieldRuntimeMessage
             }
             isWorking = false
         }
@@ -163,7 +163,7 @@ struct SetupView: View {
                 try await app.importNostrSecret(submittedSecret)
                 onSuccess?()
             } catch {
-                errorMessage = error.localizedDescription
+                errorMessage = error.fieldRuntimeMessage
             }
             isWorking = false
         }

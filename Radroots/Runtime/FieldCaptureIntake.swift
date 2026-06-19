@@ -382,7 +382,7 @@ final class FieldCaptureIntake: @unchecked Sendable {
                 success: success
             )
         } catch {
-            return .failure(.permanentFailure(error.localizedDescription))
+            return .failure(.permanentFailure(error.fieldRuntimeMessage))
         }
     }
 
@@ -395,7 +395,7 @@ final class FieldCaptureIntake: @unchecked Sendable {
                 success: success
             )
         } catch {
-            return .failure(.permanentFailure(error.localizedDescription))
+            return .failure(.permanentFailure(error.fieldRuntimeMessage))
         }
     }
 

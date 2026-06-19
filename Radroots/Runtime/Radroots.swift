@@ -18,7 +18,7 @@ public final class Radroots: ObservableObject {
         do {
             try settings.apply(bundleIdentifier: bundleId)
         } catch {
-            throw FieldRuntimeLoggingError.initializationFailed(error.localizedDescription)
+            throw FieldRuntimeLoggingError.initializationFailed(error.fieldRuntimeMessage)
         }
         telemetry.runtimeLoggingInitialized(settings: settings)
 

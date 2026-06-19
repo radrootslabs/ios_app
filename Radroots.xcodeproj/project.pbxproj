@@ -56,6 +56,7 @@
 		D62E9461833A0AA5E622A1E6 /* ToastModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227028B4EBDC6703999FB9DA /* ToastModifier.swift */; };
 		D9BF5BE7E4AB5EACBF342539 /* FieldSecureIdentityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8246B707FA9D218414EC4038 /* FieldSecureIdentityStore.swift */; };
 		DCE468F668A3C346E716B04C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CCF0F7B3C57D8D770F178329 /* Assets.xcassets */; };
+		DDDA83E35D868FE927D2ED37 /* FieldRuntimeError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32238D3DFB4465DEEDE6E003 /* FieldRuntimeError.swift */; };
 		E1EDAEE6B182025ACAF754A6 /* RadrootsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15DBA726450712D6DE88E951 /* RadrootsProvider.swift */; };
 		E3864E34D67BAD0744B93180 /* Bundle+Build.swift in Sources */ = {isa = PBXBuildFile; fileRef = 138AA7BAA021EE13E829390B /* Bundle+Build.swift */; };
 		E432FD39ECC8F03764EEED81 /* FieldDocumentInterchangeUITestProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF05B944D348DAA4EF28B463 /* FieldDocumentInterchangeUITestProbe.swift */; };
@@ -77,6 +78,7 @@
 		26BAE32CD1D46033DDA1A5BB /* TradeListingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeListingDetailView.swift; sourceTree = "<group>"; };
 		2818363B157125491FB84A1E /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		2F3541389124A31F5D701A45 /* FieldLocationCheckIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldLocationCheckIn.swift; sourceTree = "<group>"; };
+		32238D3DFB4465DEEDE6E003 /* FieldRuntimeError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldRuntimeError.swift; sourceTree = "<group>"; };
 		3B4E53FD4C4AADF63855888A /* FieldTelemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldTelemetry.swift; sourceTree = "<group>"; };
 		3E6187FA7C4786EC662718B2 /* FieldExternalActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldExternalActions.swift; sourceTree = "<group>"; };
 		41A4289F43625DD65E6C4B25 /* CopyRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyRow.swift; sourceTree = "<group>"; };
@@ -218,6 +220,7 @@
 				CA942715DB13FFD494FD35A0 /* FieldIdentityPublicMetadataStore.swift */,
 				9EB0A2CFCBBFA9D204C6992B /* FieldLocalState.swift */,
 				2F3541389124A31F5D701A45 /* FieldLocationCheckIn.swift */,
+				32238D3DFB4465DEEDE6E003 /* FieldRuntimeError.swift */,
 				E883FDB7004A210C9D7BE27A /* FieldRuntimeService.swift */,
 				8246B707FA9D218414EC4038 /* FieldSecureIdentityStore.swift */,
 				3B4E53FD4C4AADF63855888A /* FieldTelemetry.swift */,
@@ -459,6 +462,7 @@
 				D4CFDE54747B6D6957977025 /* FieldIdentityPublicMetadataStore.swift in Sources */,
 				6E15D30653861F26AC45B501 /* FieldLocalState.swift in Sources */,
 				1C6EA551530A46CA77BD9E1C /* FieldLocationCheckIn.swift in Sources */,
+				DDDA83E35D868FE927D2ED37 /* FieldRuntimeError.swift in Sources */,
 				D25C1E1DC99F5CF8E99AE970 /* FieldRuntimeService.swift in Sources */,
 				D9BF5BE7E4AB5EACBF342539 /* FieldSecureIdentityStore.swift in Sources */,
 				9346DA48630668A65D37E14A /* FieldTelemetry.swift in Sources */,

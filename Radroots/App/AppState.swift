@@ -185,7 +185,7 @@ public final class AppState: ObservableObject {
             telemetryProbeTask = nil
             await FieldBackgroundURLSessionEvents.shared.completePendingAfterStartupFailure()
             backgroundExecution = nil
-            let message = error.localizedDescription
+            let message = error.fieldRuntimeMessage
             bootstrapPhase = .failed(message)
             telemetry.appStartupFailed(error)
             startTelemetryProbeRefreshForUITest()
@@ -541,7 +541,7 @@ public final class AppState: ObservableObject {
         } catch {
             captureIntakeState.support = .unavailable
             captureIntakeState.operation = .idle
-            captureIntakeState.lastError = error.localizedDescription
+            captureIntakeState.lastError = error.fieldRuntimeMessage
             captureIntakeState.recoveryAction = nil
             telemetry.captureSupportRefreshed(
                 support: captureIntakeState.support,
@@ -576,7 +576,7 @@ public final class AppState: ObservableObject {
             )
         } catch {
             captureIntakeState.operation = .idle
-            captureIntakeState.lastError = error.localizedDescription
+            captureIntakeState.lastError = error.fieldRuntimeMessage
             captureIntakeState.recoveryAction = captureRecoveryAction(for: error)
             telemetry.captureOperation(
                 operation: operation,
@@ -674,7 +674,7 @@ public final class AppState: ObservableObject {
             let snapshot = try await service.nostrIdentitySnapshot()
             apply(identity: snapshot)
         } catch {
-            relayLastError = error.localizedDescription
+            relayLastError = error.fieldRuntimeMessage
         }
         await refreshRelayStatus(using: service)
         await backgroundExecution?.updateRuntimeState(
@@ -768,7 +768,7 @@ public final class AppState: ObservableObject {
             userPresenceStatus = record.statusText
             telemetry.userPresence(action: action, outcome: "success")
         } catch {
-            userPresenceStatus = error.localizedDescription
+            userPresenceStatus = error.fieldRuntimeMessage
             telemetry.userPresence(action: action, outcome: FieldTelemetry.userPresenceOutcome(for: error))
             throw error
         }
@@ -801,7 +801,7 @@ public final class AppState: ObservableObject {
         do {
             try await lockRuntimeIdentityState(using: service)
         } catch {
-            relayLastError = error.localizedDescription
+            relayLastError = error.fieldRuntimeMessage
         }
         hasKey = storedIdentityAvailable
         await refreshRelayStatus(using: service)
@@ -912,7 +912,7 @@ public final class AppState: ObservableObject {
             externalActionStatus = record.statusText
             telemetry.externalAction(operation: "open", kind: record.kind, outcome: "success")
         } catch {
-            externalActionStatus = error.localizedDescription
+            externalActionStatus = error.fieldRuntimeMessage
             telemetry.externalAction(
                 operation: "open",
                 kind: nil,
@@ -932,7 +932,7 @@ public final class AppState: ObservableObject {
             do {
                 try await self?.connect(using: service)
             } catch {
-                self?.relayLastError = error.localizedDescription
+                self?.relayLastError = error.fieldRuntimeMessage
                 self?.relayLight = .red
             }
             while !Task.isCancelled {

@@ -129,7 +129,7 @@ struct TradeOrderRequestView: View {
                 dismiss()
             } catch {
                 isSending = false
-                errorMessage = String(describing: error)
+                errorMessage = error.fieldRuntimeMessage
             }
         }
     }

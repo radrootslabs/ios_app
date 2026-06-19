@@ -120,7 +120,7 @@ struct RelaysView: View {
             activeExport = export
             preparedExport = export
         } catch {
-            documentError = error.localizedDescription
+            documentError = error.fieldRuntimeMessage
         }
     }
 
@@ -137,7 +137,7 @@ struct RelaysView: View {
                 destinationScope: .temporary
             )
         } catch {
-            documentError = error.localizedDescription
+            documentError = error.fieldRuntimeMessage
         }
     }
 
@@ -151,7 +151,7 @@ struct RelaysView: View {
             documentMessage = "Exported \(exportResult.exportedFilename)"
             documentError = nil
         case .failure(let error):
-            documentError = error.localizedDescription
+            documentError = error.fieldRuntimeMessage
         }
     }
 
@@ -172,7 +172,7 @@ struct RelaysView: View {
             documentMessage = "Imported and applied \(importedRelays.count) relay config entries"
             documentError = nil
         } catch {
-            documentError = error.localizedDescription
+            documentError = error.fieldRuntimeMessage
         }
     }
 }

@@ -33,7 +33,7 @@ final class PostFeedViewModel: ObservableObject {
             posts = fetched.sorted { $0.publishedAt > $1.publishedAt }
             isLoading = false
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = error.fieldRuntimeMessage
             isLoading = false
         }
     }
@@ -82,7 +82,7 @@ final class PostFeedViewModel: ObservableObject {
                 setResult("Reply Posted", "Event \(id.rawValue)")
             } catch {
                 sendingReplyFor.remove(parentId)
-                setResult("Failed to Post Reply", String(describing: error))
+                setResult("Failed to Post Reply", error.fieldRuntimeMessage)
             }
         }
     }
@@ -97,7 +97,7 @@ final class PostFeedViewModel: ObservableObject {
             do {
                 try await app.runtimeService?.nostrStartPostStream(sinceUnix: since)
             } catch {
-                errorMessage = String(describing: error)
+                errorMessage = error.fieldRuntimeMessage
             }
 
             while !Task.isCancelled {

@@ -151,7 +151,7 @@ struct TradeListingCreateView: View {
                 dismiss()
             } catch {
                 isPosting = false
-                errorMessage = String(describing: error)
+                errorMessage = error.fieldRuntimeMessage
             }
         }
     }

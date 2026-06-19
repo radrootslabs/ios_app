@@ -27,7 +27,7 @@ final class TradeListingDetailViewModel: ObservableObject {
             messages = items
             isLoading = false
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = error.fieldRuntimeMessage
             isLoading = false
         }
     }

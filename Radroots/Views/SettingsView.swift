@@ -141,7 +141,7 @@ struct SettingsView: View {
             do {
                 try await app.resetLocalIdentity()
             } catch {
-                resetError = error.localizedDescription
+                resetError = error.fieldRuntimeMessage
             }
         }
     }
@@ -223,7 +223,7 @@ private struct RuntimeDiagnosticsView: View {
             activeExport = export
             preparedExport = export
         } catch {
-            exportError = error.localizedDescription
+            exportError = error.fieldRuntimeMessage
         }
     }
 
@@ -237,7 +237,7 @@ private struct RuntimeDiagnosticsView: View {
             exportMessage = "Exported \(exportResult.exportedFilename)"
             exportError = nil
         case .failure(let error):
-            exportError = error.localizedDescription
+            exportError = error.fieldRuntimeMessage
         }
     }
 }

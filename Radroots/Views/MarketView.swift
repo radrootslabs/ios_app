@@ -23,7 +23,7 @@ final class TradeListingsViewModel: ObservableObject {
             listings = items
             isLoading = false
         } catch {
-            errorMessage = String(describing: error)
+            errorMessage = error.fieldRuntimeMessage
             isLoading = false
         }
     }

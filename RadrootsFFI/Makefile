@@ -6,7 +6,7 @@ SHELL := /bin/bash
 
 SOURCE_MODE ?= git
 RADROOTS_FIELD_LIB_GIT_URL ?= git@github.com:radrootslabs/app_rt.git
-RADROOTS_FIELD_LIB_GIT_REV ?= a1548ea5b3c1094473cde2cdcfd0e122b9add5a8
+RADROOTS_FIELD_LIB_GIT_REV ?= b0bc5663551f296625991a36e87ef1ec7209e311
 RADROOTS_FIELD_FFI_CRATE_VERSION ?= 0.1.0-alpha.1
 FFI_FEATURES ?= radroots_app_core/rt,radroots_app_core/nostr-client
 LOCAL_FFI_MANIFEST ?=

@@ -95,7 +95,7 @@ public struct FieldLocationCheckIn: Sendable {
         } catch RadrootsLocationServicesError.cancelled(let message) {
             return .failed(availability, message)
         } catch {
-            return .failed(availability, error.localizedDescription)
+            return .failed(availability, error.fieldRuntimeMessage)
         }
     }
 
