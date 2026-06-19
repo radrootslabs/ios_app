@@ -93,7 +93,7 @@ struct PostCreateView: View {
                 }
             } catch {
                 await MainActor.run {
-                    resultMessage = "Failed to post: \(error)"
+                    resultMessage = "Failed to post: \(error.fieldRuntimeMessage)"
                     showResult = true
                     isPosting = false
                 }

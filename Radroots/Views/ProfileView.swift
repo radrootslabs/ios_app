@@ -11,6 +11,7 @@ public struct ProfileView: View {
     @State private var original: OriginalProfile = .empty
     @State private var isLoading: Bool = false
     @State private var isPosting: Bool = false
+    @State private var profileReadMessage: String?
     @State private var postMessage: String?
     @State private var showMessage: Bool = false
     @FocusState private var focusedField: Field?
@@ -68,6 +69,9 @@ public struct ProfileView: View {
                 .animation(.easeInOut(duration: 0.15), value: hasChanges)
             } footer: {
                 VStack(alignment: .leading, spacing: 6) {
+                    if let profileReadMessage {
+                        Text(profileReadMessage)
+                    }
                     if !isConnected {
                         Text("No relays connected. Connect to at least one relay to post.")
                     }
@@ -111,14 +115,23 @@ public struct ProfileView: View {
         guard let service = app.runtimeService else { return }
         isLoading = true
         Task {
-            let meta = await service.nostrProfileForSelf()
-            await MainActor.run {
-                self.original = OriginalProfile.from(meta)
-                self.name = original.name
-                self.displayName = original.displayName
-                self.nip05 = original.nip05
-                self.about = original.about
-                self.isLoading = false
+            do {
+                let meta = try await service.nostrProfileForSelf()
+                let loaded = OriginalProfile.from(meta)
+                await MainActor.run {
+                    self.original = loaded
+                    self.name = loaded.name
+                    self.displayName = loaded.displayName
+                    self.nip05 = loaded.nip05
+                    self.about = loaded.about
+                    self.profileReadMessage = meta == nil ? "No profile event found yet." : nil
+                    self.isLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.profileReadMessage = error.fieldRuntimeMessage
+                    self.isLoading = false
+                }
             }
         }
     }
@@ -146,7 +159,7 @@ public struct ProfileView: View {
             } catch {
                 await MainActor.run {
                     self.isPosting = false
-                    self.postMessage = "Failed to post profile: \(error)"
+                    self.postMessage = "Failed to post profile: \(error.fieldRuntimeMessage)"
                     self.showMessage = true
                 }
             }

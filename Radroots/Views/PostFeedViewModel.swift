@@ -92,10 +92,11 @@ final class PostFeedViewModel: ObservableObject {
         guard liveTask == nil else { return }
         liveTask = Task { @MainActor [weak self] in
             guard let self else { return }
+            guard let service = app.runtimeService else { return }
             var knownIds = Set(posts.map(\.id))
             let since = posts.map(\.publishedAt).max()
             do {
-                try await app.runtimeService?.nostrStartPostStream(sinceUnix: since)
+                try await service.nostrStartPostStream(sinceUnix: since)
             } catch {
                 errorMessage = error.fieldRuntimeMessage
             }
@@ -110,15 +111,20 @@ final class PostFeedViewModel: ObservableObject {
                     knownIds = Set(posts.map(\.id))
                 }
 
-                if let event = await app.runtimeService?.nostrNextPostStreamEvent() {
-                    if knownIds.insert(event.id).inserted {
-                        posts.insert(event, at: 0)
-                        posts.sort { $0.publishedAt > $1.publishedAt }
-                        if posts.count > 200 {
-                            posts = Array(posts.prefix(200))
+                do {
+                    if let event = try await service.nostrNextPostStreamEvent() {
+                        if knownIds.insert(event.id).inserted {
+                            posts.insert(event, at: 0)
+                            posts.sort { $0.publishedAt > $1.publishedAt }
+                            if posts.count > 200 {
+                                posts = Array(posts.prefix(200))
+                            }
                         }
+                    } else {
+                        try? await Task.sleep(for: .milliseconds(300))
                     }
-                } else {
+                } catch {
+                    errorMessage = error.fieldRuntimeMessage
                     try? await Task.sleep(for: .milliseconds(300))
                 }
             }

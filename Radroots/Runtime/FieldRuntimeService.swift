@@ -82,8 +82,8 @@ public final class FieldRuntimeService: @unchecked Sendable {
         try await run { try $0.nostrIdentityResetHostCustodyRuntime() }
     }
 
-    public func nostrProfileForSelf() async -> NostrProfileEventMetadata? {
-        await runValue { $0.nostrProfileForSelf() }
+    public func nostrProfileForSelf() async throws -> NostrProfileEventMetadata? {
+        try await run { try $0.nostrProfileForSelf() }
     }
 
     public func nostrFetchTextNotes(
@@ -93,7 +93,7 @@ public final class FieldRuntimeService: @unchecked Sendable {
         try await run { try $0.nostrFetchTextNotes(limit: limit, sinceUnix: sinceUnix) }
     }
 
-    public func nostrNextPostStreamEvent() async -> NostrPostEventMetadata? {
-        await runValue { $0.nostrNextPostEvent() }
+    public func nostrNextPostStreamEvent() async throws -> NostrPostEventMetadata? {
+        try await run { try $0.nostrNextPostEvent() }
     }
 }
