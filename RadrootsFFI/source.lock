@@ -1,5 +1,5 @@
 SOURCE_MODE=git
 RADROOTS_FIELD_LIB_GIT_URL=git@github.com:radrootslabs/app_rt.git
-RADROOTS_FIELD_LIB_GIT_REV=32b4cb1ef2ba07105a1683bd002ca7e4bf2d5688
+RADROOTS_FIELD_LIB_GIT_REV=f7458e3a856e2a6f70050d6eecaf565734c4e7af
 RADROOTS_FIELD_FFI_CRATE_VERSION=0.1.0-alpha.1
 FFI_FEATURES=radroots_app_core/rt,radroots_app_core/nostr-client
