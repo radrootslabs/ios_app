@@ -11,7 +11,6 @@ enum BuildConfigKey: String {
     case keychainServicePrefix = "RADROOTS_FIELD_IOS_KEYCHAIN_SERVICE_PREFIX"
     case keychainAccessPolicy = "RADROOTS_FIELD_IOS_KEYCHAIN_ACCESS_POLICY"
     case resetLocalState = "RADROOTS_FIELD_IOS_RESET_LOCAL_STATE"
-    case tradeRhiPubkey = "RADROOTS_FIELD_IOS_TRADE_RHI_PUBKEY"
 }
 
 enum BuildConfig {

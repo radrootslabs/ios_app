@@ -19,7 +19,6 @@
 		2B6ACA26689B355CECBFFB57 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16A7641E5C643B4B36CFEDA8 /* SetupView.swift */; };
 		2FAE0FC43EB547F2CE7A567D /* FieldBackgroundExecutionUITestProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59AC0543EF8335D691D56BD3 /* FieldBackgroundExecutionUITestProbe.swift */; };
 		33A800AA701C354099623B24 /* MarketView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08C0B870E44C7B152A7FABE0 /* MarketView.swift */; };
-		35D8223F5E169DDB4E3E87C0 /* TradeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6D224B525028DE5D8C8E28D /* TradeSettings.swift */; };
 		360F23EFE80FDBDC6983FB15 /* AppEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D448C9655B708CA3FA8712B9 /* AppEntry.swift */; };
 		3A7FA9E5BCC7590B2EAC5349 /* RelaySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBB081610305940C7849C7C /* RelaySettings.swift */; };
 		3B6020E24A2DAD8ADFC2F155 /* BuildConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A71EFADBC7D54AF5B9314773 /* BuildConfig.swift */; };
@@ -129,7 +128,6 @@
 		F21554DA87EEC1E5C5F38365 /* PostFeedViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostFeedViewModel.swift; sourceTree = "<group>"; };
 		F3C0EFACAD213A69C12D5064 /* PostDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostDetailView.swift; sourceTree = "<group>"; };
 		F4C7DE4207398DE242519F9C /* CopyButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyButton.swift; sourceTree = "<group>"; };
-		F6D224B525028DE5D8C8E28D /* TradeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeSettings.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -230,7 +228,6 @@
 				8F0F21496E7A8490EB14AC5B /* Radroots.swift */,
 				6FBB081610305940C7849C7C /* RelaySettings.swift */,
 				7D69D200DB1F5FA7AA561CD7 /* TradeListing.swift */,
-				F6D224B525028DE5D8C8E28D /* TradeSettings.swift */,
 			);
 			path = Runtime;
 			sourceTree = "<group>";
@@ -489,7 +486,6 @@
 				D5C58A98C950D45AD027962A /* TradeListing.swift in Sources */,
 				505A5731ACDBBB0296134340 /* TradeListingCreateView.swift in Sources */,
 				4B44B723FF06ECC363A486BA /* TradeListingDetailView.swift in Sources */,
-				35D8223F5E169DDB4E3E87C0 /* TradeSettings.swift in Sources */,
 				B971351ABE8E79A472B4DC7D /* View+Nav.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -80,15 +80,6 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Trade") {
-                if let rhi = TradeSettings.rhiPubkeyOptional {
-                    CopyRow(title: "RHI Pubkey", value: rhi)
-                } else {
-                    Text("Listing publish and fetch use the shared field runtime.")
-                        .foregroundStyle(.secondary)
-                }
-            }
-
             Section {
                 Button {
                     app.signOut()
