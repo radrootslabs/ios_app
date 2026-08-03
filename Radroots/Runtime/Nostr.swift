@@ -27,19 +27,17 @@ public extension FieldRuntimeService {
         nip05: String? = nil,
         about: String? = nil
     ) async throws -> NostrEventId {
-        let id = try await run {
-            try $0.nostrPostProfile(
-                name: name,
-                displayName: displayName,
-                nip05: nip05,
-                about: about
-            )
-        }
+        let id = try await runtime.nostrPostProfile(
+            name: name,
+            displayName: displayName,
+            nip05: nip05,
+            about: about
+        )
         return NostrEventId(id)
     }
 
     func nostrPostTextNote(content: String) async throws -> NostrEventId {
-        let id = try await run { try $0.nostrPostTextNote(content: content) }
+        let id = try await runtime.nostrPostTextNote(content: content)
         return NostrEventId(id)
     }
 
@@ -49,22 +47,12 @@ public extension FieldRuntimeService {
         content: String,
         rootEventIdHex: String? = nil
     ) async throws -> NostrEventId {
-        let id = try await run {
-            try $0.nostrPostReply(
-                parentEventIdHex: parentEventIdHex,
-                parentAuthorHex: parentAuthorHex,
-                content: content,
-                rootEventIdHex: rootEventIdHex
-            )
-        }
+        let id = try await runtime.nostrPostReply(
+            parentEventIdHex: parentEventIdHex,
+            parentAuthorHex: parentAuthorHex,
+            content: content,
+            rootEventIdHex: rootEventIdHex
+        )
         return NostrEventId(id)
-    }
-
-    func nostrStartPostStream(sinceUnix: UInt64? = nil) async throws {
-        try await run { try $0.nostrStartPostEventStream(sinceUnix: sinceUnix) }
-    }
-
-    func nostrStopPostStream() async throws {
-        try await run { try $0.nostrStopPostEventStream() }
     }
 }

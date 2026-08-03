@@ -15,12 +15,14 @@ extension RadrootsAppError {
         switch self {
         case .Initialization(_):
             .initialization
-        case .Identity(_):
-            .identity
-        case .SecureStore(_):
-            .secureStore
-        case .Relay(_):
-            .relay
+        case .Sdk(let report):
+            if report.capabilityId?.hasPrefix("signing.") == true {
+                .identity
+            } else if report.capabilityId?.hasPrefix("transport.") == true {
+                .relay
+            } else {
+                .runtime
+            }
         case .Runtime(_):
             .runtime
         case .Unsupported(_):
@@ -33,13 +35,12 @@ extension RadrootsAppError {
     var fieldMessage: String {
         switch self {
         case .Initialization(let message),
-             .Identity(let message),
-             .SecureStore(let message),
-             .Relay(let message),
              .Runtime(let message),
              .Unsupported(let message),
              .Internal(let message):
             message
+        case .Sdk(let report):
+            report.message
         }
     }
 }

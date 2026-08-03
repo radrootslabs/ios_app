@@ -5,13 +5,14 @@ SHELL := /bin/bash
 -include Config/ffi-build.env
 
 SOURCE_MODE ?= git
-RADROOTS_FIELD_LIB_GIT_URL ?= git@github.com:radrootslabs/app_rt.git
-RADROOTS_FIELD_LIB_GIT_REV ?= 922c8a82977fa0e41616ebdf978ef2df78c0063c
+RADROOTS_FIELD_LIB_GIT_URL ?= https://github.com/radrootslabs/app_rt.git
+RADROOTS_FIELD_LIB_GIT_REV ?= b770841d2d2ea1cafc1d4a644d596cb8727624d9
 RADROOTS_FIELD_FFI_CRATE_VERSION ?= 0.1.0-alpha.1
-FFI_FEATURES ?= radroots_app_core/rt,radroots_app_core/nostr-client
+RADROOTS_FIELD_SOURCE_DATE_EPOCH ?= 1785777481
 LOCAL_FFI_MANIFEST ?=
 IPHONEOS_DEPLOYMENT_TARGET ?= 18.0
-RUSTUP_TOOLCHAIN ?= 1.92.0-aarch64-apple-darwin
+RUSTUP_TOOLCHAIN ?= 1.97.1-aarch64-apple-darwin
+CARGO_CONFIG_ARGS ?=
 
 IOS_ROOT := $(abspath $(CURDIR)/..)
 APP_ROOT := $(IOS_ROOT)/Radroots
@@ -29,42 +30,39 @@ OUT_DIR := $(BUILD_ROOT)/out
 GENERATED_DIR := $(OUT_DIR)/generated
 HEADERS_DIR := $(OUT_DIR)/headers
 
-CRATE_NAME := radroots_app_ffi
 FFI_OUTPUT_NAME := RadrootsFFI
 LIB_STEM := libradroots_app_ffi
-
-GIT_FIELD_LIB_DIR := $(SOURCE_ROOT)/field-lib
-CRATE_ARCHIVE := $(SOURCE_ROOT)/$(CRATE_NAME)-$(RADROOTS_FIELD_FFI_CRATE_VERSION).crate
-CRATE_EXTRACT_DIR := $(SOURCE_ROOT)/$(CRATE_NAME)-$(RADROOTS_FIELD_FFI_CRATE_VERSION)
-CARGO_FEATURE_FLAGS := $(if $(strip $(FFI_FEATURES)),--features $(FFI_FEATURES),)
+GIT_FIELD_LIB_DIR := $(SOURCE_ROOT)/app-rt
 
 ifeq ($(SOURCE_MODE),git)
-FFI_MANIFEST := $(GIT_FIELD_LIB_DIR)/crates/ffi/Cargo.toml
-UNIFFI_CONFIG := $(GIT_FIELD_LIB_DIR)/crates/ffi/uniffi.toml
+SOURCE_WORKSPACE_ROOT := $(GIT_FIELD_LIB_DIR)
+FFI_MANIFEST := $(SOURCE_WORKSPACE_ROOT)/crates/ffi/Cargo.toml
+UNIFFI_CONFIG := $(SOURCE_WORKSPACE_ROOT)/crates/ffi/uniffi.toml
 SOURCE_TARGET := sync-source-git
-else ifeq ($(SOURCE_MODE),crates)
-FFI_MANIFEST := $(CRATE_EXTRACT_DIR)/Cargo.toml
-UNIFFI_CONFIG := $(CRATE_EXTRACT_DIR)/uniffi.toml
-SOURCE_TARGET := sync-source-crates
 else ifeq ($(SOURCE_MODE),local)
 FFI_MANIFEST := $(LOCAL_FFI_MANIFEST)
-UNIFFI_CONFIG := $(dir $(LOCAL_FFI_MANIFEST))uniffi.toml
+SOURCE_WORKSPACE_ROOT := $(abspath $(dir $(LOCAL_FFI_MANIFEST))/../..)
+UNIFFI_CONFIG := $(SOURCE_WORKSPACE_ROOT)/crates/ffi/uniffi.toml
 SOURCE_TARGET := sync-source-local
 else
-$(error SOURCE_MODE must be one of: git, crates, local)
+$(error SOURCE_MODE must be one of: git, local)
 endif
 
-FFI_CRATE_DIR := $(dir $(FFI_MANIFEST))
-
+BINDGEN_MANIFEST := $(SOURCE_WORKSPACE_ROOT)/Cargo.toml
 RUSTC_BIN := $(shell rustup which --toolchain $(RUSTUP_TOOLCHAIN) rustc)
-CARGO_BIN := rustup run $(RUSTUP_TOOLCHAIN) cargo
-CARGO := IPHONEOS_DEPLOYMENT_TARGET=$(IPHONEOS_DEPLOYMENT_TARGET) RUSTC=$(RUSTC_BIN) CARGO_TARGET_DIR=$(TARGET_DIR) $(CARGO_BIN)
+CARGO_BIN := rustup run $(RUSTUP_TOOLCHAIN) cargo $(CARGO_CONFIG_ARGS)
+CARGO := IPHONEOS_DEPLOYMENT_TARGET=$(IPHONEOS_DEPLOYMENT_TARGET) \
+	RUSTC=$(RUSTC_BIN) \
+	CARGO_TARGET_DIR=$(TARGET_DIR) \
+	RADROOTS_SOURCE_SHA=$(RADROOTS_FIELD_LIB_GIT_REV) \
+	SOURCE_DATE_EPOCH=$(RADROOTS_FIELD_SOURCE_DATE_EPOCH) \
+	$(CARGO_BIN)
 
 LIB_DEVICE := $(TARGET_DIR)/aarch64-apple-ios/release/$(LIB_STEM).a
 LIB_SIMULATOR := $(TARGET_DIR)/aarch64-apple-ios-sim/release/$(LIB_STEM).a
 LIB_HOST := $(TARGET_DIR)/release/$(LIB_STEM).dylib
 
-.PHONY: all clean distclean print-config sync-source sync-source-git sync-source-crates sync-source-local ensure-toolchain build generate package install
+.PHONY: all clean distclean print-config sync-source sync-source-git sync-source-local ensure-toolchain build generate package install
 
 all: sync-source build generate package install
 	@echo "done"
@@ -74,7 +72,9 @@ all: sync-source build generate package install
 
 print-config:
 	@echo "SOURCE_MODE=$(SOURCE_MODE)"
+	@echo "SOURCE_WORKSPACE_ROOT=$(SOURCE_WORKSPACE_ROOT)"
 	@echo "FFI_MANIFEST=$(FFI_MANIFEST)"
+	@echo "BINDGEN_MANIFEST=$(BINDGEN_MANIFEST)"
 	@echo "UNIFFI_CONFIG=$(UNIFFI_CONFIG)"
 	@echo "ARTIFACTS_DIR=$(ARTIFACTS_DIR)"
 	@echo "GENERATED_SWIFT_DIR=$(GENERATED_SWIFT_DIR)"
@@ -82,6 +82,9 @@ print-config:
 	@echo "IPHONEOS_DEPLOYMENT_TARGET=$(IPHONEOS_DEPLOYMENT_TARGET)"
 	@echo "RUSTUP_TOOLCHAIN=$(RUSTUP_TOOLCHAIN)"
 	@echo "RUSTC_BIN=$(RUSTC_BIN)"
+	@echo "CARGO_CONFIG_ARGS=$(CARGO_CONFIG_ARGS)"
+	@echo "RADROOTS_FIELD_LIB_GIT_REV=$(RADROOTS_FIELD_LIB_GIT_REV)"
+	@echo "RADROOTS_FIELD_SOURCE_DATE_EPOCH=$(RADROOTS_FIELD_SOURCE_DATE_EPOCH)"
 
 clean:
 	rm -rf $(TARGET_DIR) $(OUT_DIR) $(ARTIFACTS_DIR)/$(FFI_OUTPUT_NAME).xcframework
@@ -102,37 +105,33 @@ sync-source-git:
 	git -C $(GIT_FIELD_LIB_DIR) fetch --tags --force origin
 	git -C $(GIT_FIELD_LIB_DIR) checkout --detach $(RADROOTS_FIELD_LIB_GIT_REV)
 	test -f $(FFI_MANIFEST)
-
-sync-source-crates:
-	mkdir -p $(SOURCE_ROOT)
-	rm -rf $(CRATE_EXTRACT_DIR)
-	curl -fLsS https://crates.io/api/v1/crates/$(CRATE_NAME)/$(RADROOTS_FIELD_FFI_CRATE_VERSION)/download -o $(CRATE_ARCHIVE)
-	tar -xzf $(CRATE_ARCHIVE) -C $(SOURCE_ROOT)
-	test -f $(FFI_MANIFEST)
+	test -f $(BINDGEN_MANIFEST)
 
 sync-source-local:
 	if [ -z "$(LOCAL_FFI_MANIFEST)" ]; then \
 		echo "LOCAL_FFI_MANIFEST is required when SOURCE_MODE=local"; \
 		exit 1; \
 	fi
-	test -f $(LOCAL_FFI_MANIFEST)
+	test -f $(FFI_MANIFEST)
 	test -f $(UNIFFI_CONFIG)
+	test -f $(BINDGEN_MANIFEST)
 
 ensure-toolchain:
 	rustup target add --toolchain $(RUSTUP_TOOLCHAIN) aarch64-apple-ios aarch64-apple-ios-sim
 
 build: ensure-toolchain
 	mkdir -p $(TARGET_DIR) $(OUT_DIR)
-	$(CARGO) build --manifest-path $(FFI_MANIFEST) $(CARGO_FEATURE_FLAGS) --release --target aarch64-apple-ios
-	$(CARGO) build --manifest-path $(FFI_MANIFEST) $(CARGO_FEATURE_FLAGS) --release --target aarch64-apple-ios-sim
-	$(CARGO) build --manifest-path $(FFI_MANIFEST) $(CARGO_FEATURE_FLAGS) --release
+	$(CARGO) build --manifest-path $(FFI_MANIFEST) --release --locked --target aarch64-apple-ios
+	$(CARGO) build --manifest-path $(FFI_MANIFEST) --release --locked --target aarch64-apple-ios-sim
+	$(CARGO) build --manifest-path $(FFI_MANIFEST) --release --locked
 
 generate:
 	rm -rf $(GENERATED_DIR) $(HEADERS_DIR)
 	mkdir -p $(GENERATED_DIR) $(HEADERS_DIR)
-	cd $(FFI_CRATE_DIR) && $(CARGO) run --manifest-path Cargo.toml $(CARGO_FEATURE_FLAGS) --bin uniffi-bindgen -- \
-		generate --library $(LIB_HOST) \
+	$(CARGO) run --manifest-path $(BINDGEN_MANIFEST) -p radroots_app_bindgen --locked -- \
+		generate $(LIB_HOST) --library \
 		--language swift \
+		--metadata-no-deps \
 		--out-dir $(GENERATED_DIR) \
 		--config $(UNIFFI_CONFIG)
 	cp $(GENERATED_DIR)/$(FFI_OUTPUT_NAME).h $(HEADERS_DIR)/

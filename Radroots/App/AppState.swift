@@ -37,8 +37,9 @@ public final class AppState: ObservableObject {
     @Published public private(set) var npub: String?
     @Published public private(set) var identityLabel: String?
     @Published public private(set) var identities: [NostrIdentityRecord] = []
-    @Published public private(set) var relayConnectedCount: UInt32 = 0
-    @Published public private(set) var relayConnectingCount: UInt32 = 0
+    @Published public private(set) var relayConfigured: Bool = false
+    @Published public private(set) var relaySourceAvailable: Bool = false
+    @Published public private(set) var relaySinkAvailable: Bool = false
     @Published public private(set) var relayLight: RelayLight = .red
     @Published public private(set) var relayLastError: String?
     @Published public private(set) var configuredRelayURLs: [String] = []
@@ -279,8 +280,9 @@ public final class AppState: ObservableObject {
         setLocked(true)
         statusTask?.cancel()
         statusTask = nil
-        relayConnectedCount = 0
-        relayConnectingCount = 0
+        relayConfigured = false
+        relaySourceAvailable = false
+        relaySinkAvailable = false
         relayLight = .red
         Task {
             await lockRuntimeIdentity()
@@ -298,8 +300,9 @@ public final class AppState: ObservableObject {
             try await resetRuntimeIdentityState(using: service)
             applyNoIdentity()
             setLocked(false)
-            relayConnectedCount = 0
-            relayConnectingCount = 0
+            relayConfigured = false
+            relaySourceAvailable = false
+            relaySinkAvailable = false
             relayLight = .red
             relayLastError = nil
             canOpenNostrProfile = false
@@ -408,8 +411,9 @@ public final class AppState: ObservableObject {
             let document = try documentInterchange().prepareDiagnosticsExport(
                 infoJSONString: infoJSONString,
                 relays: relays,
-                connectedCount: relayConnectedCount,
-                connectingCount: relayConnectingCount,
+                configured: relayConfigured,
+                sourceAvailable: relaySourceAvailable,
+                sinkAvailable: relaySinkAvailable,
                 lastError: relayLastError
             )
             telemetry.documentInterchange(operation: "diagnostics_export", outcome: "success", relayCount: relays.count)
@@ -461,8 +465,9 @@ public final class AppState: ObservableObject {
             )
             apply(relaySettings: snapshot)
             if let service = runtimeService, runtimeIdentityReady && !isLocked {
-                relayConnectedCount = 0
-                relayConnectingCount = 0
+                relayConfigured = !snapshot.relays.isEmpty
+                relaySourceAvailable = false
+                relaySinkAvailable = false
                 relayLight = .yellow
                 relayLastError = nil
                 try await service.nostrSetDefaultRelays(snapshot.relays)
@@ -684,29 +689,39 @@ public final class AppState: ObservableObject {
     }
 
     private func refreshRelayStatus(using service: FieldRuntimeService) async {
-        let status = await service.nostrConnectionStatus()
-        relayConnectedCount = status.connected
-        relayConnectingCount = status.connecting
-        relayLastError = status.lastError ?? relayLastError
-        switch status.light {
-        case .green:
-            relayLight = .green
-        case .yellow:
-            relayLight = .yellow
-        case .red:
+        do {
+            let status = try await service.nostrConnectionStatus()
+            relayConfigured = status.configured
+            relaySourceAvailable = status.sourceAvailable
+            relaySinkAvailable = status.sinkAvailable
+            relayLastError = status.lastError ?? relayLastError
+            switch status.light {
+            case .green:
+                relayLight = .green
+            case .yellow:
+                relayLight = .yellow
+            case .red:
+                relayLight = .red
+            }
+        } catch {
+            relaySourceAvailable = false
+            relaySinkAvailable = false
             relayLight = .red
+            relayLastError = error.fieldRuntimeMessage
         }
         let telemetryStatus = FieldTelemetryRelayStatus(
-            connectedCount: relayConnectedCount,
-            connectingCount: relayConnectingCount,
+            configured: relayConfigured,
+            sourceAvailable: relaySourceAvailable,
+            sinkAvailable: relaySinkAvailable,
             configuredRelayCount: configuredRelayURLs.count,
             light: relayLight.telemetryValue
         )
         if telemetryStatus != lastTelemetryRelayStatus {
             lastTelemetryRelayStatus = telemetryStatus
             telemetry.relayStatusChanged(
-                connectedCount: telemetryStatus.connectedCount,
-                connectingCount: telemetryStatus.connectingCount,
+                configured: telemetryStatus.configured,
+                sourceAvailable: telemetryStatus.sourceAvailable,
+                sinkAvailable: telemetryStatus.sinkAvailable,
                 configuredRelayCount: telemetryStatus.configuredRelayCount,
                 light: telemetryStatus.light
             )
@@ -878,8 +893,9 @@ public final class AppState: ObservableObject {
             bundleIdentifier: bundleIdentifier,
             infoJSONString: infoJSONString,
             relays: effectiveRelaySettings().relays,
-            connectedCount: relayConnectedCount,
-            connectingCount: relayConnectingCount,
+            configured: relayConfigured,
+            sourceAvailable: relaySourceAvailable,
+            sinkAvailable: relaySinkAvailable,
             lastError: relayLastError
         )
         guard FieldDocumentInterchangeUITestProbe.isRequested else {
@@ -970,8 +986,9 @@ public final class AppState: ObservableObject {
 }
 
 private struct FieldTelemetryRelayStatus: Equatable {
-    let connectedCount: UInt32
-    let connectingCount: UInt32
+    let configured: Bool
+    let sourceAvailable: Bool
+    let sinkAvailable: Bool
     let configuredRelayCount: Int
     let light: String
 }

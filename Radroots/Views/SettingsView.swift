@@ -183,8 +183,8 @@ private struct RuntimeDiagnosticsView: View {
             }
 
             Section("Relay") {
-                LabeledContent("Connected", value: "\(app.relayConnectedCount)")
-                LabeledContent("Connecting", value: "\(app.relayConnectingCount)")
+                LabeledContent("Read operations", value: app.relaySourceAvailable ? "Available" : "Unavailable")
+                LabeledContent("Write operations", value: app.relaySinkAvailable ? "Available" : "Unavailable")
                 if let relayLastError = app.relayLastError {
                     Text(relayLastError)
                         .foregroundStyle(.red)

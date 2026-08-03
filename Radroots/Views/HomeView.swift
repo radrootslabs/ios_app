@@ -60,7 +60,7 @@ private struct TodayView: View {
                         Label(syncLabel, systemImage: syncImage)
                             .font(.subheadline.weight(.semibold))
                         Spacer()
-                        RelayPill(count: app.relayConnectedCount)
+                        RelayPill(available: app.relaySourceAvailable && app.relaySinkAvailable)
                     }
                 }
                 .padding(.vertical, 4)
@@ -76,8 +76,8 @@ private struct TodayView: View {
             }
 
             Section("Relay") {
-                RelayMetricRow(label: "Connected", systemImage: "dot.radiowaves.left.and.right", value: app.relayConnectedCount)
-                RelayMetricRow(label: "Connecting", systemImage: "antenna.radiowaves.left.and.right", value: app.relayConnectingCount)
+                RelayMetricRow(label: "Read operations", systemImage: "arrow.down.circle", value: app.relaySourceAvailable ? "Available" : "Unavailable")
+                RelayMetricRow(label: "Write operations", systemImage: "arrow.up.circle", value: app.relaySinkAvailable ? "Available" : "Unavailable")
                 if let last = app.relayLastError {
                     Text(last)
                         .foregroundStyle(.red)
@@ -91,11 +91,11 @@ private struct TodayView: View {
     }
 
     private var syncLabel: String {
-        app.relayConnectedCount > 0 ? "Sync online" : "Waiting for relay"
+        app.relaySourceAvailable && app.relaySinkAvailable ? "Relay ready" : "Waiting for relay"
     }
 
     private var syncImage: String {
-        app.relayConnectedCount > 0 ? "checkmark.icloud.fill" : "icloud.slash.fill"
+        app.relaySourceAvailable && app.relaySinkAvailable ? "checkmark.icloud.fill" : "icloud.slash.fill"
     }
 }
 
@@ -336,7 +336,7 @@ private struct ActivityView: View {
         List {
             Section("Recent Activity") {
                 ActivityRow(title: "Identity ready", detail: app.npub.map(shortNpub) ?? "Local key selected", systemImage: "person.crop.circle.badge.checkmark")
-                ActivityRow(title: "Relay posture", detail: "\(app.relayConnectedCount) connected, \(app.relayConnectingCount) connecting", systemImage: "dot.radiowaves.left.and.right")
+                ActivityRow(title: "Relay posture", detail: app.relaySourceAvailable && app.relaySinkAvailable ? "Read and write operations available" : "Relay operations unavailable", systemImage: "dot.radiowaves.left.and.right")
                 ActivityRow(title: "Draft queue", detail: "No local drafts", systemImage: "tray")
             }
         }
@@ -599,14 +599,14 @@ private struct ActivityRow: View {
 }
 
 private struct RelayPill: View {
-    let count: UInt32
+    let available: Bool
 
     var body: some View {
-        Text("\(count) connected")
+        Text(available ? "relay ready" : "relay unavailable")
             .font(.caption.weight(.semibold))
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .foregroundStyle(count > 0 ? .green : .secondary)
+            .foregroundStyle(available ? .green : .secondary)
             .background(.thinMaterial, in: Capsule())
     }
 }
@@ -614,13 +614,13 @@ private struct RelayPill: View {
 private struct RelayMetricRow: View {
     let label: String
     let systemImage: String
-    let value: UInt32
+    let value: String
 
     var body: some View {
         HStack {
             Label(label, systemImage: systemImage)
             Spacer()
-            Text("\(value)")
+            Text(value)
                 .foregroundStyle(.secondary)
         }
     }

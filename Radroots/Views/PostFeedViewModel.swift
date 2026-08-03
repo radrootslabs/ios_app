@@ -15,13 +15,12 @@ final class PostFeedViewModel: ObservableObject {
         if posts.isEmpty {
             Task { await load(app: app) }
         }
-        startStream(app: app)
+        startPolling(app: app)
     }
 
     func onDisappear(app: AppState) {
         liveTask?.cancel()
         liveTask = nil
-        Task { try? await app.runtimeService?.nostrStopPostStream() }
     }
 
     func load(app: AppState) async {
@@ -88,45 +87,32 @@ final class PostFeedViewModel: ObservableObject {
     }
 
 
-    private func startStream(app: AppState) {
+    private func startPolling(app: AppState) {
         guard liveTask == nil else { return }
         liveTask = Task { @MainActor [weak self] in
             guard let self else { return }
             guard let service = app.runtimeService else { return }
-            var knownIds = Set(posts.map(\.id))
-            let since = posts.map(\.publishedAt).max()
-            do {
-                try await service.nostrStartPostStream(sinceUnix: since)
-            } catch {
-                errorMessage = error.fieldRuntimeMessage
-            }
-
             while !Task.isCancelled {
-                if app.relayConnectedCount == 0 {
-                    try? await Task.sleep(for: .seconds(1))
+                if !app.relaySourceAvailable {
+                    try? await Task.sleep(for: .seconds(2))
                     continue
                 }
 
-                if knownIds.count != posts.count {
-                    knownIds = Set(posts.map(\.id))
-                }
-
                 do {
-                    if let event = try await service.nostrNextPostStreamEvent() {
-                        if knownIds.insert(event.id).inserted {
-                            posts.insert(event, at: 0)
-                            posts.sort { $0.publishedAt > $1.publishedAt }
-                            if posts.count > 200 {
-                                posts = Array(posts.prefix(200))
-                            }
-                        }
-                    } else {
-                        try? await Task.sleep(for: .milliseconds(300))
+                    let since = posts.map(\.publishedAt).max()
+                    let fetched = try await service.nostrFetchTextNotes(limit: 50, sinceUnix: since)
+                    let knownIds = Set(posts.map(\.id))
+                    let newPosts = fetched.filter { !knownIds.contains($0.id) }
+                    if !newPosts.isEmpty {
+                        posts.append(contentsOf: newPosts)
+                        posts.sort { $0.publishedAt > $1.publishedAt }
+                        posts = Array(posts.prefix(200))
                     }
+                    errorMessage = nil
                 } catch {
                     errorMessage = error.fieldRuntimeMessage
-                    try? await Task.sleep(for: .milliseconds(300))
                 }
+                try? await Task.sleep(for: .seconds(5))
             }
         }
     }

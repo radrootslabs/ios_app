@@ -10,8 +10,8 @@ configs:
 
 packages:
   RadrootsKit:
-    url: git@github.com:radrootslabs/apple_kit.git
-    branch: master
+    url: https://github.com/radrootslabs/apple_kit.git
+    revision: 483f952ca0fe4b395a6c6910ccdb3fd1d2640e82
 
 targets:
   Radroots:

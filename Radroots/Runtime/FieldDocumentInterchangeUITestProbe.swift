@@ -38,8 +38,9 @@ enum FieldDocumentInterchangeUITestProbe {
         bundleIdentifier: String,
         infoJSONString: String,
         relays: [String],
-        connectedCount: UInt32,
-        connectingCount: UInt32,
+        configured: Bool,
+        sourceAvailable: Bool,
+        sinkAvailable: Bool,
         lastError: String?
     ) throws -> String? {
         guard isRequested else {
@@ -50,8 +51,9 @@ enum FieldDocumentInterchangeUITestProbe {
         let diagnosticsExport = try interchange.prepareDiagnosticsExport(
             infoJSONString: infoJSONString,
             relays: relays,
-            connectedCount: connectedCount,
-            connectingCount: connectingCount,
+            configured: configured,
+            sourceAvailable: sourceAvailable,
+            sinkAvailable: sinkAvailable,
             lastError: lastError
         )
         let diagnosticsFileExists = try fileAccess.preparedExportExists(diagnosticsExport)

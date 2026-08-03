@@ -120,8 +120,9 @@ final class FieldTelemetry: @unchecked Sendable {
     }
 
     func relayStatusChanged(
-        connectedCount: UInt32,
-        connectingCount: UInt32,
+        configured: Bool,
+        sourceAvailable: Bool,
+        sinkAvailable: Bool,
         configuredRelayCount: Int,
         light: String
     ) {
@@ -129,8 +130,9 @@ final class FieldTelemetry: @unchecked Sendable {
             name: "field_ios.relay.status_changed",
             level: light == "red" ? .warning : .info,
             fields: [
-                try? .integer("connected_count", Int64(connectedCount)),
-                try? .integer("connecting_count", Int64(connectingCount)),
+                try? .bool("configured", configured),
+                try? .bool("source_available", sourceAvailable),
+                try? .bool("sink_available", sinkAvailable),
                 try? .integer("configured_relay_count", configuredRelayCount),
                 try? .string("relay_light", light)
             ].compactMap { $0 }
@@ -224,8 +226,9 @@ final class FieldTelemetry: @unchecked Sendable {
         taskCount: Int? = nil,
         stagedBlobCount: Int? = nil,
         transferCount: Int? = nil,
-        relayConnectedCount: UInt32? = nil,
-        relayConnectingCount: UInt32? = nil,
+        relayConfigured: Bool? = nil,
+        relaySourceAvailable: Bool? = nil,
+        relaySinkAvailable: Bool? = nil,
         identityUnlocked: Bool? = nil,
         reason: String? = nil
     ) {
@@ -246,12 +249,16 @@ final class FieldTelemetry: @unchecked Sendable {
            let field = try? RadrootsTelemetryField.integer("transfer_count", transferCount) {
             fields.append(field)
         }
-        if let relayConnectedCount,
-           let field = try? RadrootsTelemetryField.integer("relay_connected_count", Int64(relayConnectedCount)) {
+        if let relayConfigured,
+           let field = try? RadrootsTelemetryField.bool("relay_configured", relayConfigured) {
             fields.append(field)
         }
-        if let relayConnectingCount,
-           let field = try? RadrootsTelemetryField.integer("relay_connecting_count", Int64(relayConnectingCount)) {
+        if let relaySourceAvailable,
+           let field = try? RadrootsTelemetryField.bool("relay_source_available", relaySourceAvailable) {
+            fields.append(field)
+        }
+        if let relaySinkAvailable,
+           let field = try? RadrootsTelemetryField.bool("relay_sink_available", relaySinkAvailable) {
             fields.append(field)
         }
         if let identityUnlocked,

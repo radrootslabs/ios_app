@@ -413,12 +413,13 @@ actor FieldBackgroundExecution {
             let relaySettings = try RelaySettings.effectiveSnapshot(bundleIdentifier: roots.appIdentifier)
             try await runtimeService.nostrSetDefaultRelays(relaySettings.relays)
             try await runtimeService.nostrConnectIfKeyPresent()
-            let status = await runtimeService.nostrConnectionStatus()
+            let status = try await runtimeService.nostrConnectionStatus()
             telemetry.backgroundExecution(
                 operation: "relay_refresh",
                 outcome: "success",
-                relayConnectedCount: status.connected,
-                relayConnectingCount: status.connecting,
+                relayConfigured: status.configured,
+                relaySourceAvailable: status.sourceAvailable,
+                relaySinkAvailable: status.sinkAvailable,
                 identityUnlocked: true,
                 reason: reason
             )

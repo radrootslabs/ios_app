@@ -83,8 +83,6 @@
 		63189EB90A86A9929BECD9ED /* Nostr.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nostr.swift; sourceTree = "<group>"; };
 		676B89EB116B60AE8C2B4313 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		6FBB081610305940C7849C7C /* RelaySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelaySettings.swift; sourceTree = "<group>"; };
-		7515B8FD2A65990C3E3E93CE /* apple_kit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = apple_kit; path = ../../../../domains/radroots/apple_kit; sourceTree = SOURCE_ROOT; };
-		7BCA99336E305EC789152DDE /* radroots.local.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.local.xcconfig; sourceTree = "<group>"; };
 		7C294E8EF50F5E1E73F5C135 /* Common.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
 		7CC1D11E2E296B4B54E7E8A9 /* FieldCaptureIntake.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldCaptureIntake.swift; sourceTree = "<group>"; };
 		8246B707FA9D218414EC4038 /* FieldSecureIdentityStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldSecureIdentityStore.swift; sourceTree = "<group>"; };
@@ -162,7 +160,6 @@
 			isa = PBXGroup;
 			children = (
 				54EE5A34FE2086899F5B7568 /* radroots.git.xcconfig */,
-				7BCA99336E305EC789152DDE /* radroots.local.xcconfig */,
 				4BC4B7D0BB4C6D8E4B0AA4AD /* radroots.xcconfig */,
 				23C2D7FF63B61CD356979E82 /* App */,
 				579F407D96CCAFD4000EF363 /* Config */,
@@ -242,14 +239,6 @@
 			path = Shared;
 			sourceTree = "<group>";
 		};
-		9458C318B571871852A3FD1B /* Packages */ = {
-			isa = PBXGroup;
-			children = (
-				7515B8FD2A65990C3E3E93CE /* apple_kit */,
-			);
-			name = Packages;
-			sourceTree = "<group>";
-		};
 		97FA23F0FD7E25C1AF2585FB /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -286,7 +275,6 @@
 		C4F02317699AB4FA59315D05 = {
 			isa = PBXGroup;
 			children = (
-				9458C318B571871852A3FD1B /* Packages */,
 				5FD6379AE27C57D02E8C7EE1 /* Radroots */,
 				97FA23F0FD7E25C1AF2585FB /* Frameworks */,
 				6240123423927396E47D6B3E /* Products */,
@@ -373,7 +361,7 @@
 			mainGroup = C4F02317699AB4FA59315D05;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				D71BF9693060631950EFC310 /* XCLocalSwiftPackageReference "../../../../domains/radroots/apple_kit" */,
+				5696E24009739E3BD13D6580 /* XCRemoteSwiftPackageReference "apple_kit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6240123423927396E47D6B3E /* Products */;
@@ -674,16 +662,21 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		D71BF9693060631950EFC310 /* XCLocalSwiftPackageReference "../../../../domains/radroots/apple_kit" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../../../domains/radroots/apple_kit;
+/* Begin XCRemoteSwiftPackageReference section */
+		5696E24009739E3BD13D6580 /* XCRemoteSwiftPackageReference "apple_kit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/radrootslabs/apple_kit.git";
+			requirement = {
+				kind = revision;
+				revision = 483f952ca0fe4b395a6c6910ccdb3fd1d2640e82;
+			};
 		};
-/* End XCLocalSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		2DAD90EBF8EB00ACDD7611CD /* RadrootsKit */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 5696E24009739E3BD13D6580 /* XCRemoteSwiftPackageReference "apple_kit" */;
 			productName = RadrootsKit;
 		};
 /* End XCSwiftPackageProductDependency section */

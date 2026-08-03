@@ -52,8 +52,8 @@ struct PostFeedView: View {
                         }
                     }
                 } footer: {
-                    if app.relayConnectedCount == 0 {
-                        Text("No relays connected. Configure and connect to load posts.")
+                    if !app.relaySourceAvailable {
+                        Text("No relay source is available. Configure a relay to load posts.")
                     }
                 }
             }

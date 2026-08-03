@@ -8,7 +8,7 @@ struct PostCreateView: View {
     @State private var showResult = false
     @FocusState private var focused: Bool
 
-    private var isConnected: Bool { app.relayConnectedCount > 0 }
+    private var isConnected: Bool { app.relaySinkAvailable }
     private var canPost: Bool {
         isConnected && !isPosting && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }

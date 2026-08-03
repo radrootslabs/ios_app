@@ -20,8 +20,9 @@ enum FieldDocumentInterchangeError: LocalizedError, Equatable {
 
 struct FieldRelayStatusDocument: Encodable, Equatable {
     let configuredRelays: [String]
-    let connectedCount: UInt32
-    let connectingCount: UInt32
+    let configured: Bool
+    let sourceAvailable: Bool
+    let sinkAvailable: Bool
     let lastError: String?
 }
 
@@ -106,17 +107,19 @@ final class FieldDocumentInterchange {
     func prepareDiagnosticsExport(
         infoJSONString: String,
         relays: [String],
-        connectedCount: UInt32,
-        connectingCount: UInt32,
+        configured: Bool,
+        sourceAvailable: Bool,
+        sinkAvailable: Bool,
         lastError: String?
     ) throws -> RadrootsPreparedExportDocument {
         let document = FieldDiagnosticsDocument(
-            format: "radroots_field_ios_diagnostics_v1",
+            format: "radroots_field_ios_diagnostics_v2",
             runtime: Self.jsonValue(from: infoJSONString),
             relay: FieldRelayStatusDocument(
                 configuredRelays: try Self.validatedRelays(relays),
-                connectedCount: connectedCount,
-                connectingCount: connectingCount,
+                configured: configured,
+                sourceAvailable: sourceAvailable,
+                sinkAvailable: sinkAvailable,
                 lastError: lastError
             )
         )

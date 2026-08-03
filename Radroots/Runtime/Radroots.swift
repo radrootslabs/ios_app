@@ -37,10 +37,6 @@ public final class Radroots: ObservableObject {
         return service
     }
 
-    deinit {
-        runtime?.stop()
-    }
-
     public func info() -> RuntimeInfo? {
         runtime?.info()
     }

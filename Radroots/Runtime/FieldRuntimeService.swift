@@ -1,7 +1,7 @@
 import Foundation
 
 public final class FieldRuntimeService: @unchecked Sendable {
-    private let runtime: RadrootsRuntime
+    let runtime: RadrootsRuntime
     private let queue = DispatchQueue(label: "org.radroots.field_ios.runtime", qos: .userInitiated)
 
     public init(runtime: RadrootsRuntime) {
@@ -40,8 +40,8 @@ public final class FieldRuntimeService: @unchecked Sendable {
         try await run { try $0.nostrConnectIfKeyPresent() }
     }
 
-    public func nostrConnectionStatus() async -> NostrConnectionStatus {
-        await runValue { $0.nostrConnectionStatus() }
+    public func nostrConnectionStatus() async throws -> NostrConnectionStatus {
+        try await runtime.nostrConnectionStatus()
     }
 
     public func nostrIdentitySnapshot() async throws -> NostrIdentitySnapshot {
@@ -83,17 +83,13 @@ public final class FieldRuntimeService: @unchecked Sendable {
     }
 
     public func nostrProfileForSelf() async throws -> NostrProfileEventMetadata? {
-        try await run { try $0.nostrProfileForSelf() }
+        try await runtime.nostrProfileForSelf()
     }
 
     public func nostrFetchTextNotes(
         limit: UInt16,
         sinceUnix: UInt64?
     ) async throws -> [NostrPostEventMetadata] {
-        try await run { try $0.nostrFetchTextNotes(limit: limit, sinceUnix: sinceUnix) }
-    }
-
-    public func nostrNextPostStreamEvent() async throws -> NostrPostEventMetadata? {
-        try await run { try $0.nostrNextPostEvent() }
+        try await runtime.nostrFetchTextNotes(limit: limit, sinceUnix: sinceUnix)
     }
 }

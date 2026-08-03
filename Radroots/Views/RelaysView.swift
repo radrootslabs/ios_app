@@ -19,16 +19,16 @@ struct RelaysView: View {
         List {
             Section("Relays") {
                 RelayMetricRow(
-                    label: "Connected",
-                    systemImage: "dot.radiowaves.left.and.right",
-                    value: app.relayConnectedCount,
-                    accessibilityID: "field_ios.relays.connected_count"
+                    label: "Read operations",
+                    systemImage: "arrow.down.circle",
+                    value: app.relaySourceAvailable ? "Available" : "Unavailable",
+                    accessibilityID: "field_ios.relays.source_available"
                 )
                 RelayMetricRow(
-                    label: "Connecting",
-                    systemImage: "antenna.radiowaves.left.and.right",
-                    value: app.relayConnectingCount,
-                    accessibilityID: "field_ios.relays.connecting_count"
+                    label: "Write operations",
+                    systemImage: "arrow.up.circle",
+                    value: app.relaySinkAvailable ? "Available" : "Unavailable",
+                    accessibilityID: "field_ios.relays.sink_available"
                 )
                 if let last = app.relayLastError {
                     Text(last)
@@ -180,18 +180,18 @@ struct RelaysView: View {
 private struct RelayMetricRow: View {
     let label: String
     let systemImage: String
-    let value: UInt32
+    let value: String
     let accessibilityID: String
 
     var body: some View {
         HStack {
             Label(label, systemImage: systemImage)
             Spacer()
-            Text("\(value)")
+            Text(value)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
-        .accessibilityValue("\(value)")
+        .accessibilityValue(value)
         .accessibilityIdentifier(accessibilityID)
     }
 }

@@ -102,7 +102,7 @@ public struct ProfileView: View {
         }
     }
 
-    private var isConnected: Bool { app.relayConnectedCount > 0 }
+    private var isConnected: Bool { app.relaySinkAvailable }
     private var isPostEnabled: Bool { isConnected && !isPosting }
     private var hasChanges: Bool {
         name != original.name ||
