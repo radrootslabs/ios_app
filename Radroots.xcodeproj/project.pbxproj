@@ -30,6 +30,7 @@
 		7E650F6DA30931E310F842E2 /* FieldFileAccessUITestProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 491D57E540BAB04F24619737 /* FieldFileAccessUITestProbe.swift */; };
 		7FD8FB018DA09568303194B2 /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADE61264E2C98E73828E8680 /* Strings.swift */; };
 		82903551F5E15FBDAC388D20 /* FieldExternalActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E6187FA7C4786EC662718B2 /* FieldExternalActions.swift */; };
+		850F3C1E444A4C0BC51A608D /* SharedEngineLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C4ADF0DD703CA020D0CF67D /* SharedEngineLifecycleTests.swift */; };
 		8B923F78BF5B680C7F6A7CE3 /* PostFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AE0EB327C10171444553378 /* PostFeedView.swift */; };
 		8F6D0970610DF68816DE1A98 /* Radroots.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F0F21496E7A8490EB14AC5B /* Radroots.swift */; };
 		9121BD4A3E7C6EF2B21F540F /* CopyButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C7DE4207398DE242519F9C /* CopyButton.swift */; };
@@ -60,6 +61,16 @@
 		F3E40E5A76B4EA19AC7603D2 /* RadrootsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2DAD90EBF8EB00ACDD7611CD /* RadrootsKit */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		5B242C3EC56D6F3216103D77 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 572C41532B5066EC7641561C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 469EC50C49E7266DF1C2000B;
+			remoteInfo = Radroots;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		08FA88664E5E3ED3A24D56CC /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		0A0274A0260D1C04F40C71AF /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -70,6 +81,7 @@
 		227028B4EBDC6703999FB9DA /* ToastModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastModifier.swift; sourceTree = "<group>"; };
 		2818363B157125491FB84A1E /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		2F3541389124A31F5D701A45 /* FieldLocationCheckIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldLocationCheckIn.swift; sourceTree = "<group>"; };
+		318804462AADCA05FB04ACD9 /* RadrootsTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RadrootsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		32238D3DFB4465DEEDE6E003 /* FieldRuntimeError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldRuntimeError.swift; sourceTree = "<group>"; };
 		3B4E53FD4C4AADF63855888A /* FieldTelemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldTelemetry.swift; sourceTree = "<group>"; };
 		3E6187FA7C4786EC662718B2 /* FieldExternalActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldExternalActions.swift; sourceTree = "<group>"; };
@@ -77,6 +89,7 @@
 		481E7791F4F6CF82FA3117C1 /* FieldIdentityImportFailureUITestProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldIdentityImportFailureUITestProbe.swift; sourceTree = "<group>"; };
 		491D57E540BAB04F24619737 /* FieldFileAccessUITestProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldFileAccessUITestProbe.swift; sourceTree = "<group>"; };
 		4BC4B7D0BB4C6D8E4B0AA4AD /* radroots.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.xcconfig; sourceTree = "<group>"; };
+		4C4ADF0DD703CA020D0CF67D /* SharedEngineLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedEngineLifecycleTests.swift; sourceTree = "<group>"; };
 		4E150C6C18B2A06F2F3227C6 /* FieldIdentityPolicyUITestProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldIdentityPolicyUITestProbe.swift; sourceTree = "<group>"; };
 		54EE5A34FE2086899F5B7568 /* radroots.git.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = radroots.git.xcconfig; sourceTree = "<group>"; };
 		59AC0543EF8335D691D56BD3 /* FieldBackgroundExecutionUITestProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldBackgroundExecutionUITestProbe.swift; sourceTree = "<group>"; };
@@ -145,6 +158,14 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		31C88176C5674CFF5F9CFBEA /* RadrootsTests */ = {
+			isa = PBXGroup;
+			children = (
+				4C4ADF0DD703CA020D0CF67D /* SharedEngineLifecycleTests.swift */,
+			);
+			path = RadrootsTests;
+			sourceTree = "<group>";
+		};
 		579F407D96CCAFD4000EF363 /* Config */ = {
 			isa = PBXGroup;
 			children = (
@@ -176,6 +197,7 @@
 			isa = PBXGroup;
 			children = (
 				93AA285819DD1269C3EAD80A /* Radroots.app */,
+				318804462AADCA05FB04ACD9 /* RadrootsTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -276,6 +298,7 @@
 			isa = PBXGroup;
 			children = (
 				5FD6379AE27C57D02E8C7EE1 /* Radroots */,
+				31C88176C5674CFF5F9CFBEA /* RadrootsTests */,
 				97FA23F0FD7E25C1AF2585FB /* Frameworks */,
 				6240123423927396E47D6B3E /* Products */,
 			);
@@ -340,6 +363,24 @@
 			productReference = 93AA285819DD1269C3EAD80A /* Radroots.app */;
 			productType = "com.apple.product-type.application";
 		};
+		67B2EF8D69F6CEA9BE5A8B04 /* RadrootsTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DCDE79513C7AE684F9540473 /* Build configuration list for PBXNativeTarget "RadrootsTests" */;
+			buildPhases = (
+				4948BBB44D48B961DE81F508 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C4ECFE4B8C347EE1F784B9BA /* PBXTargetDependency */,
+			);
+			name = RadrootsTests;
+			packageProductDependencies = (
+			);
+			productName = RadrootsTests;
+			productReference = 318804462AADCA05FB04ACD9 /* RadrootsTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -369,6 +410,7 @@
 			projectRoot = "";
 			targets = (
 				469EC50C49E7266DF1C2000B /* Radroots */,
+				67B2EF8D69F6CEA9BE5A8B04 /* RadrootsTests */,
 			);
 		};
 /* End PBXProject section */
@@ -408,6 +450,14 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		4948BBB44D48B961DE81F508 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				850F3C1E444A4C0BC51A608D /* SharedEngineLifecycleTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		78F7810CC77628CB591F8CD2 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -464,6 +514,14 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		C4ECFE4B8C347EE1F784B9BA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 469EC50C49E7266DF1C2000B /* Radroots */;
+			targetProxy = 5B242C3EC56D6F3216103D77 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin PBXVariantGroup section */
 		8D19AA8D515FC8F5D2407378 /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
@@ -498,6 +556,24 @@
 			};
 			name = Debug;
 		};
+		8113D02CF1312FB10249F707 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Radroots.app/Radroots";
+			};
+			name = Release;
+		};
 		D930E9391B5B63DB518922D2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 08FA88664E5E3ED3A24D56CC /* Release.xcconfig */;
@@ -519,6 +595,24 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
+		};
+		F1654BB285BEA5667F11CBD2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Radroots.app/Radroots";
+			};
+			name = Debug;
 		};
 		F4E5B115657562F65E2A7C00 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -656,6 +750,15 @@
 			buildConfigurations = (
 				F4F00921D65CA3F2388F2BCC /* Debug */,
 				F4E5B115657562F65E2A7C00 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DCDE79513C7AE684F9540473 /* Build configuration list for PBXNativeTarget "RadrootsTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F1654BB285BEA5667F11CBD2 /* Debug */,
+				8113D02CF1312FB10249F707 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

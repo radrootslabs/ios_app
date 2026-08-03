@@ -40,4 +40,11 @@ public final class Radroots: ObservableObject {
     public func info() -> RuntimeInfo? {
         runtime?.info()
     }
+
+    public func shutdown() async {
+        guard let runtimeService else { return }
+        _ = try? await runtimeService.shutdown()
+        self.runtimeService = nil
+        runtime = nil
+    }
 }

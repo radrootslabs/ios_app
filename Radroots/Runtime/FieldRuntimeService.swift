@@ -32,6 +32,10 @@ public final class FieldRuntimeService: @unchecked Sendable {
         await runValue { $0.infoJson() }
     }
 
+    public func shutdown() async throws -> SdkShutdownRecord {
+        try await runtime.shutdown()
+    }
+
     public func nostrSetDefaultRelays(_ relays: [String]) async throws {
         try await run { try $0.nostrSetDefaultRelays(relays: relays) }
     }

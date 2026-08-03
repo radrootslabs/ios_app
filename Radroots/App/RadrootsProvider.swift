@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 public struct RadrootsProvider<Content: View>: View {
     @Environment(\.scenePhase) private var scenePhase
@@ -36,6 +37,12 @@ public struct RadrootsProvider<Content: View>: View {
                 @unknown default:
                     break
                 }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willTerminateNotification)) { _ in
+                Task { await appState.shutdown() }
+            }
+            .onDisappear {
+                Task { await appState.shutdown() }
             }
     }
 }

@@ -220,6 +220,19 @@ public final class AppState: ObservableObject {
         }
     }
 
+    public func shutdown() async {
+        statusTask?.cancel()
+        statusTask = nil
+        telemetryProbeTask?.cancel()
+        telemetryProbeTask = nil
+        await backgroundExecution?.cancelAll()
+        if let service = runtimeService {
+            try? await service.nostrIdentityLockHostCustodyRuntime()
+        }
+        backgroundExecution = nil
+        await radroots.shutdown()
+    }
+
     public func continueWithLocalIdentity() async throws {
         let service = try requireRuntimeService()
         do {
