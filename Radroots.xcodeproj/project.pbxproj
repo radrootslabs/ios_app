@@ -771,7 +771,7 @@
 			repositoryURL = "https://github.com/radrootslabs/apple_kit.git";
 			requirement = {
 				kind = revision;
-				revision = 483f952ca0fe4b395a6c6910ccdb3fd1d2640e82;
+				revision = fdcf377466e1c25945ef561042ebc250eb68cd3a;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
