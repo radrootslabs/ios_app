@@ -1,0 +1,26 @@
+[workspace]
+members = ["crates/source_lock"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0-alpha"
+edition = "2024"
+rust-version = "1.97.1"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/radrootslabs/ios_app"
+homepage = "https://radroots.org"
+authors = ["Tyson Lupul <tyson@radroots.org>"]
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
+
+[workspace.lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+unimplemented = "deny"
+
+[workspace.dependencies]
+radroots_mobile_ffi = { git = "https://github.com/radrootslabs/lib", rev = "2aa9874e3cbbee87055ca075784baa06bd385dc4", version = "=0.1.0-alpha" }
