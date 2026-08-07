@@ -26,7 +26,18 @@ FFI_OUTPUT_NAME := RadrootsFFI
 LIB_STEM := libradroots_mobile_ffi
 GIT_FIELD_LIB_DIR := $(SOURCE_ROOT)/lib
 PROVENANCE_OUTPUT := RadrootsFFI/provenance.json
+SOURCE_MODE ?= pinned
+LOCAL_LIB_ROOT ?=
+ifeq ($(SOURCE_MODE),local)
+ifeq ($(strip $(LOCAL_LIB_ROOT)),)
+$(error LOCAL_LIB_ROOT is required when SOURCE_MODE=local)
+endif
+SOURCE_WORKSPACE_ROOT := $(abspath $(LOCAL_LIB_ROOT))
+else ifeq ($(SOURCE_MODE),pinned)
 SOURCE_WORKSPACE_ROOT := $(GIT_FIELD_LIB_DIR)
+else
+$(error SOURCE_MODE must be pinned or local)
+endif
 FFI_MANIFEST := $(SOURCE_WORKSPACE_ROOT)/crates/mobile_ffi/Cargo.toml
 UNIFFI_CONFIG := $(SOURCE_WORKSPACE_ROOT)/crates/mobile_ffi/uniffi.toml
 
@@ -76,15 +87,22 @@ distclean: clean
 	rm -rf $(SOURCE_ROOT)
 
 sync-source:
-	mkdir -p $(SOURCE_ROOT)
-	if [ ! -d $(GIT_FIELD_LIB_DIR)/.git ]; then \
-		git clone --filter=blob:none $(RADROOTS_FIELD_LIB_GIT_URL) $(GIT_FIELD_LIB_DIR); \
+	@if [ "$(SOURCE_MODE)" = "local" ]; then \
+		test -d $(SOURCE_WORKSPACE_ROOT)/.git; \
+		test "$$(git -C $(SOURCE_WORKSPACE_ROOT) rev-parse HEAD)" = "$(RADROOTS_FIELD_LIB_GIT_REV)"; \
+		git -C $(SOURCE_WORKSPACE_ROOT) diff --quiet --no-ext-diff; \
+		git -C $(SOURCE_WORKSPACE_ROOT) diff --cached --quiet --no-ext-diff; \
+	else \
+		mkdir -p $(SOURCE_ROOT); \
+		if [ ! -d $(GIT_FIELD_LIB_DIR)/.git ]; then \
+			git clone --filter=blob:none $(RADROOTS_FIELD_LIB_GIT_URL) $(GIT_FIELD_LIB_DIR); \
+		fi; \
+		git -C $(GIT_FIELD_LIB_DIR) fetch --tags --force origin; \
+		git -C $(GIT_FIELD_LIB_DIR) checkout --detach $(RADROOTS_FIELD_LIB_GIT_REV); \
+		test "$$(git -C $(GIT_FIELD_LIB_DIR) rev-parse HEAD)" = "$(RADROOTS_FIELD_LIB_GIT_REV)"; \
+		git -C $(GIT_FIELD_LIB_DIR) diff --quiet --no-ext-diff; \
+		git -C $(GIT_FIELD_LIB_DIR) diff --cached --quiet --no-ext-diff; \
 	fi
-	git -C $(GIT_FIELD_LIB_DIR) fetch --tags --force origin
-	git -C $(GIT_FIELD_LIB_DIR) checkout --detach $(RADROOTS_FIELD_LIB_GIT_REV)
-	test "$$(git -C $(GIT_FIELD_LIB_DIR) rev-parse HEAD)" = "$(RADROOTS_FIELD_LIB_GIT_REV)"
-	git -C $(GIT_FIELD_LIB_DIR) diff --quiet --no-ext-diff
-	git -C $(GIT_FIELD_LIB_DIR) diff --cached --quiet --no-ext-diff
 	test -f $(FFI_MANIFEST)
 	test -f $(BINDGEN_MANIFEST)
 	test -f $(UNIFFI_CONFIG)
