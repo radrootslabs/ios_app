@@ -11,7 +11,7 @@ configs:
 packages:
   RadrootsKit:
     url: https://github.com/radrootslabs/apple_kit.git
-    revision: fdcf377466e1c25945ef561042ebc250eb68cd3a
+    revision: 265015fc537bfe507f12d801b9765be9764fbc95
 
 targets:
   Radroots:

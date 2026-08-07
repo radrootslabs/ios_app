@@ -6,7 +6,15 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/radrootslabs/apple_kit.git",
       "state" : {
-        "revision" : "fdcf377466e1c25945ef561042ebc250eb68cd3a"
+        "revision" : "265015fc537bfe507f12d801b9765be9764fbc95"
+      }
+    },
+    {
+      "identity" : "swift-secp256k1",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/21-DOT-DEV/swift-secp256k1.git",
+      "state" : {
+        "revision" : "e70a10e036a55fffea31568f0af92d69b6d449cd"
       }
     }
   ],

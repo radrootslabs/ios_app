@@ -21,6 +21,12 @@ override TARGET_DIR := $(abspath $(TARGET_DIR))
 OUT_DIR := $(BUILD_ROOT)/out
 GENERATED_DIR := $(OUT_DIR)/generated
 HEADERS_DIR := $(OUT_DIR)/headers
+API_WORK_DIR := $(OUT_DIR)/api
+API_MODULE_DIR := $(API_WORK_DIR)/module
+API_SYMBOLS_DIR := $(API_WORK_DIR)/symbols
+API_SNAPSHOT_DIR := $(CURDIR)/api
+API_SNAPSHOT := $(API_SNAPSHOT_DIR)/RadrootsKitBindings.symbols.json
+API_RENDERED := $(API_WORK_DIR)/RadrootsKitBindings.symbols.json
 
 FFI_OUTPUT_NAME := RadrootsFFI
 LIB_STEM := libradroots_mobile_ffi
@@ -54,8 +60,13 @@ CARGO := IPHONEOS_DEPLOYMENT_TARGET=$(IPHONEOS_DEPLOYMENT_TARGET) \
 LIB_DEVICE := $(TARGET_DIR)/aarch64-apple-ios/release/$(LIB_STEM).a
 LIB_SIMULATOR := $(TARGET_DIR)/aarch64-apple-ios-sim/release/$(LIB_STEM).a
 LIB_HOST := $(TARGET_DIR)/release/$(LIB_STEM).dylib
+SIMULATOR_HEADERS := $(ARTIFACTS_DIR)/$(FFI_OUTPUT_NAME).xcframework/ios-arm64-simulator/Headers
+SWIFT_SDK := $(shell xcrun --sdk iphonesimulator --show-sdk-path)
+SWIFT_COMPILER := $(shell xcrun --sdk iphonesimulator --find swiftc)
+SWIFT_SYMBOLGRAPH := $(shell xcrun --sdk iphonesimulator --find swift-symbolgraph-extract)
+SWIFT_API_TARGET := arm64-apple-ios$(IPHONEOS_DEPLOYMENT_TARGET)-simulator
 
-.PHONY: all clean distclean print-config sync-source ensure-toolchain build generate package install provenance verify
+.PHONY: all clean distclean print-config sync-source ensure-toolchain build generate package install api-snapshot-render api-snapshot-write api-snapshot-check provenance verify
 
 all: verify
 	@echo "done"
@@ -144,6 +155,41 @@ install: package
 	fi
 	cp $(GENERATED_DIR)/*.swift $(GENERATED_SWIFT_DIR)/
 
+api-snapshot-render: install
+	rm -rf $(API_WORK_DIR)
+	mkdir -p $(API_MODULE_DIR) $(API_SYMBOLS_DIR)
+	$(SWIFT_COMPILER) \
+		-emit-module \
+		-parse-as-library \
+		-module-name RadrootsKitBindings \
+		-target $(SWIFT_API_TARGET) \
+		-sdk $(SWIFT_SDK) \
+		-I $(SIMULATOR_HEADERS) \
+		-module-cache-path $(API_WORK_DIR)/module-cache \
+		-emit-module-path $(API_MODULE_DIR)/RadrootsKitBindings.swiftmodule \
+		$(GENERATED_SWIFT_DIR)/RadrootsKitBindings.swift
+	$(SWIFT_SYMBOLGRAPH) \
+		-module-name RadrootsKitBindings \
+		-target $(SWIFT_API_TARGET) \
+		-sdk $(SWIFT_SDK) \
+		-I $(API_MODULE_DIR) \
+		-I $(SIMULATOR_HEADERS) \
+		-module-cache-path $(API_WORK_DIR)/module-cache \
+		-minimum-access-level public \
+		-skip-inherited-docs \
+		-skip-synthesized-members \
+		-output-dir $(API_SYMBOLS_DIR)
+	jq -cS \
+		'{schema:"radroots.swift-api-snapshot.v1",generator:.metadata.generator,module:.module,symbols:(.symbols | map({kind:.kind.identifier,precise:.identifier.precise,path:.pathComponents,access:.accessLevel,declaration:.declarationFragments}) | sort_by(.precise)),relationships:(.relationships | map({kind,source,target}) | sort_by(.kind,.source,.target))}' \
+		$(API_SYMBOLS_DIR)/RadrootsKitBindings.symbols.json > $(API_RENDERED)
+
+api-snapshot-write: api-snapshot-render
+	mkdir -p $(API_SNAPSHOT_DIR)
+	cp $(API_RENDERED) $(API_SNAPSHOT)
+
+api-snapshot-check: api-snapshot-render
+	cmp $(API_RENDERED) $(API_SNAPSHOT)
+
 provenance: install
 	$(CARGO) run --manifest-path $(BINDGEN_MANIFEST) -p xtask --locked -- \
 		artifact \
@@ -168,7 +214,12 @@ provenance: install
 		--source-date-epoch $(RADROOTS_FIELD_SOURCE_DATE_EPOCH) \
 		--builder-id radroots_ios_app
 
-verify: provenance
+verify: provenance api-snapshot-check
 	test "$$(shasum -a 256 $(LIB_DEVICE) | awk '{print $$1}')" = "$(RADROOTS_FIELD_FFI_DEVICE_SHA256)"
 	test "$$(shasum -a 256 $(LIB_SIMULATOR) | awk '{print $$1}')" = "$(RADROOTS_FIELD_FFI_SIMULATOR_SHA256)"
 	test "$$(shasum -a 256 $(GENERATED_SWIFT_DIR)/RadrootsKitBindings.swift | awk '{print $$1}')" = "$(RADROOTS_FIELD_FFI_SWIFT_SHA256)"
+	test "$$(shasum -a 256 $(GENERATED_DIR)/RadrootsFFI.h | awk '{print $$1}')" = "$(RADROOTS_FIELD_FFI_HEADER_SHA256)"
+	test "$$(shasum -a 256 $(GENERATED_DIR)/RadrootsFFI.modulemap | awk '{print $$1}')" = "$(RADROOTS_FIELD_FFI_MODULEMAP_SHA256)"
+	test "$$(shasum -a 256 $(API_SNAPSHOT) | awk '{print $$1}')" = "$(RADROOTS_FIELD_FFI_API_SHA256)"
+	test "$$(cd $(ARTIFACTS_DIR) && find $(FFI_OUTPUT_NAME).xcframework -type f -print | LC_ALL=C sort | while IFS= read -r file; do shasum -a 256 "$$file"; done | shasum -a 256 | awk '{print $$1}')" = "$(RADROOTS_FIELD_FFI_XCFRAMEWORK_SHA256)"
+	! grep -E -i 'secret.?key|private.?key|file.?path|media.?bytes|raw.?media|unbounded' $(GENERATED_SWIFT_DIR)/RadrootsKitBindings.swift $(GENERATED_DIR)/RadrootsFFI.h
