@@ -2,66 +2,81 @@ import Foundation
 
 @MainActor
 final class RadrootsAppModel: ObservableObject {
-    enum Phase: Equatable {
-        case starting
-        case identityRequired
-        case running(RadrootsRuntimeSnapshot)
-        case failed(RadrootsRuntimeFailure)
-        case stopped
-    }
+    typealias Phase = RadrootsSessionPhase
 
     @Published private(set) var phase: Phase = .starting
 
-    private let runtimeClient: RadrootsRuntimeClient
-    private let configuration: RadrootsRuntimeLaunchConfiguration?
+    private let sessionStore: RadrootsSessionStore?
+    private let bootstrapFailure: RadrootsRuntimeFailure?
+    private var generation: UInt64 = 0
 
-    init(
-        runtimeClient: RadrootsRuntimeClient = .production(),
-        configuration: RadrootsRuntimeLaunchConfiguration? = nil
-    ) {
-        self.runtimeClient = runtimeClient
-        self.configuration = configuration
+    init(sessionStore: RadrootsSessionStore? = nil) {
+        if let sessionStore {
+            self.sessionStore = sessionStore
+            bootstrapFailure = nil
+        } else {
+            do {
+                self.sessionStore = try .production()
+                bootstrapFailure = nil
+            } catch let error as LocalizedError {
+                self.sessionStore = nil
+                bootstrapFailure = .local(
+                    operation: "app.bootstrap",
+                    code: "ios.app.configuration_invalid",
+                    safeMessage: error.errorDescription ?? "Radroots configuration is invalid."
+                )
+            } catch {
+                self.sessionStore = nil
+                bootstrapFailure = .local(
+                    operation: "app.bootstrap",
+                    code: "ios.app.configuration_invalid",
+                    safeMessage: "Radroots configuration is invalid."
+                )
+            }
+        }
     }
 
     func start() async {
-        guard let configuration else {
-            phase = .identityRequired
-            return
-        }
-        phase = .starting
-        do {
-            phase = try await .running(runtimeClient.start(configuration: configuration))
-        } catch let RadrootsRuntimeClientError.startup(failure) {
-            phase = .failed(failure)
-        } catch {
-            phase = .failed(
-                .local(
-                    operation: "app.start",
-                    code: "ios.app.start_failed",
-                    safeMessage: "Radroots could not start."
-                )
-            )
-        }
+        await run { store in await store.start() }
     }
 
     func retry() async {
         await start()
     }
 
+    func createIdentity() async {
+        await run { store in await store.createIdentity() }
+    }
+
+    func unlockIdentity() async {
+        await run { store in await store.unlockIdentity() }
+    }
+
+    func recoverIdentity() async {
+        await run { store in await store.recoverIdentity() }
+    }
+
     func stop() async {
-        do {
-            _ = try await runtimeClient.stop()
-            phase = .stopped
-        } catch let RadrootsRuntimeClientError.shutdown(failure) {
-            phase = .failed(failure)
-        } catch {
+        await run { store in await store.stop() }
+    }
+
+    private func run(
+        _ operation: @escaping @Sendable (RadrootsSessionStore) async -> Phase
+    ) async {
+        generation &+= 1
+        let requestedGeneration = generation
+        guard let sessionStore else {
             phase = .failed(
-                .local(
-                    operation: "app.stop",
-                    code: "ios.app.stop_failed",
-                    safeMessage: "Radroots could not finish shutting down."
+                bootstrapFailure ?? .local(
+                    operation: "app.bootstrap",
+                    code: "ios.app.bootstrap_failed",
+                    safeMessage: "Radroots could not start."
                 )
             )
+            return
         }
+        let result = await operation(sessionStore)
+        guard generation == requestedGeneration else { return }
+        phase = result
     }
 }

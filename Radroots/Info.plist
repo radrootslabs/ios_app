@@ -17,7 +17,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>0.1.0-alpha</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
@@ -96,6 +96,8 @@
 	<string>$(RADROOTS_FIELD_IOS_NOSTR_RELAY_URLS)</string>
 	<key>RADROOTS_FIELD_IOS_KEYCHAIN_SERVICE_PREFIX</key>
 	<string>$(RADROOTS_FIELD_IOS_KEYCHAIN_SERVICE_PREFIX)</string>
+	<key>RADROOTS_FIELD_IOS_BLOSSOM_ORIGINS</key>
+	<string>$(RADROOTS_FIELD_IOS_BLOSSOM_ORIGINS)</string>
 	<key>RADROOTS_FIELD_IOS_KEYCHAIN_ACCESS_POLICY</key>
 	<string>$(RADROOTS_FIELD_IOS_KEYCHAIN_ACCESS_POLICY)</string>
 	<key>RADROOTS_FIELD_IOS_RESET_LOCAL_STATE</key>

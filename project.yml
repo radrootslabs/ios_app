@@ -42,6 +42,9 @@ targets:
       - path: Radroots/Runtime/RadrootsGeneratedRuntimeBackend.swift
       - path: Radroots/Runtime/RadrootsRuntimeClient.swift
       - path: Radroots/Runtime/RadrootsRuntimeModels.swift
+      - path: Radroots/State/RadrootsConfigurationStore.swift
+      - path: Radroots/State/RadrootsIdentityStore.swift
+      - path: Radroots/State/RadrootsSessionStore.swift
       - path: Radroots/Views/RuntimeStatusView.swift
       - path: Radroots/Resources
     settings:
@@ -68,6 +71,7 @@ targets:
     deploymentTarget: "18.0"
     sources:
       - path: RadrootsTests/RadrootsRuntimeClientTests.swift
+      - path: RadrootsTests/RadrootsStateMigrationTests.swift
     settings:
       base:
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64

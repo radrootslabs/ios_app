@@ -18,7 +18,44 @@ struct RadrootsRuntimeAppMetadata: Sendable, Equatable {
     let buildSHA: String?
 }
 
-struct RadrootsRuntimeLaunchConfiguration: Sendable, Equatable {
+enum RadrootsRuntimeSignerAvailability: Sendable, Equatable {
+    case ready
+    case busy
+    case locked
+    case unavailable
+}
+
+enum RadrootsRuntimeSigningPurpose: Sendable, Equatable {
+    case nostrEvent
+    case blossomUpload
+}
+
+struct RadrootsRuntimeSigningRequest: Sendable, Equatable {
+    let operationID: String
+    let signerRequestID: String
+    let publicKeyHex: String
+    let purpose: RadrootsRuntimeSigningPurpose
+    let deadlineUnixMilliseconds: UInt64
+    let digest: Data
+}
+
+enum RadrootsRuntimeSigningOutcome: Sendable, Equatable {
+    case signed(signatureHex: String)
+    case locked
+    case cancelled
+    case rejected
+    case timedOut
+    case unavailable
+    case invalidated
+    case failed
+}
+
+protocol RadrootsRuntimeSigner: Sendable {
+    func availability() async -> RadrootsRuntimeSignerAvailability
+    func sign(_ request: RadrootsRuntimeSigningRequest) async -> RadrootsRuntimeSigningOutcome
+}
+
+struct RadrootsRuntimeLaunchConfiguration: Sendable {
     let applicationSupportDirectory: String
     let publicKeyHex: String
     let sourceGenerationHex: String
@@ -28,6 +65,24 @@ struct RadrootsRuntimeLaunchConfiguration: Sendable, Equatable {
     let writableRelays: [String]
     let blossomOrigins: [String]
     let app: RadrootsRuntimeAppMetadata
+    let signerGeneration: String
+    let signer: any RadrootsRuntimeSigner
+}
+
+extension RadrootsRuntimeLaunchConfiguration: Equatable {
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.applicationSupportDirectory == rhs.applicationSupportDirectory
+            && lhs.publicKeyHex == rhs.publicKeyHex
+            && lhs.sourceGenerationHex == rhs.sourceGenerationHex
+            && lhs.sourceGenerationCreatedAtUnixMilliseconds
+            == rhs.sourceGenerationCreatedAtUnixMilliseconds
+            && lhs.protectedData == rhs.protectedData
+            && lhs.networkProfile == rhs.networkProfile
+            && lhs.writableRelays == rhs.writableRelays
+            && lhs.blossomOrigins == rhs.blossomOrigins
+            && lhs.app == rhs.app
+            && lhs.signerGeneration == rhs.signerGeneration
+    }
 }
 
 struct RadrootsRuntimeIdentity: Sendable, Equatable {

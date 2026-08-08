@@ -1,6 +1,45 @@
 import Foundation
 import RadrootsKitBindings
 
+private final class RadrootsGeneratedHostSigner: RadrootsHostSigner, @unchecked Sendable {
+    private let signer: any RadrootsRuntimeSigner
+
+    init(signer: any RadrootsRuntimeSigner) {
+        self.signer = signer
+    }
+
+    func signerStatus() async -> SignerStatusRecord {
+        await SignerStatusRecord(
+            schemaVersion: 1,
+            availability: signer.availability().generatedValue
+        )
+    }
+
+    func sign(request: HostSigningRequest) async -> HostSigningResult {
+        let purpose = request.purpose.appValue
+        let outcome = await signer.sign(
+            RadrootsRuntimeSigningRequest(
+                operationID: request.operationId,
+                signerRequestID: request.signerRequestId,
+                publicKeyHex: request.publicKey,
+                purpose: purpose,
+                deadlineUnixMilliseconds: request.deadlineUnixMs,
+                digest: request.eventIdDigest
+            )
+        )
+        return HostSigningResult(
+            schemaVersion: 1,
+            outcome: outcome.generatedOutcome,
+            operationId: request.operationId,
+            signerRequestId: request.signerRequestId,
+            publicKey: request.publicKey,
+            purpose: request.purpose,
+            signatureHex: outcome.signatureHex,
+            completedAtUnixMs: UInt64(Date().timeIntervalSince1970 * 1000)
+        )
+    }
+}
+
 private final class RadrootsGeneratedRuntimeObserver: RadrootsRuntimeObserver, @unchecked Sendable {
     private let continuation: AsyncStream<RadrootsRuntimeChange>.Continuation
 
@@ -142,12 +181,13 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
     ) async throws -> RadrootsRuntimeBackendStart {
         var createdRuntime: RadrootsRuntime?
         do {
-            let runtime = try await RadrootsRuntime(
+            let runtime = try await RadrootsRuntime.withHostSigner(
                 applicationSupportDirectory: configuration.applicationSupportDirectory,
                 publicKeyHex: configuration.publicKeyHex,
                 sourceGenerationHex: configuration.sourceGenerationHex,
                 sourceGenerationCreatedAtUnixMs: configuration.sourceGenerationCreatedAtUnixMilliseconds,
-                protectedData: configuration.protectedData.generatedValue
+                protectedData: configuration.protectedData.generatedValue,
+                hostSigner: RadrootsGeneratedHostSigner(signer: configuration.signer)
             )
             createdRuntime = runtime
             runtime.setAppInfoPlatform(
@@ -161,13 +201,19 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
             switch configuration.networkProfile {
             case .publicNetwork:
                 try runtime.configurePublicRelays(writableRelays: configuration.writableRelays)
-                try runtime.configurePublicBlossom(origins: configuration.blossomOrigins)
+                if !configuration.blossomOrigins.isEmpty {
+                    try runtime.configurePublicBlossom(origins: configuration.blossomOrigins)
+                }
             case .simulator:
                 try runtime.configureSimulatorRelays(loopbackRelays: configuration.writableRelays)
-                try runtime.configureSimulatorBlossom(origins: configuration.blossomOrigins)
+                if !configuration.blossomOrigins.isEmpty {
+                    try runtime.configureSimulatorBlossom(origins: configuration.blossomOrigins)
+                }
             case .device:
                 try runtime.configureDeviceRelays(writableRelays: configuration.writableRelays)
-                try runtime.configureDeviceBlossom(origins: configuration.blossomOrigins)
+                if !configuration.blossomOrigins.isEmpty {
+                    try runtime.configureDeviceBlossom(origins: configuration.blossomOrigins)
+                }
             }
 
             let backend = RadrootsGeneratedRuntimeBackend(runtime: runtime)
@@ -204,6 +250,48 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
             code: "ios.generated_runtime.unexpected",
             safeMessage: "The Radroots runtime could not complete the operation."
         )
+    }
+}
+
+private extension RadrootsRuntimeSignerAvailability {
+    var generatedValue: SignerAvailabilityRecord {
+        switch self {
+        case .ready: .ready
+        case .busy: .busy
+        case .locked: .locked
+        case .unavailable: .unavailable
+        }
+    }
+}
+
+private extension HostSigningPurpose {
+    var appValue: RadrootsRuntimeSigningPurpose {
+        switch self {
+        case .nostrEvent: .nostrEvent
+        case .blossomUpload: .blossomUpload
+        }
+    }
+}
+
+private extension RadrootsRuntimeSigningOutcome {
+    var generatedOutcome: HostSigningOutcome {
+        switch self {
+        case .signed: .signed
+        case .locked: .locked
+        case .cancelled: .cancelled
+        case .rejected: .rejected
+        case .timedOut: .timedOut
+        case .unavailable: .unavailable
+        case .invalidated: .invalidated
+        case .failed: .failed
+        }
+    }
+
+    var signatureHex: String? {
+        if case let .signed(signatureHex) = self {
+            return signatureHex
+        }
+        return nil
     }
 }
 

@@ -154,7 +154,9 @@ final class RadrootsRuntimeClientTests: XCTestCase {
                 version: "0.1.0-alpha",
                 buildNumber: "1",
                 buildSHA: nil
-            )
+            ),
+            signerGeneration: generation,
+            signer: TestRuntimeSigner()
         )
     }
 
@@ -165,6 +167,16 @@ final class RadrootsRuntimeClientTests: XCTestCase {
             kind: .today,
             entityID: "card-\(generation)"
         )
+    }
+}
+
+private struct TestRuntimeSigner: RadrootsRuntimeSigner {
+    func availability() async -> RadrootsRuntimeSignerAvailability {
+        .ready
+    }
+
+    func sign(_: RadrootsRuntimeSigningRequest) async -> RadrootsRuntimeSigningOutcome {
+        .failed
     }
 }
 
