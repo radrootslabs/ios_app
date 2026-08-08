@@ -142,6 +142,8 @@ final class RadrootsLifecycleTests: XCTestCase {
                     ),
                 ]
             ),
+            blossomConfiguration: nil,
+            blossomEvidence: nil,
             crateName: "radroots_mobile_ffi",
             crateVersion: "0.1.0-alpha",
             isClosed: false

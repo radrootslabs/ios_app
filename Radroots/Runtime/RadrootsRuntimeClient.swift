@@ -46,6 +46,7 @@ protocol RadrootsRuntimeBackend: Sendable {
     ) async throws -> RadrootsDraftStatus
     func recoverDraftQueue(id: String, recoveredAtUnixMilliseconds: UInt64) async throws -> RadrootsDraftStatus
     func uploadDraftMedia(input: RadrootsBlossomUploadInput) async throws -> RadrootsDraftStatus
+    func probeBlossom() async throws -> RadrootsBlossomEvidence
     func advanceDraft(id: String, expectedRevision: UInt64) async throws -> RadrootsDraftStatus
     func cancelDraft(
         id: String,
@@ -125,6 +126,10 @@ extension RadrootsRuntimeBackend {
 
     func uploadDraftMedia(input _: RadrootsBlossomUploadInput) async throws -> RadrootsDraftStatus {
         throw addUnsupported()
+    }
+
+    func probeBlossom() async throws -> RadrootsBlossomEvidence {
+        throw supportUnsupported()
     }
 
     func advanceDraft(id _: String, expectedRevision _: UInt64) async throws -> RadrootsDraftStatus {
@@ -399,6 +404,12 @@ actor RadrootsRuntimeClient {
     func uploadDraftMedia(input: RadrootsBlossomUploadInput) async throws -> RadrootsDraftStatus {
         try await addOperation("runtime.add.media") { backend in
             try await backend.uploadDraftMedia(input: input)
+        }
+    }
+
+    func probeBlossom() async throws -> RadrootsBlossomEvidence {
+        try await supportOperation("runtime.blossom.probe") { backend in
+            try await backend.probeBlossom()
         }
     }
 

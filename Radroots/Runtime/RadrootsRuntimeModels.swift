@@ -11,6 +11,50 @@ enum RadrootsRuntimeNetworkProfile: Sendable, Equatable {
     case device
 }
 
+enum RadrootsBlossomHostKind: String, Codable, Sendable, Equatable {
+    case native
+    case simulator
+    case physicalDevice = "physical_device"
+}
+
+enum RadrootsBlossomEndpointAuthority: String, Codable, Sendable, Equatable {
+    case publicWebPKI = "public_web_pki"
+    case loopbackDevelopment = "loopback_development"
+    case privateNetworkDevelopment = "private_network_development"
+}
+
+struct RadrootsBlossomEndpointConfiguration: Codable, Sendable, Equatable {
+    let hostKind: RadrootsBlossomHostKind
+    let endpointAuthority: RadrootsBlossomEndpointAuthority
+    let primaryOrigin: String
+    let fallbackOrigins: [String]
+}
+
+struct RadrootsBlossomConfigurationStatus: Sendable, Equatable {
+    let schemaVersion: UInt16
+    let hostKind: String
+    let endpointAuthority: String
+    let primaryOrigin: String
+    let fallbackOrigins: [String]
+    let configFingerprint: String
+}
+
+struct RadrootsBlossomEvidence: Sendable, Equatable {
+    let schemaVersion: UInt16
+    let origin: String
+    let configFingerprint: String
+    let state: String
+    let lastSuccessfulState: String
+    let transportSecurity: String
+    let observedAtUnixMilliseconds: UInt64?
+    let httpStatus: UInt16?
+    let errorCode: String?
+    let errorPhase: String?
+    let retryable: Bool
+    let possibleOrphan: Bool
+    let attempts: UInt8
+}
+
 struct RadrootsRuntimeAppMetadata: Sendable, Equatable {
     let bundleIdentifier: String
     let version: String
@@ -63,7 +107,7 @@ struct RadrootsRuntimeLaunchConfiguration: Sendable {
     let protectedData: RadrootsProtectedDataState
     let networkProfile: RadrootsRuntimeNetworkProfile
     let writableRelays: [String]
-    let blossomOrigins: [String]
+    let blossom: RadrootsBlossomEndpointConfiguration?
     let app: RadrootsRuntimeAppMetadata
     let signerGeneration: String
     let signer: any RadrootsRuntimeSigner
@@ -79,7 +123,7 @@ extension RadrootsRuntimeLaunchConfiguration: Equatable {
             && lhs.protectedData == rhs.protectedData
             && lhs.networkProfile == rhs.networkProfile
             && lhs.writableRelays == rhs.writableRelays
-            && lhs.blossomOrigins == rhs.blossomOrigins
+            && lhs.blossom == rhs.blossom
             && lhs.app == rhs.app
             && lhs.signerGeneration == rhs.signerGeneration
     }
@@ -112,6 +156,8 @@ struct RadrootsRelayStatus: Sendable, Equatable {
 struct RadrootsRuntimeSnapshot: Sendable, Equatable {
     let identity: RadrootsRuntimeIdentity
     let relay: RadrootsRelayStatus?
+    let blossomConfiguration: RadrootsBlossomConfigurationStatus?
+    let blossomEvidence: RadrootsBlossomEvidence?
     let crateName: String
     let crateVersion: String
     let isClosed: Bool
@@ -539,7 +585,7 @@ enum RadrootsEventTiming: String, Sendable, Equatable, Hashable, CaseIterable, I
 
 struct RadrootsPreparedMedia: Sendable, Equatable, Hashable, Identifiable {
     let opaqueReference: String
-    let url: String
+    let remoteURL: String?
     let sha256: String
     let mediaType: String
     let byteSize: UInt64

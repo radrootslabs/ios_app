@@ -20,7 +20,7 @@ enum RadrootsAppNetworkProfile: String, Codable, Sendable, Equatable {
 struct RadrootsAppConfiguration: Sendable, Equatable {
     let profile: RadrootsAppNetworkProfile
     let writableRelays: [String]
-    let blossomOrigins: [String]
+    let blossom: RadrootsBlossomEndpointConfiguration?
     let keychainServicePrefix: String
     let bundleIdentifier: String
     let appMetadata: RadrootsRuntimeAppMetadata
@@ -67,7 +67,16 @@ extension RadrootsConfigurationError: LocalizedError {
 }
 
 actor RadrootsConfigurationStore {
-    private struct StoredConfiguration: Codable {
+    private struct StoredConfigurationV3: Codable {
+        static let format = "radroots_ios_configuration_v3"
+
+        let format: String
+        let profile: RadrootsAppNetworkProfile
+        let writableRelays: [String]
+        let blossom: RadrootsBlossomEndpointConfiguration?
+    }
+
+    private struct StoredConfigurationV2: Codable {
         static let format = "radroots_ios_configuration_v2"
 
         let format: String
@@ -84,6 +93,10 @@ actor RadrootsConfigurationStore {
     }
 
     private static let configurationFile = RadrootsFileReference(
+        scope: .data,
+        relativePath: "settings/radroots_configuration_v3.json"
+    )
+    private static let v2ConfigurationFile = RadrootsFileReference(
         scope: .data,
         relativePath: "settings/radroots_configuration_v2.json"
     )
@@ -106,39 +119,58 @@ actor RadrootsConfigurationStore {
 
     func load() throws -> RadrootsAppConfiguration {
         let profile = try Self.profile(for: bootstrap.runtimeMode)
-        let stored = try readStoredConfiguration()
-        let selected: StoredConfiguration
-        if let stored {
-            guard stored.format == StoredConfiguration.format, stored.profile == profile else {
+        let selected: StoredConfigurationV3
+        if let stored = try readStoredConfiguration() {
+            guard stored.format == StoredConfigurationV3.format else {
                 throw RadrootsConfigurationError.corruptStoredConfiguration
             }
-            selected = stored
+            if stored.profile == profile,
+               Self.blossomMatchesProfile(stored.blossom, profile: profile)
+            {
+                selected = stored
+            } else {
+                selected = Self.bootstrapConfiguration(bootstrap, profile: profile)
+                try persist(selected)
+            }
+        } else if let stored = try readV2Configuration() {
+            guard stored.format == StoredConfigurationV2.format else {
+                throw RadrootsConfigurationError.corruptStoredConfiguration
+            }
+            selected = if stored.profile == profile {
+                StoredConfigurationV3(
+                    format: StoredConfigurationV3.format,
+                    profile: profile,
+                    writableRelays: stored.writableRelays,
+                    blossom: Self.blossomConfiguration(
+                        origins: stored.blossomOrigins,
+                        profile: profile
+                    )
+                )
+            } else {
+                Self.bootstrapConfiguration(bootstrap, profile: profile)
+            }
+            try persist(selected)
         } else if let legacy = try readLegacyConfiguration() {
             guard legacy.format == LegacyRelaySettings.format else {
                 throw RadrootsConfigurationError.corruptStoredConfiguration
             }
-            selected = StoredConfiguration(
-                format: StoredConfiguration.format,
+            selected = StoredConfigurationV3(
+                format: StoredConfigurationV3.format,
                 profile: profile,
                 writableRelays: legacy.relays,
-                blossomOrigins: bootstrap.blossomOrigins
+                blossom: Self.blossomConfiguration(
+                    origins: bootstrap.blossomOrigins,
+                    profile: profile
+                )
             )
             try persist(selected)
         } else {
-            selected = StoredConfiguration(
-                format: StoredConfiguration.format,
-                profile: profile,
-                writableRelays: bootstrap.relayURLs,
-                blossomOrigins: bootstrap.blossomOrigins
-            )
+            selected = Self.bootstrapConfiguration(bootstrap, profile: profile)
+            try persist(selected)
         }
 
         let relays = try RadrootsNetworkValidator.relays(
             selected.writableRelays,
-            profile: profile
-        )
-        let origins = try RadrootsNetworkValidator.blossomOrigins(
-            selected.blossomOrigins,
             profile: profile
         )
         guard !bootstrap.keychainServicePrefix.isEmpty,
@@ -149,7 +181,7 @@ actor RadrootsConfigurationStore {
         return RadrootsAppConfiguration(
             profile: profile,
             writableRelays: relays,
-            blossomOrigins: origins,
+            blossom: selected.blossom,
             keychainServicePrefix: bootstrap.keychainServicePrefix,
             bundleIdentifier: bootstrap.bundleIdentifier,
             appMetadata: bootstrap.appMetadata
@@ -189,9 +221,17 @@ actor RadrootsConfigurationStore {
         }
     }
 
-    private func readStoredConfiguration() throws -> StoredConfiguration? {
+    private func readStoredConfiguration() throws -> StoredConfigurationV3? {
         guard let data = try read(Self.configurationFile) else { return nil }
-        guard let stored = try? JSONDecoder().decode(StoredConfiguration.self, from: data) else {
+        guard let stored = try? JSONDecoder().decode(StoredConfigurationV3.self, from: data) else {
+            throw RadrootsConfigurationError.corruptStoredConfiguration
+        }
+        return stored
+    }
+
+    private func readV2Configuration() throws -> StoredConfigurationV2? {
+        guard let data = try read(Self.v2ConfigurationFile) else { return nil }
+        guard let stored = try? JSONDecoder().decode(StoredConfigurationV2.self, from: data) else {
             throw RadrootsConfigurationError.corruptStoredConfiguration
         }
         return stored
@@ -220,7 +260,7 @@ actor RadrootsConfigurationStore {
         }
     }
 
-    private func persist(_ configuration: StoredConfiguration) throws {
+    private func persist(_ configuration: StoredConfigurationV3) throws {
         do {
             let data = try JSONEncoder.radroots.encode(configuration)
             try fileAccess.write(.inline(data), to: Self.configurationFile)
@@ -235,6 +275,58 @@ actor RadrootsConfigurationStore {
         case "localhost-dev", "simulator": .simulator
         case "device-development", "device": .device
         default: throw RadrootsConfigurationError.invalid("runtime_mode")
+        }
+    }
+
+    private static func bootstrapConfiguration(
+        _ bootstrap: RadrootsConfigurationBootstrap,
+        profile: RadrootsAppNetworkProfile
+    ) -> StoredConfigurationV3 {
+        StoredConfigurationV3(
+            format: StoredConfigurationV3.format,
+            profile: profile,
+            writableRelays: bootstrap.relayURLs,
+            blossom: blossomConfiguration(origins: bootstrap.blossomOrigins, profile: profile)
+        )
+    }
+
+    private static func blossomConfiguration(
+        origins: [String],
+        profile: RadrootsAppNetworkProfile
+    ) -> RadrootsBlossomEndpointConfiguration? {
+        guard let primary = origins.first else { return nil }
+        let identity = blossomIdentity(profile: profile)
+        return RadrootsBlossomEndpointConfiguration(
+            hostKind: identity.hostKind,
+            endpointAuthority: identity.endpointAuthority,
+            primaryOrigin: primary,
+            fallbackOrigins: Array(origins.dropFirst())
+        )
+    }
+
+    private static func blossomMatchesProfile(
+        _ configuration: RadrootsBlossomEndpointConfiguration?,
+        profile: RadrootsAppNetworkProfile
+    ) -> Bool {
+        guard let configuration else { return true }
+        let identity = blossomIdentity(profile: profile)
+        return configuration.hostKind == identity.hostKind
+            && configuration.endpointAuthority == identity.endpointAuthority
+    }
+
+    private static func blossomIdentity(
+        profile: RadrootsAppNetworkProfile
+    ) -> (
+        hostKind: RadrootsBlossomHostKind,
+        endpointAuthority: RadrootsBlossomEndpointAuthority
+    ) {
+        switch profile {
+        case .publicNetwork:
+            (.physicalDevice, .publicWebPKI)
+        case .simulator:
+            (.simulator, .loopbackDevelopment)
+        case .device:
+            (.physicalDevice, .privateNetworkDevelopment)
         }
     }
 }
@@ -264,49 +356,6 @@ enum RadrootsNetworkValidator {
         let totalCount = output.count + (profile == .simulator ? 0 : 1)
         guard totalCount <= 64 else {
             throw RadrootsConfigurationError.invalid("too_many_relays")
-        }
-        return output
-    }
-
-    static func blossomOrigins(
-        _ values: [String],
-        profile: RadrootsAppNetworkProfile
-    ) throws -> [String] {
-        var output: [String] = []
-        var seen = Set<String>()
-        for raw in values {
-            guard raw == raw.trimmingCharacters(in: .whitespacesAndNewlines),
-                  raw.utf8.allSatisfy({ $0 < 128 }),
-                  let components = URLComponents(string: raw),
-                  components.user == nil,
-                  components.password == nil,
-                  components.query == nil,
-                  components.fragment == nil,
-                  components.path.isEmpty || components.path == "/",
-                  let scheme = components.scheme?.lowercased(),
-                  let host = components.host?.lowercased(),
-                  components.port != 0
-            else {
-                throw RadrootsConfigurationError.invalid("blossom_origin")
-            }
-            guard scheme == "https" || scheme == "http" && profile == .simulator,
-                  hostAllowed(host, profile: profile)
-            else {
-                throw RadrootsConfigurationError.invalid("blossom_policy")
-            }
-            var canonical = "\(scheme)://\(hostForURL(host))"
-            if let port = components.port,
-               !((scheme == "https" && port == 443) || (scheme == "http" && port == 80))
-            {
-                canonical += ":\(port)"
-            }
-            guard seen.insert(canonical).inserted else {
-                throw RadrootsConfigurationError.invalid("duplicate_blossom_origin")
-            }
-            output.append(canonical)
-        }
-        guard output.count <= 8 else {
-            throw RadrootsConfigurationError.invalid("too_many_blossom_origins")
         }
         return output
     }

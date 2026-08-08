@@ -197,7 +197,12 @@ final class RadrootsTodayStoreTests: XCTestCase {
             protectedData: .available,
             networkProfile: .simulator,
             writableRelays: ["ws://127.0.0.1:7447"],
-            blossomOrigins: ["http://127.0.0.1:3000"],
+            blossom: RadrootsBlossomEndpointConfiguration(
+                hostKind: .simulator,
+                endpointAuthority: .loopbackDevelopment,
+                primaryOrigin: "http://127.0.0.1:3000",
+                fallbackOrigins: []
+            ),
             app: RadrootsRuntimeAppMetadata(
                 bundleIdentifier: "org.radroots.today-tests",
                 version: "0.1.0-alpha",
@@ -297,6 +302,8 @@ private actor TodayBackend: RadrootsRuntimeBackend {
                 hostSignerConfigured: true
             ),
             relay: nil,
+            blossomConfiguration: nil,
+            blossomEvidence: nil,
             crateName: "radroots_mobile_ffi",
             crateVersion: "0.1.0-alpha",
             isClosed: closed

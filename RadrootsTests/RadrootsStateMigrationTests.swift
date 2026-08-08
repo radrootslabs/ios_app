@@ -4,7 +4,7 @@ import RadrootsKit
 import XCTest
 
 final class RadrootsStateMigrationTests: XCTestCase {
-    func testRelayValidationMatchesRustProfiles() throws {
+    func testRelayValidationMatchesRuntimeProfiles() throws {
         XCTAssertEqual(
             try RadrootsNetworkValidator.relays(
                 ["wss://radroots.org", "WSS://WRITE.EXAMPLE:443/"],
@@ -75,7 +75,7 @@ final class RadrootsStateMigrationTests: XCTestCase {
             .inline(Data("not-json".utf8)),
             to: RadrootsFileReference(
                 scope: .data,
-                relativePath: "settings/radroots_configuration_v2.json"
+                relativePath: "settings/radroots_configuration_v3.json"
             )
         )
         do {
@@ -84,6 +84,133 @@ final class RadrootsStateMigrationTests: XCTestCase {
         } catch {
             XCTAssertEqual(error as? RadrootsConfigurationError, .corruptStoredConfiguration)
         }
+    }
+
+    func testV2ConfigurationMigratesOnceToExplicitV3BlossomAuthority() async throws {
+        let fixture = try StateFixture()
+        defer { fixture.remove() }
+        let fileAccess = RadrootsAppleFileAccess(roots: fixture.roots)
+        try fileAccess.write(
+            .inline(
+                Data(
+                    """
+                    {"format":"radroots_ios_configuration_v2","profile":"simulator","writableRelays":["ws://127.0.0.1:7447"],"blossomOrigins":["http://127.0.0.1:3000","http://localhost:3001"]}
+                    """.utf8
+                )
+            ),
+            to: RadrootsFileReference(
+                scope: .data,
+                relativePath: "settings/radroots_configuration_v2.json"
+            )
+        )
+        let store = RadrootsConfigurationStore(bootstrap: fixture.bootstrap, roots: fixture.roots)
+
+        let first = try await store.load()
+        let second = try await store.load()
+
+        XCTAssertEqual(first, second)
+        XCTAssertEqual(
+            first.blossom,
+            RadrootsBlossomEndpointConfiguration(
+                hostKind: .simulator,
+                endpointAuthority: .loopbackDevelopment,
+                primaryOrigin: "http://127.0.0.1:3000",
+                fallbackOrigins: ["http://localhost:3001"]
+            )
+        )
+        let persisted = try configurationObject(fileAccess)
+        XCTAssertEqual(persisted["format"] as? String, "radroots_ios_configuration_v3")
+        let blossom = try XCTUnwrap(persisted["blossom"] as? [String: Any])
+        XCTAssertEqual(blossom["hostKind"] as? String, "simulator")
+        XCTAssertEqual(blossom["endpointAuthority"] as? String, "loopback_development")
+    }
+
+    func testStoredProfileDriftRecoversFromCurrentBootstrap() async throws {
+        let fixture = try StateFixture()
+        defer { fixture.remove() }
+        let fileAccess = RadrootsAppleFileAccess(roots: fixture.roots)
+        _ = try await RadrootsConfigurationStore(
+            bootstrap: fixture.bootstrap,
+            roots: fixture.roots
+        ).load()
+        let production = RadrootsConfigurationBootstrap(
+            runtimeMode: "production",
+            relayURLs: ["wss://write.example"],
+            blossomOrigins: ["https://blossom.example"],
+            keychainServicePrefix: fixture.bootstrap.keychainServicePrefix,
+            bundleIdentifier: fixture.bootstrap.bundleIdentifier,
+            appMetadata: fixture.bootstrap.appMetadata
+        )
+        let store = RadrootsConfigurationStore(bootstrap: production, roots: fixture.roots)
+
+        let recovered = try await store.load()
+
+        XCTAssertEqual(recovered.profile, .publicNetwork)
+        XCTAssertEqual(recovered.writableRelays, ["wss://write.example"])
+        XCTAssertEqual(
+            recovered.blossom,
+            RadrootsBlossomEndpointConfiguration(
+                hostKind: .physicalDevice,
+                endpointAuthority: .publicWebPKI,
+                primaryOrigin: "https://blossom.example",
+                fallbackOrigins: []
+            )
+        )
+        let repeated = try await store.load()
+        XCTAssertEqual(repeated, recovered)
+
+        let persisted = try configurationObject(fileAccess)
+        XCTAssertEqual(persisted["profile"] as? String, "public")
+    }
+
+    func testStoredBlossomAuthorityDriftRecoversWithinProfile() async throws {
+        let fixture = try StateFixture()
+        defer { fixture.remove() }
+        let fileAccess = RadrootsAppleFileAccess(roots: fixture.roots)
+        try fileAccess.write(
+            .inline(
+                Data(
+                    """
+                    {"format":"radroots_ios_configuration_v3","profile":"simulator","writableRelays":["ws://127.0.0.1:7447"],"blossom":{"hostKind":"physical_device","endpointAuthority":"public_web_pki","primaryOrigin":"https://wrong.example","fallbackOrigins":[]}}
+                    """.utf8
+                )
+            ),
+            to: RadrootsFileReference(
+                scope: .data,
+                relativePath: "settings/radroots_configuration_v3.json"
+            )
+        )
+        let store = RadrootsConfigurationStore(bootstrap: fixture.bootstrap, roots: fixture.roots)
+
+        let recovered = try await store.load()
+
+        XCTAssertEqual(
+            recovered.blossom,
+            RadrootsBlossomEndpointConfiguration(
+                hostKind: .simulator,
+                endpointAuthority: .loopbackDevelopment,
+                primaryOrigin: "http://127.0.0.1:3000",
+                fallbackOrigins: []
+            )
+        )
+    }
+
+    private func configurationObject(
+        _ fileAccess: RadrootsAppleFileAccess
+    ) throws -> [String: Any] {
+        let source = try fileAccess.read(
+            RadrootsFileReference(
+                scope: .data,
+                relativePath: "settings/radroots_configuration_v3.json"
+            ),
+            mode: .inline
+        )
+        guard case let .inline(data) = source,
+              let object = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else {
+            throw RadrootsConfigurationError.persistenceFailed
+        }
+        return object
     }
 
     func testSourceGenerationAndVisualIdentitySurviveStoreRecreation() async throws {

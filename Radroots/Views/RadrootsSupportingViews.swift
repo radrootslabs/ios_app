@@ -334,9 +334,48 @@ struct RadrootsSettingsView: View {
                     .accessibilityIdentifier("radroots.settings.retry.network")
             }
             Section("Blossom photos") {
+                if let configuration = addStore.blossomConfiguration {
+                    LabeledContent("Origin", value: configuration.primaryOrigin)
+                        .accessibilityIdentifier("radroots.settings.blossom.origin")
+                    LabeledContent("Configuration", value: abbreviated(configuration.configFingerprint))
+                        .accessibilityIdentifier("radroots.settings.blossom.fingerprint")
+                } else {
+                    Text("No photo service is configured for this network profile.")
+                        .foregroundStyle(.secondary)
+                }
+                if let evidence = addStore.blossomEvidence {
+                    LabeledContent("Service state", value: display(evidence.state))
+                        .accessibilityIdentifier("radroots.settings.blossom.state")
+                    LabeledContent("Connection", value: display(evidence.transportSecurity))
+                    if evidence.lastSuccessfulState != "none" {
+                        LabeledContent("Last success", value: display(evidence.lastSuccessfulState))
+                    }
+                    if let status = evidence.httpStatus {
+                        LabeledContent("HTTP status", value: String(status))
+                    }
+                    if let errorCode = evidence.errorCode {
+                        LabeledContent("Last error", value: display(errorCode))
+                    }
+                    if evidence.attempts > 0 {
+                        LabeledContent("Attempts", value: String(evidence.attempts))
+                    }
+                    if evidence.possibleOrphan {
+                        Text("The server may contain an upload whose verification did not complete.")
+                            .foregroundStyle(.orange)
+                    }
+                }
                 LabeledContent("Photo library", value: addStore.mediaSupport.library ? "Ready" : "Unavailable")
                 LabeledContent("Camera", value: addStore.mediaSupport.camera ? "Ready" : "Unavailable")
-                Button("Check photo service") { Task { await addStore.refreshMediaSupport() } }
+                Button {
+                    Task { await addStore.checkPhotoService() }
+                } label: {
+                    if addStore.isCheckingBlossom {
+                        ProgressView()
+                    } else {
+                        Text("Check photo service")
+                    }
+                }
+                .disabled(addStore.isCheckingBlossom || addStore.blossomConfiguration == nil)
                     .accessibilityIdentifier("radroots.settings.retry.blossom")
             }
             Section("Runtime") {
@@ -371,5 +410,14 @@ struct RadrootsSettingsView: View {
         let key = snapshot.identity.publicKeyHex
         guard key.count > 16 else { return key }
         return "\(key.prefix(8))…\(key.suffix(8))"
+    }
+
+    private func abbreviated(_ value: String) -> String {
+        guard value.count > 16 else { return value }
+        return "\(value.prefix(8))…\(value.suffix(8))"
+    }
+
+    private func display(_ value: String) -> String {
+        value.replacingOccurrences(of: "_", with: " ")
     }
 }

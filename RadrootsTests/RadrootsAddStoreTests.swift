@@ -20,11 +20,18 @@ final class RadrootsAddStoreTests: XCTestCase {
             if type == .createPhotoUpdate {
                 await store.importPhotos()
                 XCTAssertEqual(store.form.media.count, 1)
+                XCTAssertNil(store.form.media.first?.remoteURL)
             }
             await store.submit()
             XCTAssertEqual(store.activeDraft?.commandType, type)
             XCTAssertEqual(store.activeDraft?.state, .complete)
             XCTAssertEqual(store.activeDraft?.form, store.form)
+            if type == .createPhotoUpdate {
+                XCTAssertEqual(
+                    store.form.media.first?.remoteURL,
+                    "http://127.0.0.1:3000/\(String(repeating: "0", count: 64)).png"
+                )
+            }
         }
 
         let frozen = store.form
@@ -98,6 +105,22 @@ final class RadrootsAddStoreTests: XCTestCase {
     }
 
     @MainActor
+    func testPhotoServiceProbeSurfacesCanonicalEvidence() async throws {
+        let backend = AddBackend()
+        let client = try await Self.startedClient(backend)
+        let store = RadrootsAddStore(runtimeClient: client, media: AddMediaHarness())
+        await store.configure(snapshot: backend.snapshot())
+
+        await store.checkPhotoService()
+
+        XCTAssertEqual(store.blossomEvidence?.state, "reachable")
+        XCTAssertEqual(store.blossomEvidence?.configFingerprint, String(repeating: "f", count: 64))
+        XCTAssertEqual(store.mediaSupport, .init(library: true, camera: true))
+        XCTAssertEqual(store.message, "Photo service is reachable.")
+        _ = try await client.stop()
+    }
+
+    @MainActor
     func testSuspendAndResumePreserveLateDurableDraftCompletion() async throws {
         let backend = AddBackend(saveDelayNanoseconds: 50_000_000)
         let client = try await Self.startedClient(backend)
@@ -160,7 +183,12 @@ final class RadrootsAddStoreTests: XCTestCase {
             protectedData: .available,
             networkProfile: .simulator,
             writableRelays: ["ws://127.0.0.1:7447"],
-            blossomOrigins: ["http://127.0.0.1:3000"],
+            blossom: RadrootsBlossomEndpointConfiguration(
+                hostKind: .simulator,
+                endpointAuthority: .loopbackDevelopment,
+                primaryOrigin: "http://127.0.0.1:3000",
+                fallbackOrigins: []
+            ),
             app: RadrootsRuntimeAppMetadata(
                 bundleIdentifier: "org.radroots.add-tests",
                 version: "0.1.0-alpha",
@@ -220,7 +248,7 @@ private struct AddSigner: RadrootsRuntimeSigner {
 private actor AddMediaHarness: RadrootsAddMediaHandling {
     private let item = RadrootsPreparedMedia(
         opaqueReference: "media:\(String(repeating: "0", count: 64))",
-        url: "http://127.0.0.1:3000/\(String(repeating: "0", count: 64)).png",
+        remoteURL: nil,
         sha256: String(repeating: "0", count: 64),
         mediaType: "image/png",
         byteSize: 4,
@@ -285,6 +313,15 @@ private actor AddBackend: RadrootsRuntimeBackend {
                     ),
                 ]
             ),
+            blossomConfiguration: RadrootsBlossomConfigurationStatus(
+                schemaVersion: 1,
+                hostKind: "simulator",
+                endpointAuthority: "loopback_development",
+                primaryOrigin: "http://127.0.0.1:3000",
+                fallbackOrigins: [],
+                configFingerprint: String(repeating: "f", count: 64)
+            ),
+            blossomEvidence: nil,
             crateName: "radroots_mobile_ffi",
             crateVersion: "0.1.0-alpha",
             isClosed: closed
@@ -319,17 +356,32 @@ private actor AddBackend: RadrootsRuntimeBackend {
         if saveDelayNanoseconds > 0 {
             try await Task.sleep(nanoseconds: saveDelayNanoseconds)
         }
+        let savedMedia = input.form.media.map {
+            RadrootsPreparedMedia(
+                opaqueReference: $0.opaqueReference,
+                remoteURL: "http://127.0.0.1:3000/\($0.sha256).png",
+                sha256: $0.sha256,
+                mediaType: $0.mediaType,
+                byteSize: $0.byteSize,
+                width: $0.width,
+                height: $0.height,
+                alt: $0.alt,
+                preparedAtUnixSeconds: $0.preparedAtUnixSeconds
+            )
+        }
+        var storedForm = input.form
+        storedForm.media = savedMedia
         let status = makeStatus(
             id: id,
             revision: (expectedRevision ?? 0) + 1,
             kind: .add,
             commandType: input.form.commandType,
-            form: input.form,
-            state: input.form.media.isEmpty ? .draft : .mediaPreparing,
+            form: storedForm,
+            state: savedMedia.isEmpty ? .draft : .mediaPreparing,
             updatedAt: persistedAtUnixMilliseconds,
-            media: input.form.media.map {
+            media: savedMedia.map {
                 RadrootsDraftMediaStatus(
-                    url: $0.url,
+                    url: $0.remoteURL!,
                     stage: .pending,
                     uploadAttempts: 0,
                     verifiedAtUnixMilliseconds: nil,
@@ -341,6 +393,24 @@ private actor AddBackend: RadrootsRuntimeBackend {
         )
         values[id] = status
         return status
+    }
+
+    func probeBlossom() -> RadrootsBlossomEvidence {
+        RadrootsBlossomEvidence(
+            schemaVersion: 1,
+            origin: "http://127.0.0.1:3000",
+            configFingerprint: String(repeating: "f", count: 64),
+            state: "reachable",
+            lastSuccessfulState: "probe",
+            transportSecurity: "loopback_plaintext",
+            observedAtUnixMilliseconds: 1_800_000_000_000,
+            httpStatus: 404,
+            errorCode: nil,
+            errorPhase: nil,
+            retryable: false,
+            possibleOrphan: false,
+            attempts: 1
+        )
     }
 
     func saveRetractionDraft(

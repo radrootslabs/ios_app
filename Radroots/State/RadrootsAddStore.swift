@@ -15,6 +15,9 @@ final class RadrootsAddStore: ObservableObject {
     @Published private(set) var form: RadrootsAddForm
     @Published private(set) var state: RadrootsAddLoadState = .idle
     @Published private(set) var mediaSupport: RadrootsAddMediaSupport = .unavailable
+    @Published private(set) var blossomConfiguration: RadrootsBlossomConfigurationStatus?
+    @Published private(set) var blossomEvidence: RadrootsBlossomEvidence?
+    @Published private(set) var isCheckingBlossom = false
     @Published private(set) var isWorking = false
     @Published private(set) var message: String?
 
@@ -65,6 +68,8 @@ final class RadrootsAddStore: ObservableObject {
         writableRelays = snapshot.relay?.relays
             .filter { $0.access != "read_only" }
             .map(\.url) ?? []
+        blossomConfiguration = snapshot.blossomConfiguration
+        blossomEvidence = snapshot.blossomEvidence
     }
 
     func start() async {
@@ -155,13 +160,21 @@ final class RadrootsAddStore: ObservableObject {
         }
     }
 
-    func refreshMediaSupport() async {
+    func checkPhotoService() async {
+        guard !isCheckingBlossom else { return }
+        guard blossomConfiguration != nil else {
+            mediaSupport = .unavailable
+            message = "No photo service is configured for the current network profile."
+            return
+        }
+        isCheckingBlossom = true
+        defer { isCheckingBlossom = false }
         do {
+            blossomEvidence = try await runtimeClient.probeBlossom()
             mediaSupport = try await loadMediaSupport()
-            message = mediaSupport == .unavailable
-                ? "Photo intake is unavailable for the current configuration."
-                : "Photo service is ready."
+            message = "Photo service is reachable."
         } catch {
+            await refreshBlossomSnapshot()
             mediaSupport = .unavailable
             message = Self.message(for: error)
         }
@@ -333,7 +346,11 @@ final class RadrootsAddStore: ObservableObject {
         let opened = try await openedMedia(form.media)
         defer { opened.close() }
         for mediaStatus in status.media where mediaStatus.stage != .verified {
-            guard let handle = opened.handles.first(where: { $0.media.url == mediaStatus.url }) else {
+            guard let persisted = form.media.first(where: { $0.remoteURL == mediaStatus.url }),
+                  let handle = opened.handles.first(where: {
+                      $0.media.opaqueReference == persisted.opaqueReference
+                  })
+            else {
                 throw RadrootsRuntimeFailure.local(
                     operation: "add.media.upload",
                     code: "ios.add.media_missing",
@@ -358,6 +375,7 @@ final class RadrootsAddStore: ObservableObject {
                 )
             )
             accept(status)
+            await refreshBlossomSnapshot()
         }
         return status
     }
@@ -399,8 +417,14 @@ final class RadrootsAddStore: ObservableObject {
     }
 
     private func loadMediaSupport() async throws -> RadrootsAddMediaSupport {
-        guard let media else { return .unavailable }
+        guard blossomConfiguration != nil, let media else { return .unavailable }
         return try await media.support()
+    }
+
+    private func refreshBlossomSnapshot() async {
+        guard let snapshot = try? await runtimeClient.snapshot() else { return }
+        blossomConfiguration = snapshot.blossomConfiguration
+        blossomEvidence = snapshot.blossomEvidence
     }
 
     private func startObservation() {
@@ -411,6 +435,9 @@ final class RadrootsAddStore: ObservableObject {
                     guard !Task.isCancelled else { break }
                     if change.kind == .drafts || change.kind == .media {
                         await self?.reloadDrafts()
+                    }
+                    if change.kind == .media {
+                        await self?.refreshBlossomSnapshot()
                     }
                 }
             } catch {

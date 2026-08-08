@@ -242,7 +242,7 @@ actor RadrootsSessionStore {
                 protectedData: protectedData.isAvailable() ? .available : .unavailable,
                 networkProfile: configuration.profile.runtimeValue,
                 writableRelays: configuration.writableRelays,
-                blossomOrigins: configuration.blossomOrigins,
+                blossom: configuration.blossom,
                 app: configuration.appMetadata,
                 signerGeneration: signerGeneration,
                 signer: signer

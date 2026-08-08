@@ -101,6 +101,8 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
         do {
             let identity = try runtime.identityStatus()
             let relay = try runtime.sdkRelayStatus()
+            let blossomConfiguration = try runtime.sdkBlossomConfiguration()
+            let blossomEvidence = try runtime.sdkBlossomEvidence()
             let info = runtime.info()
             return RadrootsRuntimeSnapshot(
                 identity: RadrootsRuntimeIdentity(
@@ -127,6 +129,8 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
                         }
                     )
                 },
+                blossomConfiguration: blossomConfiguration?.appValue,
+                blossomEvidence: blossomEvidence?.appValue,
                 crateName: info.sdk.crateName,
                 crateVersion: info.sdk.crateVersion,
                 isClosed: info.sdkClosed
@@ -322,6 +326,14 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
         }
     }
 
+    func probeBlossom() async throws -> RadrootsBlossomEvidence {
+        do {
+            return try await runtime.probeBlossom().appValue
+        } catch {
+            throw Self.failure(from: error)
+        }
+    }
+
     func advanceDraft(id: String, expectedRevision: UInt64) async throws -> RadrootsDraftStatus {
         do {
             return try await runtime.phase1AdvanceDraft(
@@ -414,19 +426,18 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
             switch configuration.networkProfile {
             case .publicNetwork:
                 try runtime.configurePublicRelays(writableRelays: configuration.writableRelays)
-                if !configuration.blossomOrigins.isEmpty {
-                    try runtime.configurePublicBlossom(origins: configuration.blossomOrigins)
-                }
             case .simulator:
                 try runtime.configureSimulatorRelays(loopbackRelays: configuration.writableRelays)
-                if !configuration.blossomOrigins.isEmpty {
-                    try runtime.configureSimulatorBlossom(origins: configuration.blossomOrigins)
-                }
             case .device:
                 try runtime.configureDeviceRelays(writableRelays: configuration.writableRelays)
-                if !configuration.blossomOrigins.isEmpty {
-                    try runtime.configureDeviceBlossom(origins: configuration.blossomOrigins)
-                }
+            }
+            if let blossom = configuration.blossom {
+                try runtime.configureBlossom(
+                    hostKind: blossom.hostKind.generatedValue,
+                    endpointAuthority: blossom.endpointAuthority.generatedValue,
+                    primaryOrigin: blossom.primaryOrigin,
+                    fallbackOrigins: blossom.fallbackOrigins
+                )
             }
 
             let backend = RadrootsGeneratedRuntimeBackend(runtime: runtime)
@@ -522,6 +533,59 @@ private extension RadrootsProtectedDataState {
         case .available: .available
         case .unavailable: .unavailable
         }
+    }
+}
+
+private extension RadrootsBlossomHostKind {
+    var generatedValue: FfiBlossomHostKind {
+        switch self {
+        case .native: .native
+        case .simulator: .simulator
+        case .physicalDevice: .physicalDevice
+        }
+    }
+}
+
+private extension RadrootsBlossomEndpointAuthority {
+    var generatedValue: FfiBlossomEndpointAuthority {
+        switch self {
+        case .publicWebPKI: .publicWebPki
+        case .loopbackDevelopment: .loopbackDevelopment
+        case .privateNetworkDevelopment: .privateNetworkDevelopment
+        }
+    }
+}
+
+private extension FfiBlossomConfigurationRecord {
+    var appValue: RadrootsBlossomConfigurationStatus {
+        RadrootsBlossomConfigurationStatus(
+            schemaVersion: schemaVersion,
+            hostKind: hostKind,
+            endpointAuthority: endpointAuthority,
+            primaryOrigin: primaryOrigin,
+            fallbackOrigins: fallbackOrigins,
+            configFingerprint: configFingerprint
+        )
+    }
+}
+
+private extension FfiBlossomEvidenceRecord {
+    var appValue: RadrootsBlossomEvidence {
+        RadrootsBlossomEvidence(
+            schemaVersion: schemaVersion,
+            origin: origin,
+            configFingerprint: configFingerprint,
+            state: state,
+            lastSuccessfulState: lastSuccessfulState,
+            transportSecurity: transportSecurity,
+            observedAtUnixMilliseconds: observedAtUnixMs,
+            httpStatus: httpStatus,
+            errorCode: errorCode,
+            errorPhase: errorPhase,
+            retryable: retryable,
+            possibleOrphan: possibleOrphan,
+            attempts: attempts
+        )
     }
 }
 
@@ -866,7 +930,6 @@ private extension RadrootsPreparedMediaHandle {
             schemaVersion: 1,
             opaqueReference: media.opaqueReference,
             fileDescriptor: fileDescriptor,
-            url: media.url,
             sha256: media.sha256,
             mediaType: media.mediaType,
             byteSize: media.byteSize,
@@ -882,7 +945,7 @@ private extension FfiDraftFormMediaRecord {
     var appValue: RadrootsPreparedMedia {
         RadrootsPreparedMedia(
             opaqueReference: opaqueReference,
-            url: url,
+            remoteURL: url,
             sha256: sha256,
             mediaType: mediaType,
             byteSize: byteSize,

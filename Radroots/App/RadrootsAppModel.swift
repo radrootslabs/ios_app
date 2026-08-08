@@ -241,27 +241,10 @@ final class RadrootsAppModel: ObservableObject {
     }
 
     private static func productionMediaCoordinator(bundle: Bundle = .main) -> RadrootsAddMediaCoordinator? {
-        guard let bundleIdentifier = bundle.bundleIdentifier,
-              let origin = configuredValues("RADROOTS_FIELD_IOS_BLOSSOM_ORIGINS", bundle: bundle).first,
-              let url = URL(string: origin)
-        else {
+        guard let bundleIdentifier = bundle.bundleIdentifier else {
             return nil
         }
-        return try? RadrootsAddMediaCoordinator.production(
-            bundleIdentifier: bundleIdentifier,
-            blossomOrigin: url
-        )
-    }
-
-    private static func configuredValues(_ key: String, bundle: Bundle) -> [String] {
-        if let values = bundle.object(forInfoDictionaryKey: key) as? [String] {
-            return values.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-        }
-        guard let value = bundle.object(forInfoDictionaryKey: key) as? String else { return [] }
-        return value.components(separatedBy: CharacterSet(charactersIn: ",; \n\r\t"))
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+        return try? RadrootsAddMediaCoordinator.production(bundleIdentifier: bundleIdentifier)
     }
 }
 
@@ -279,6 +262,8 @@ final class RadrootsAppModel: ObservableObject {
                 writeAvailability: "unobserved",
                 relays: []
             ),
+            blossomConfiguration: nil,
+            blossomEvidence: nil,
             crateName: "radroots_mobile_ffi",
             crateVersion: "0.1.0-alpha",
             isClosed: false
