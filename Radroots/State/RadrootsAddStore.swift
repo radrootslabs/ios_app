@@ -70,22 +70,12 @@ final class RadrootsAddStore: ObservableObject {
     func start() async {
         guard !isStarted else { return }
         isStarted = true
+        startObservation()
+        guard operationGeneration == nil else { return }
+        message = nil
         state = .loading
         generation &+= 1
         let requestedGeneration = generation
-        observationTask = Task { [weak self, runtimeClient] in
-            do {
-                let changes = try await runtimeClient.changes(bufferCapacity: 16)
-                for await change in changes {
-                    guard !Task.isCancelled else { break }
-                    if change.kind == .drafts || change.kind == .media {
-                        await self?.reloadDrafts()
-                    }
-                }
-            } catch {
-                // Durable draft operations remain available without observation.
-            }
-        }
         do {
             async let schemaResult = runtimeClient.addSchemas()
             async let draftResult = runtimeClient.draftHeads(limit: 100)
@@ -112,6 +102,12 @@ final class RadrootsAddStore: ObservableObject {
         observationTask?.cancel()
         observationTask = nil
         isWorking = false
+    }
+
+    func suspend() {
+        isStarted = false
+        observationTask?.cancel()
+        observationTask = nil
     }
 
     func selectType(_ type: RadrootsAddCommandType) {
@@ -405,6 +401,22 @@ final class RadrootsAddStore: ObservableObject {
     private func loadMediaSupport() async throws -> RadrootsAddMediaSupport {
         guard let media else { return .unavailable }
         return try await media.support()
+    }
+
+    private func startObservation() {
+        observationTask = Task { [weak self, runtimeClient] in
+            do {
+                let changes = try await runtimeClient.changes(bufferCapacity: 16)
+                for await change in changes {
+                    guard !Task.isCancelled else { break }
+                    if change.kind == .drafts || change.kind == .media {
+                        await self?.reloadDrafts()
+                    }
+                }
+            } catch {
+                // Durable draft operations remain available without observation.
+            }
+        }
     }
 
     private func accept(_ status: RadrootsDraftStatus) {

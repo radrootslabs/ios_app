@@ -95,6 +95,27 @@ final class RadrootsAddStoreTests: XCTestCase {
     }
 
     @MainActor
+    func testSuspendAndResumePreserveLateDurableDraftCompletion() async throws {
+        let backend = AddBackend(saveDelayNanoseconds: 50_000_000)
+        let client = try await Self.startedClient(backend)
+        let store = RadrootsAddStore(runtimeClient: client, now: { 1_800_000_000 })
+        await store.configure(snapshot: backend.snapshot())
+        await store.start()
+        store.updateForm(\.content, "Background draft")
+
+        let save = Task { await store.save() }
+        try await Task.sleep(nanoseconds: 2_000_000)
+        store.suspend()
+        await store.start()
+        await save.value
+
+        XCTAssertEqual(store.activeDraft?.form?.content, "Background draft")
+        XCTAssertEqual(store.message, "Draft saved on this device.")
+        XCTAssertFalse(store.isWorking)
+        _ = try await client.stop()
+    }
+
+    @MainActor
     private func configure(_ store: RadrootsAddStore, type: RadrootsAddCommandType) {
         switch type {
         case .createUpdate:

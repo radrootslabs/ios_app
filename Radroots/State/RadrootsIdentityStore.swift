@@ -79,7 +79,7 @@ actor RadrootsIdentityStore {
     @MainActor
     static func production(
         servicePrefix: String,
-        protectedDataAvailable: Bool
+        protectedDataAvailable: @escaping @Sendable () -> Bool
     ) throws -> RadrootsIdentityStore {
         let namespace = "radroots_identity_v1"
         let secureStore = RadrootsAppleKeychainSecureStore(servicePrefix: servicePrefix)
@@ -92,7 +92,7 @@ actor RadrootsIdentityStore {
             ),
             userPresence: RadrootsAppleUserPresence(),
             protectedData: RadrootsProtectedDataProvider {
-                protectedDataAvailable ? .available : .unavailable
+                protectedDataAvailable() ? .available : .unavailable
             }
         )
         return RadrootsIdentityStore(

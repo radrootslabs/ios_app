@@ -2,6 +2,23 @@ import Foundation
 import RadrootsKit
 import UIKit
 
+final class RadrootsProtectedDataMonitor: @unchecked Sendable {
+    private let lock = NSLock()
+    private var available: Bool
+
+    init(available: Bool) {
+        self.available = available
+    }
+
+    func update(available: Bool) {
+        lock.withLock { self.available = available }
+    }
+
+    func isAvailable() -> Bool {
+        lock.withLock { available }
+    }
+}
+
 enum RadrootsSessionPhase: Sendable, Equatable {
     case starting
     case identityRequired
@@ -19,7 +36,7 @@ actor RadrootsSessionStore {
     private let identityStore: RadrootsIdentityStore
     private let runtimeClient: RadrootsRuntimeClient
     private let roots: RadrootsAppleFileRoots
-    private let protectedDataAvailable: Bool
+    private let protectedData: RadrootsProtectedDataMonitor
     private var generation: UInt64 = 0
     private var phase: RadrootsSessionPhase = .starting
 
@@ -28,13 +45,13 @@ actor RadrootsSessionStore {
         identityStore: RadrootsIdentityStore,
         runtimeClient: RadrootsRuntimeClient,
         roots: RadrootsAppleFileRoots,
-        protectedDataAvailable: Bool
+        protectedData: RadrootsProtectedDataMonitor
     ) {
         self.configurationStore = configurationStore
         self.identityStore = identityStore
         self.runtimeClient = runtimeClient
         self.roots = roots
-        self.protectedDataAvailable = protectedDataAvailable
+        self.protectedData = protectedData
     }
 
     @MainActor
@@ -65,17 +82,23 @@ actor RadrootsSessionStore {
             )
         )
         let roots = try RadrootsAppleFileRoots.appContainer(appIdentifier: bundleIdentifier)
-        let protectedDataAvailable = UIApplication.shared.isProtectedDataAvailable
+        let protectedData = RadrootsProtectedDataMonitor(
+            available: UIApplication.shared.isProtectedDataAvailable
+        )
         return try RadrootsSessionStore(
             configurationStore: RadrootsConfigurationStore(bootstrap: bootstrap, roots: roots),
             identityStore: .production(
                 servicePrefix: servicePrefix,
-                protectedDataAvailable: protectedDataAvailable
+                protectedDataAvailable: { protectedData.isAvailable() }
             ),
             runtimeClient: runtimeClient,
             roots: roots,
-            protectedDataAvailable: protectedDataAvailable
+            protectedData: protectedData
         )
+    }
+
+    func updateProtectedDataAvailability(_ available: Bool) {
+        protectedData.update(available: available)
     }
 
     func currentPhase() -> RadrootsSessionPhase {
@@ -87,7 +110,6 @@ actor RadrootsSessionStore {
         let requestedGeneration = generation
         phase = .starting
         do {
-            let configuration = try await configurationStore.load()
             let identity = try await identityStore.loadAndMigrate()
             guard generation == requestedGeneration else {
                 throw RadrootsRuntimeClientError.superseded
@@ -104,6 +126,7 @@ actor RadrootsSessionStore {
             case .corrupt:
                 phase = .corruptIdentity(identity)
             case .unlocked:
+                let configuration = try await configurationStore.load()
                 phase = try await startRuntime(
                     configuration: configuration,
                     identity: identity,
@@ -206,7 +229,7 @@ actor RadrootsSessionStore {
         let mobileStore = try RadrootsAppleMobileStore.prepare(
             roots: roots,
             publicKeyHex: publicKeyHex,
-            protectedDataAvailability: protectedDataAvailable ? .available : .unavailable
+            protectedDataAvailability: protectedData.isAvailable() ? .available : .unavailable
         )
         let sourceGeneration = try await configurationStore.sourceGeneration()
         let signer = try await identityStore.signer(for: identity)
@@ -216,7 +239,7 @@ actor RadrootsSessionStore {
                 publicKeyHex: publicKeyHex,
                 sourceGenerationHex: sourceGeneration.generationHex,
                 sourceGenerationCreatedAtUnixMilliseconds: sourceGeneration.createdAtUnixMilliseconds,
-                protectedData: protectedDataAvailable ? .available : .unavailable,
+                protectedData: protectedData.isAvailable() ? .available : .unavailable,
                 networkProfile: configuration.profile.runtimeValue,
                 writableRelays: configuration.writableRelays,
                 blossomOrigins: configuration.blossomOrigins,

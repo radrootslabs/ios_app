@@ -2,27 +2,22 @@ import UIKit
 
 final class RadrootsAppDelegate: NSObject, UIApplicationDelegate {
     func application(
-        _ application: UIApplication,
+        _: UIApplication,
         handleEventsForBackgroundURLSession identifier: String,
         completionHandler: @escaping () -> Void
     ) {
-        let completion = FieldBackgroundURLSessionCompletion(completionHandler)
+        let completion = RadrootsCompletionOnce(completionHandler)
         Task {
-            await FieldBackgroundURLSessionEvents.shared.handleEvents(identifier: identifier) {
-                completion.complete()
-            }
+            await RadrootsBackgroundEventRouter.shared.handle(
+                identifier: identifier,
+                completion: completion
+            )
         }
     }
-}
 
-private final class FieldBackgroundURLSessionCompletion: @unchecked Sendable {
-    private let completionHandler: () -> Void
-
-    init(_ completionHandler: @escaping () -> Void) {
-        self.completionHandler = completionHandler
-    }
-
-    func complete() {
-        completionHandler()
+    func applicationWillTerminate(_: UIApplication) {
+        Task {
+            await RadrootsLifecycleBridge.shared.requestShutdown()
+        }
     }
 }

@@ -1,4 +1,5 @@
 import Foundation
+import RadrootsKit
 
 @MainActor
 final class RadrootsAppModel: ObservableObject {
@@ -9,16 +10,27 @@ final class RadrootsAppModel: ObservableObject {
     private(set) var addStore: RadrootsAddStore?
     private(set) var searchStore: RadrootsSearchStore?
     private(set) var meStore: RadrootsMeStore?
+    let diagnosticsStore: RadrootsDiagnosticsStore
 
     private let sessionStore: RadrootsSessionStore?
     private let bootstrapFailure: RadrootsRuntimeFailure?
+    private let lifecycleCoordinator: RadrootsLifecycleCoordinator
     private var generation: UInt64 = 0
+    private var lifecycleRegistered = false
     private let isShellUITest: Bool
 
     init(
         sessionStore: RadrootsSessionStore? = nil,
-        runtimeClient: RadrootsRuntimeClient? = nil
+        runtimeClient: RadrootsRuntimeClient? = nil,
+        lifecycleCoordinator requestedLifecycleCoordinator: RadrootsLifecycleCoordinator? = nil
     ) {
+        let lifecycleCoordinator = requestedLifecycleCoordinator
+            ?? Bundle.main.bundleIdentifier.flatMap {
+                try? RadrootsLifecycleCoordinator.production(bundleIdentifier: $0)
+            }
+            ?? RadrootsLifecycleCoordinator.disabled()
+        self.lifecycleCoordinator = lifecycleCoordinator
+        diagnosticsStore = RadrootsDiagnosticsStore(coordinator: lifecycleCoordinator)
         #if DEBUG
             if ProcessInfo.processInfo.environment["RADROOTS_IOS_UI_TEST_SHELL"] == "1" {
                 self.sessionStore = nil
@@ -79,7 +91,9 @@ final class RadrootsAppModel: ObservableObject {
     }
 
     func start() async {
-        await run { store in await store.start() }
+        await ensureLifecycleRegistration()
+        await lifecycleCoordinator.record("ios.lifecycle.start_requested")
+        await run(name: "start", showsStarting: true) { store in await store.start() }
     }
 
     func retry() async {
@@ -87,27 +101,79 @@ final class RadrootsAppModel: ObservableObject {
     }
 
     func createIdentity() async {
-        await run { store in await store.createIdentity() }
+        await run(name: "identity_create", showsStarting: true) { store in
+            await store.createIdentity()
+        }
     }
 
     func unlockIdentity() async {
-        await run { store in await store.unlockIdentity() }
+        await run(name: "identity_unlock", showsStarting: true) { store in
+            await store.unlockIdentity()
+        }
     }
 
     func recoverIdentity() async {
-        await run { store in await store.recoverIdentity() }
+        await run(name: "identity_recover", showsStarting: true) { store in
+            await store.recoverIdentity()
+        }
     }
 
     func stop() async {
-        await run { store in await store.stop() }
+        stopPresentationWork()
+        await run(name: "stop") { store in await store.stop() }
+    }
+
+    func resume() async {
+        await ensureLifecycleRegistration()
+        if case .running = phase {
+            await todayStore?.start()
+            await addStore?.start()
+            await lifecycleCoordinator.record("ios.lifecycle.active")
+        } else {
+            await start()
+        }
+    }
+
+    func suspend() async {
+        todayStore?.stop()
+        addStore?.suspend()
+        searchStore?.stop()
+        meStore?.stop()
+        await lifecycleCoordinator.record("ios.lifecycle.background")
+    }
+
+    func updateProtectedDataAvailability(_ available: Bool) async {
+        await sessionStore?.updateProtectedDataAvailability(available)
+        await lifecycleCoordinator.record(
+            available
+                ? "ios.lifecycle.protected_data_available"
+                : "ios.lifecycle.protected_data_unavailable"
+        )
+        if available {
+            await start()
+        } else {
+            await stop()
+            await start()
+        }
+    }
+
+    func shutdown() async {
+        await lifecycleCoordinator.record("ios.lifecycle.shutdown_requested", level: .notice)
+        await stop()
+        await RadrootsBackgroundEventRouter.shared.detachAndCompletePending()
     }
 
     private func run(
+        name: String,
+        showsStarting: Bool = false,
         _ operation: @escaping @Sendable (RadrootsSessionStore) async -> Phase
     ) async {
         guard !isShellUITest else { return }
         generation &+= 1
         let requestedGeneration = generation
+        if showsStarting {
+            phase = .starting
+        }
         guard let sessionStore else {
             phase = .failed(
                 bootstrapFailure ?? .local(
@@ -115,6 +181,11 @@ final class RadrootsAppModel: ObservableObject {
                     code: "ios.app.bootstrap_failed",
                     safeMessage: "Radroots could not start."
                 )
+            )
+            await lifecycleCoordinator.record(
+                "ios.lifecycle.operation_failed",
+                level: .error,
+                fields: ["operation": name, "code": "bootstrap_failed"]
             )
             return
         }
@@ -125,6 +196,48 @@ final class RadrootsAppModel: ObservableObject {
             addStore?.configure(snapshot: snapshot)
         }
         phase = result
+        await lifecycleCoordinator.record(
+            "ios.lifecycle.operation_completed",
+            level: Self.isFailure(result) ? .warning : .info,
+            fields: ["operation": name, "phase": Self.phaseCode(result)]
+        )
+    }
+
+    private func ensureLifecycleRegistration() async {
+        guard !lifecycleRegistered else { return }
+        lifecycleRegistered = true
+        await lifecycleCoordinator.attachBackgroundEvents()
+        await RadrootsLifecycleBridge.shared.register { @Sendable [weak self] in
+            await self?.shutdown()
+        }
+    }
+
+    private func stopPresentationWork() {
+        todayStore?.stop()
+        addStore?.stop()
+        searchStore?.stop()
+        meStore?.stop()
+    }
+
+    private static func isFailure(_ phase: Phase) -> Bool {
+        if case .failed = phase {
+            return true
+        }
+        return false
+    }
+
+    private static func phaseCode(_ phase: Phase) -> String {
+        switch phase {
+        case .starting: "starting"
+        case .identityRequired: "identity_required"
+        case .identityLocked: "identity_locked"
+        case .protectedDataUnavailable: "protected_data_unavailable"
+        case .recoveryRequired: "recovery_required"
+        case .corruptIdentity: "corrupt_identity"
+        case .running: "running"
+        case .stopped: "stopped"
+        case .failed: "failed"
+        }
     }
 
     private static func productionMediaCoordinator(bundle: Bundle = .main) -> RadrootsAddMediaCoordinator? {

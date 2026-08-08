@@ -1,4 +1,6 @@
+import Combine
 import SwiftUI
+import UIKit
 
 struct RadrootsProvider<Content: View>: View {
     @Environment(\.scenePhase) private var scenePhase
@@ -16,13 +18,28 @@ struct RadrootsProvider<Content: View>: View {
     var body: some View {
         content()
             .environmentObject(appModel)
-            .task { await appModel.start() }
+            .environmentObject(appModel.diagnosticsStore)
+            .task { await appModel.resume() }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
-                    Task { await appModel.start() }
+                    Task { await appModel.resume() }
                 } else if phase == .background {
-                    Task { await appModel.stop() }
+                    Task { await appModel.suspend() }
                 }
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: UIApplication.protectedDataDidBecomeAvailableNotification
+                )
+            ) { _ in
+                Task { await appModel.updateProtectedDataAvailability(true) }
+            }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: UIApplication.protectedDataWillBecomeUnavailableNotification
+                )
+            ) { _ in
+                Task { await appModel.updateProtectedDataAvailability(false) }
             }
     }
 }

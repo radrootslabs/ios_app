@@ -1,3 +1,4 @@
+import RadrootsKit
 import SwiftUI
 
 struct RadrootsSearchSheet: View {
@@ -308,6 +309,7 @@ struct RadrootsSettingsView: View {
     let snapshot: RadrootsRuntimeSnapshot
     @ObservedObject var todayStore: RadrootsTodayStore
     @ObservedObject var addStore: RadrootsAddStore
+    @EnvironmentObject private var diagnosticsStore: RadrootsDiagnosticsStore
 
     var body: some View {
         List {
@@ -342,8 +344,26 @@ struct RadrootsSettingsView: View {
                 LabeledContent("Version", value: snapshot.crateVersion)
                 LabeledContent("State", value: snapshot.isClosed ? "Closed" : "Running")
             }
+            Section {
+                if let message = diagnosticsStore.message {
+                    Text(message)
+                        .foregroundStyle(.secondary)
+                }
+                Button("Prepare diagnostics export") {
+                    Task { await diagnosticsStore.prepare(snapshot: snapshot) }
+                }
+                .disabled(diagnosticsStore.isPreparing)
+                .accessibilityIdentifier("radroots.settings.diagnostics")
+            } header: {
+                Text("Privacy-safe diagnostics")
+            } footer: {
+                Text("Exports contain bounded lifecycle codes and runtime status only. Posts, keys, credentials, endpoint URLs, and local paths are excluded.")
+            }
         }
         .navigationTitle("Settings")
+        .radrootsDocumentExporter(preparedExport: $diagnosticsStore.preparedExport) { result in
+            diagnosticsStore.completeExport(result)
+        }
         .accessibilityIdentifier("radroots.support.settings.view")
     }
 

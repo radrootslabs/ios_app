@@ -147,6 +147,12 @@ package: generate
 		-library $(LIB_DEVICE) -headers $(HEADERS_DIR) \
 		-library $(LIB_SIMULATOR) -headers $(HEADERS_DIR) \
 		-output $(ARTIFACTS_DIR)/$(FFI_OUTPUT_NAME).xcframework
+	plutil -convert json -o $(OUT_DIR)/xcframework-info.json \
+		$(ARTIFACTS_DIR)/$(FFI_OUTPUT_NAME).xcframework/Info.plist
+	jq -S '.AvailableLibraries |= sort_by(.LibraryIdentifier)' \
+		$(OUT_DIR)/xcframework-info.json > $(OUT_DIR)/xcframework-info.sorted.json
+	plutil -convert xml1 -o $(ARTIFACTS_DIR)/$(FFI_OUTPUT_NAME).xcframework/Info.plist \
+		$(OUT_DIR)/xcframework-info.sorted.json
 
 install: package
 	mkdir -p $(GENERATED_SWIFT_DIR)

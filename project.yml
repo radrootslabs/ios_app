@@ -36,12 +36,14 @@ targets:
     deploymentTarget: "18.0"
     sources:
       - path: Radroots/App/App.swift
+      - path: Radroots/App/RadrootsAppDelegate.swift
       - path: Radroots/App/AppEntry.swift
       - path: Radroots/App/RadrootsAppModel.swift
       - path: Radroots/App/RadrootsProvider.swift
       - path: Radroots/App/RadrootsRootShell.swift
       - path: Radroots/Runtime/RadrootsGeneratedRuntimeBackend.swift
       - path: Radroots/Runtime/RadrootsAddMediaCoordinator.swift
+      - path: Radroots/Runtime/RadrootsLifecycleCoordinator.swift
       - path: Radroots/Runtime/RadrootsRuntimeClient.swift
       - path: Radroots/Runtime/RadrootsRuntimeModels.swift
       - path: Radroots/State/RadrootsConfigurationStore.swift
@@ -84,6 +86,7 @@ targets:
       - path: RadrootsTests/RadrootsTodayStoreTests.swift
       - path: RadrootsTests/RadrootsAddStoreTests.swift
       - path: RadrootsTests/RadrootsSupportingStoreTests.swift
+      - path: RadrootsTests/RadrootsLifecycleTests.swift
     settings:
       base:
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
