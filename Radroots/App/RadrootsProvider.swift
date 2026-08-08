@@ -1,48 +1,28 @@
 import SwiftUI
-import UIKit
 
-public struct RadrootsProvider<Content: View>: View {
+struct RadrootsProvider<Content: View>: View {
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var appState = AppState()
-    private let onStartupError: ((Error) -> Void)?
+    @StateObject private var appModel: RadrootsAppModel
     private let content: () -> Content
 
-    public init(
-        onStartupError: ((Error) -> Void)? = nil,
+    init(
+        appModel: @autoclosure @escaping () -> RadrootsAppModel = RadrootsAppModel(),
         @ViewBuilder content: @escaping () -> Content
     ) {
-        self.onStartupError = onStartupError
+        _appModel = StateObject(wrappedValue: appModel())
         self.content = content
     }
 
-    public var body: some View {
+    var body: some View {
         content()
-            .environmentObject(appState)
-            .environmentObject(appState.radroots)
-            .task {
-                do {
-                    try await appState.start()
-                } catch {
-                    onStartupError?(error)
-                }
-            }
+            .environmentObject(appModel)
+            .task { await appModel.start() }
             .onChange(of: scenePhase) { _, phase in
-                switch phase {
-                case .active:
-                    appState.appDidBecomeActive()
-                case .background:
-                    appState.appDidEnterBackground()
-                case .inactive:
-                    break
-                @unknown default:
-                    break
+                if phase == .active {
+                    Task { await appModel.start() }
+                } else if phase == .background {
+                    Task { await appModel.stop() }
                 }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willTerminateNotification)) { _ in
-                Task { await appState.shutdown() }
-            }
-            .onDisappear {
-                Task { await appState.shutdown() }
             }
     }
 }

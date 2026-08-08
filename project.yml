@@ -14,25 +14,47 @@ packages:
     revision: 265015fc537bfe507f12d801b9765be9764fbc95
 
 targets:
+  RadrootsKitBindings:
+    type: framework
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: Radroots/Generated/RadrootsKitBindings.swift
+    settings:
+      base:
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
+        GENERATE_INFOPLIST_FILE: true
+        PRODUCT_BUNDLE_IDENTIFIER: org.radroots.RadrootsKitBindings
+        SWIFT_VERSION: 5.0
+        SWIFT_STRICT_CONCURRENCY: minimal
+    dependencies:
+      - framework: Radroots/Frameworks/RadrootsFFI.xcframework
+        embed: false
   Radroots:
     type: application
     platform: iOS
     deploymentTarget: "18.0"
     sources:
-      - path: Radroots
-        excludes:
-          - Info.plist
-          - Frameworks
+      - path: Radroots/App/App.swift
+      - path: Radroots/App/AppEntry.swift
+      - path: Radroots/App/RadrootsAppModel.swift
+      - path: Radroots/App/RadrootsProvider.swift
+      - path: Radroots/Runtime/RadrootsGeneratedRuntimeBackend.swift
+      - path: Radroots/Runtime/RadrootsRuntimeClient.swift
+      - path: Radroots/Runtime/RadrootsRuntimeModels.swift
+      - path: Radroots/Views/RuntimeStatusView.swift
+      - path: Radroots/Resources
     settings:
       base:
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
         SWIFT_VERSION: 6.0
         INFOPLIST_FILE: Radroots/Info.plist
     configFiles:
       Debug: Radroots/Config/Debug.xcconfig
       Release: Radroots/Config/Release.xcconfig
     dependencies:
-      - framework: Radroots/Frameworks/RadrootsFFI.xcframework
-        embed: false
+      - target: RadrootsKitBindings
+        embed: true
       - package: RadrootsKit
     preBuildScripts:
       - name: Generate git SHA xcconfig
@@ -45,9 +67,10 @@ targets:
     platform: iOS
     deploymentTarget: "18.0"
     sources:
-      - path: RadrootsTests
+      - path: RadrootsTests/RadrootsRuntimeClientTests.swift
     settings:
       base:
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
         SWIFT_VERSION: 6.0
         GENERATE_INFOPLIST_FILE: true
     dependencies:
