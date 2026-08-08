@@ -48,9 +48,11 @@ targets:
       - path: Radroots/State/RadrootsAddStore.swift
       - path: Radroots/State/RadrootsIdentityStore.swift
       - path: Radroots/State/RadrootsSessionStore.swift
+      - path: Radroots/State/RadrootsSupportingStores.swift
       - path: Radroots/State/RadrootsTodayStore.swift
       - path: Radroots/Views/RadrootsTodayView.swift
       - path: Radroots/Views/RadrootsAddView.swift
+      - path: Radroots/Views/RadrootsSupportingViews.swift
       - path: Radroots/Views/RuntimeStatusView.swift
       - path: Radroots/Resources
     settings:
@@ -81,6 +83,7 @@ targets:
       - path: RadrootsTests/RadrootsStateMigrationTests.swift
       - path: RadrootsTests/RadrootsTodayStoreTests.swift
       - path: RadrootsTests/RadrootsAddStoreTests.swift
+      - path: RadrootsTests/RadrootsSupportingStoreTests.swift
     settings:
       base:
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64

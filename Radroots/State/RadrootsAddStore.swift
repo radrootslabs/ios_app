@@ -159,6 +159,18 @@ final class RadrootsAddStore: ObservableObject {
         }
     }
 
+    func refreshMediaSupport() async {
+        do {
+            mediaSupport = try await loadMediaSupport()
+            message = mediaSupport == .unavailable
+                ? "Photo intake is unavailable for the current configuration."
+                : "Photo service is ready."
+        } catch {
+            mediaSupport = .unavailable
+            message = Self.message(for: error)
+        }
+    }
+
     func capturePhoto() async {
         guard isFormEditable, form.commandType.acceptsMedia, let media else {
             message = "Camera intake is unavailable."

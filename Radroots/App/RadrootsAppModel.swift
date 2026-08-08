@@ -7,6 +7,8 @@ final class RadrootsAppModel: ObservableObject {
     @Published private(set) var phase: Phase = .starting
     private(set) var todayStore: RadrootsTodayStore?
     private(set) var addStore: RadrootsAddStore?
+    private(set) var searchStore: RadrootsSearchStore?
+    private(set) var meStore: RadrootsMeStore?
 
     private let sessionStore: RadrootsSessionStore?
     private let bootstrapFailure: RadrootsRuntimeFailure?
@@ -22,6 +24,8 @@ final class RadrootsAppModel: ObservableObject {
                 self.sessionStore = nil
                 todayStore = nil
                 addStore = nil
+                searchStore = nil
+                meStore = nil
                 bootstrapFailure = nil
                 isShellUITest = true
                 phase = .running(.shellUITest)
@@ -33,6 +37,8 @@ final class RadrootsAppModel: ObservableObject {
             self.sessionStore = sessionStore
             todayStore = runtimeClient.map { RadrootsTodayStore(runtimeClient: $0) }
             addStore = runtimeClient.map { RadrootsAddStore(runtimeClient: $0) }
+            searchStore = runtimeClient.map { RadrootsSearchStore(runtimeClient: $0) }
+            meStore = runtimeClient.map { RadrootsMeStore(runtimeClient: $0) }
             bootstrapFailure = nil
         } else {
             do {
@@ -43,11 +49,15 @@ final class RadrootsAppModel: ObservableObject {
                     runtimeClient: runtimeClient,
                     media: Self.productionMediaCoordinator()
                 )
+                searchStore = RadrootsSearchStore(runtimeClient: runtimeClient)
+                meStore = RadrootsMeStore(runtimeClient: runtimeClient)
                 bootstrapFailure = nil
             } catch let error as LocalizedError {
                 self.sessionStore = nil
                 todayStore = nil
                 addStore = nil
+                searchStore = nil
+                meStore = nil
                 bootstrapFailure = .local(
                     operation: "app.bootstrap",
                     code: "ios.app.configuration_invalid",
@@ -57,6 +67,8 @@ final class RadrootsAppModel: ObservableObject {
                 self.sessionStore = nil
                 todayStore = nil
                 addStore = nil
+                searchStore = nil
+                meStore = nil
                 bootstrapFailure = .local(
                     operation: "app.bootstrap",
                     code: "ios.app.configuration_invalid",

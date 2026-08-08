@@ -180,6 +180,7 @@ enum RadrootsRuntimeClientError: Error, Sendable, Equatable {
     case status(RadrootsRuntimeFailure)
     case today(RadrootsRuntimeFailure)
     case add(RadrootsRuntimeFailure)
+    case support(RadrootsRuntimeFailure)
     case shutdown(RadrootsRuntimeFailure)
 }
 
@@ -197,6 +198,7 @@ extension RadrootsRuntimeClientError: LocalizedError {
              let .status(failure),
              let .today(failure),
              let .add(failure),
+             let .support(failure),
              let .shutdown(failure):
             failure.safeMessage
         }
@@ -427,6 +429,24 @@ struct RadrootsTodayRefreshReceipt: Sendable, Equatable {
     let threadEntries: UInt64
     let contentGeneration: UInt64
     let changed: Bool
+}
+
+enum RadrootsSearchResultType: Sendable, Equatable, Hashable {
+    case card
+    case profile
+}
+
+struct RadrootsSearchResult: Sendable, Equatable, Hashable, Identifiable {
+    let type: RadrootsSearchResultType
+    let id: String
+    let card: RadrootsTodayCard?
+    let profile: RadrootsProfileSummary?
+}
+
+struct RadrootsMeSnapshot: Sendable, Equatable {
+    let publicKey: String
+    let profile: RadrootsProfileSummary?
+    let cards: [RadrootsTodayCard]
 }
 
 enum RadrootsAddCommandType: String, CaseIterable, Sendable, Equatable, Hashable, Identifiable {

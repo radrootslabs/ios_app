@@ -27,27 +27,35 @@ struct RadrootsRootShell: View {
     let snapshot: RadrootsRuntimeSnapshot
     let todayStore: RadrootsTodayStore?
     let addStore: RadrootsAddStore?
+    let searchStore: RadrootsSearchStore?
+    let meStore: RadrootsMeStore?
     @SceneStorage("radroots.selected_root_tab") private var storedSelection = RadrootsRootTab.today.rawValue
 
     init(
         snapshot: RadrootsRuntimeSnapshot,
         todayStore: RadrootsTodayStore? = nil,
-        addStore: RadrootsAddStore? = nil
+        addStore: RadrootsAddStore? = nil,
+        searchStore: RadrootsSearchStore? = nil,
+        meStore: RadrootsMeStore? = nil
     ) {
         self.snapshot = snapshot
         self.todayStore = todayStore
         self.addStore = addStore
+        self.searchStore = searchStore
+        self.meStore = meStore
     }
 
     var body: some View {
         TabView(selection: selection) {
             NavigationStack {
-                if let todayStore {
+                if let todayStore, let addStore, let searchStore, let meStore {
                     RadrootsTodayView(
                         snapshot: snapshot,
                         store: todayStore,
+                        searchStore: searchStore,
+                        meStore: meStore,
+                        addStore: addStore,
                         revise: { card in
-                            guard let addStore else { return }
                             Task {
                                 await addStore.retractAndRevise(card)
                                 storedSelection = RadrootsRootTab.add.rawValue
@@ -119,16 +127,16 @@ private struct RadrootsTodayLanding: View {
             }
         }
         .sheet(isPresented: $showsAccount) {
-            RadrootsAccountSheet(snapshot: snapshot)
+            RadrootsAccountUnavailableSheet(snapshot: snapshot)
         }
         .sheet(isPresented: $showsSearch) {
-            RadrootsSearchSheet()
+            RadrootsSearchUnavailableSheet()
         }
         .accessibilityIdentifier("radroots.today.root")
     }
 }
 
-struct RadrootsSearchSheet: View {
+struct RadrootsSearchUnavailableSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -145,7 +153,7 @@ struct RadrootsSearchSheet: View {
     }
 }
 
-struct RadrootsAccountSheet: View {
+struct RadrootsAccountUnavailableSheet: View {
     let snapshot: RadrootsRuntimeSnapshot
     @Environment(\.dismiss) private var dismiss
 

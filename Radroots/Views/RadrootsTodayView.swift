@@ -3,6 +3,9 @@ import SwiftUI
 struct RadrootsTodayView: View {
     let snapshot: RadrootsRuntimeSnapshot
     @ObservedObject var store: RadrootsTodayStore
+    @ObservedObject var searchStore: RadrootsSearchStore
+    @ObservedObject var meStore: RadrootsMeStore
+    @ObservedObject var addStore: RadrootsAddStore
     let revise: (RadrootsTodayCard) -> Void
     @State private var showsAccount = false
     @State private var showsContextPicker = false
@@ -47,11 +50,23 @@ struct RadrootsTodayView: View {
         .sheet(isPresented: $showsContextPicker) {
             RadrootsContextPicker(store: store)
         }
-        .sheet(isPresented: $showsAccount) {
-            RadrootsAccountSheet(snapshot: snapshot)
+        .sheet(isPresented: $showsAccount, onDismiss: { meStore.stop() }) {
+            RadrootsMeSheet(
+                runtimeSnapshot: snapshot,
+                context: store.selectedContext,
+                store: meStore,
+                todayStore: store,
+                addStore: addStore,
+                revise: revise
+            )
         }
-        .sheet(isPresented: $showsSearch) {
-            RadrootsSearchSheet()
+        .sheet(isPresented: $showsSearch, onDismiss: { searchStore.stop() }) {
+            RadrootsSearchSheet(
+                snapshot: snapshot,
+                context: store.selectedContext,
+                store: searchStore,
+                revise: revise
+            )
         }
         .task { await store.start() }
         .accessibilityIdentifier("radroots.today.root")
@@ -193,7 +208,7 @@ private struct RadrootsContextPicker: View {
     }
 }
 
-private struct RadrootsTodayCardView: View {
+struct RadrootsTodayCardView: View {
     let card: RadrootsTodayCard
 
     var body: some View {
@@ -277,7 +292,7 @@ private struct RadrootsTodayCardView: View {
     }
 }
 
-private struct RadrootsTrustedMediaView: View {
+struct RadrootsTrustedMediaView: View {
     let media: RadrootsMediaReference
 
     var body: some View {
@@ -320,7 +335,7 @@ private struct RadrootsTrustedMediaView: View {
     }
 }
 
-private struct RadrootsTodayDetailView: View {
+struct RadrootsTodayDetailView: View {
     let card: RadrootsTodayCard
     let canRevise: Bool
     let revise: (RadrootsTodayCard) -> Void

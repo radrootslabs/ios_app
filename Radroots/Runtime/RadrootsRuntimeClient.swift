@@ -12,6 +12,16 @@ protocol RadrootsRuntimeBackend: Sendable {
         nowUnixSeconds: UInt64,
         update: RadrootsTodayProjectionUpdate
     ) async throws -> RadrootsTodayRefreshReceipt
+    func search(
+        context: RadrootsLocalNetwork,
+        query: String,
+        limit: UInt16,
+        asOfUnixSeconds: UInt64
+    ) async throws -> [RadrootsSearchResult]
+    func me(
+        context: RadrootsLocalNetwork,
+        asOfUnixSeconds: UInt64
+    ) async throws -> RadrootsMeSnapshot
     func addSchemas() async throws -> [RadrootsAddSchema]
     func saveDraft(
         id: String,
@@ -50,6 +60,14 @@ protocol RadrootsRuntimeBackend: Sendable {
 }
 
 extension RadrootsRuntimeBackend {
+    private func supportUnsupported() -> RadrootsRuntimeFailure {
+        .local(
+            operation: "runtime.support",
+            code: "ios.support.unsupported",
+            safeMessage: "This supporting surface is unavailable in the current runtime."
+        )
+    }
+
     private func addUnsupported() -> RadrootsRuntimeFailure {
         .local(
             operation: "runtime.add",
@@ -119,6 +137,22 @@ extension RadrootsRuntimeBackend {
         cancelledAtUnixMilliseconds _: UInt64
     ) async throws -> RadrootsDraftStatus {
         throw addUnsupported()
+    }
+
+    func search(
+        context _: RadrootsLocalNetwork,
+        query _: String,
+        limit _: UInt16,
+        asOfUnixSeconds _: UInt64
+    ) async throws -> [RadrootsSearchResult] {
+        throw supportUnsupported()
+    }
+
+    func me(
+        context _: RadrootsLocalNetwork,
+        asOfUnixSeconds _: UInt64
+    ) async throws -> RadrootsMeSnapshot {
+        throw supportUnsupported()
     }
 }
 
@@ -257,6 +291,31 @@ actor RadrootsRuntimeClient {
             throw RadrootsRuntimeClientError.today(
                 Self.failure(from: error, operation: "runtime.today.refresh")
             )
+        }
+    }
+
+    func search(
+        context: RadrootsLocalNetwork,
+        query: String,
+        limit: UInt16 = 50,
+        asOfUnixSeconds: UInt64
+    ) async throws -> [RadrootsSearchResult] {
+        try await supportOperation("runtime.support.search") { backend in
+            try await backend.search(
+                context: context,
+                query: query,
+                limit: limit,
+                asOfUnixSeconds: asOfUnixSeconds
+            )
+        }
+    }
+
+    func me(
+        context: RadrootsLocalNetwork,
+        asOfUnixSeconds: UInt64
+    ) async throws -> RadrootsMeSnapshot {
+        try await supportOperation("runtime.support.me") { backend in
+            try await backend.me(context: context, asOfUnixSeconds: asOfUnixSeconds)
         }
     }
 
@@ -558,6 +617,22 @@ actor RadrootsRuntimeClient {
         }
     }
 
+    private func supportOperation<T: Sendable>(
+        _ operation: String,
+        _ body: @Sendable (any RadrootsRuntimeBackend) async throws -> T
+    ) async throws -> T {
+        guard let backend, case .running = lifecycleState else {
+            throw RadrootsRuntimeClientError.notRunning
+        }
+        do {
+            return try await body(backend)
+        } catch {
+            throw RadrootsRuntimeClientError.support(
+                Self.failure(from: error, operation: operation)
+            )
+        }
+    }
+
     private func receive(
         _ change: RadrootsRuntimeChange,
         subscriptionID: UUID,
@@ -600,6 +675,9 @@ actor RadrootsRuntimeClient {
             return failure
         }
         if case let RadrootsRuntimeClientError.add(failure) = error {
+            return failure
+        }
+        if case let RadrootsRuntimeClientError.support(failure) = error {
             return failure
         }
         if case let RadrootsRuntimeClientError.shutdown(failure) = error {

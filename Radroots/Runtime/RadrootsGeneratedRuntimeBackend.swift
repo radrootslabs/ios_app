@@ -192,6 +192,38 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
         }
     }
 
+    func search(
+        context: RadrootsLocalNetwork,
+        query: String,
+        limit: UInt16,
+        asOfUnixSeconds: UInt64
+    ) async throws -> [RadrootsSearchResult] {
+        do {
+            return try await runtime.phase1Search(
+                context: context.generatedValue,
+                query: query,
+                limit: limit,
+                asOfUnixS: asOfUnixSeconds
+            ).map(\.appValue)
+        } catch {
+            throw Self.failure(from: error)
+        }
+    }
+
+    func me(
+        context: RadrootsLocalNetwork,
+        asOfUnixSeconds: UInt64
+    ) async throws -> RadrootsMeSnapshot {
+        do {
+            return try await runtime.phase1Me(
+                context: context.generatedValue,
+                asOfUnixS: asOfUnixSeconds
+            ).appValue
+        } catch {
+            throw Self.failure(from: error)
+        }
+    }
+
     func addSchemas() async throws -> [RadrootsAddSchema] {
         runtime.phase1AddSchemas().map(\.appValue)
     }
@@ -646,6 +678,36 @@ private extension FfiProfileRecord {
             nip05: nip05,
             website: website,
             lightningAddress: lightningAddress
+        )
+    }
+}
+
+private extension FfiSearchResultRecord {
+    var appValue: RadrootsSearchResult {
+        RadrootsSearchResult(
+            type: resultType.appValue,
+            id: stableId,
+            card: card?.appValue,
+            profile: profile?.appValue
+        )
+    }
+}
+
+private extension FfiSearchResultType {
+    var appValue: RadrootsSearchResultType {
+        switch self {
+        case .card: .card
+        case .profile: .profile
+        }
+    }
+}
+
+private extension FfiMeRecord {
+    var appValue: RadrootsMeSnapshot {
+        RadrootsMeSnapshot(
+            publicKey: publicKey,
+            profile: profile?.appValue,
+            cards: cards.map(\.appValue)
         )
     }
 }

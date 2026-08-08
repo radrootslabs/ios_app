@@ -9,7 +9,9 @@ struct AppEntry: View {
                 RadrootsRootShell(
                     snapshot: snapshot,
                     todayStore: appModel.todayStore,
-                    addStore: appModel.addStore
+                    addStore: appModel.addStore,
+                    searchStore: appModel.searchStore,
+                    meStore: appModel.meStore
                 )
             } else {
                 RuntimeStatusView(

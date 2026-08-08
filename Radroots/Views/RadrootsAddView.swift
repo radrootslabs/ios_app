@@ -300,7 +300,7 @@ struct RadrootsAddView: View {
     }()
 }
 
-private struct RadrootsDraftsSheet: View {
+struct RadrootsDraftsSheet: View {
     @ObservedObject var store: RadrootsAddStore
     @Environment(\.dismiss) private var dismiss
 
