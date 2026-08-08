@@ -1,4 +1,4 @@
-@testable import Radroots
+@testable import RadrootsApp
 import XCTest
 
 final class RadrootsTodayStoreTests: XCTestCase {
@@ -182,7 +182,7 @@ final class RadrootsTodayStoreTests: XCTestCase {
     @MainActor
     private func startedClient(backend: TodayBackend) async throws -> RadrootsRuntimeClient {
         let client = RadrootsRuntimeClient { _ in
-            RadrootsRuntimeBackendStart(backend: backend, snapshot: await backend.snapshot())
+            await RadrootsRuntimeBackendStart(backend: backend, snapshot: backend.snapshot())
         }
         _ = try await client.start(configuration: makeConfiguration())
         return client

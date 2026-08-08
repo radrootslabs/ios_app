@@ -26,9 +26,6 @@
 	<string>Radroots accesses only the photos you choose for a farm update, ask, event, or food post.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Radroots uses Face ID only to unlock the local Nostr identity or approve a post or media upload you choose to sign.</string>
-	<key>GIT_SHA</key>
-	<string>$(GIT_SHA)</string>
-
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

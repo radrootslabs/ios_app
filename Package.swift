@@ -1,0 +1,85 @@
+// swift-tools-version: 6.0
+
+import PackageDescription
+
+let package = Package(
+    name: "radroots_ios_app",
+    platforms: [
+        .iOS(.v18),
+    ],
+    products: [
+        .library(name: "RadrootsApp", targets: ["RadrootsApp"]),
+    ],
+    dependencies: [
+        .package(
+            url: "https://github.com/radrootslabs/apple_kit.git",
+            revision: "af6047761cd445e8861e11b7df15b1fc52c1fbbf"
+        ),
+    ],
+    targets: [
+        .binaryTarget(
+            name: "RadrootsFFI",
+            path: "Radroots/Frameworks/RadrootsFFI.xcframework"
+        ),
+        .target(
+            name: "RadrootsKitBindings",
+            dependencies: ["RadrootsFFI"],
+            path: "Radroots/Generated",
+            swiftSettings: [
+                .swiftLanguageMode(.v5),
+            ]
+        ),
+        .target(
+            name: "RadrootsApp",
+            dependencies: [
+                "RadrootsKitBindings",
+                .product(name: "RadrootsKit", package: "apple_kit"),
+            ],
+            path: "Radroots",
+            exclude: [
+                "App/App.swift",
+                "Config",
+                "Frameworks",
+                "Generated",
+                "Info.plist",
+                "radroots.xcconfig",
+            ],
+            sources: [
+                "App/AppEntry.swift",
+                "App/RadrootsAppDelegate.swift",
+                "App/RadrootsAppModel.swift",
+                "App/RadrootsProvider.swift",
+                "App/RadrootsRootShell.swift",
+                "Runtime/RadrootsAddMediaCoordinator.swift",
+                "Runtime/RadrootsGeneratedRuntimeBackend.swift",
+                "Runtime/RadrootsLifecycleCoordinator.swift",
+                "Runtime/RadrootsRuntimeClient.swift",
+                "Runtime/RadrootsRuntimeModels.swift",
+                "State/RadrootsAddStore.swift",
+                "State/RadrootsConfigurationStore.swift",
+                "State/RadrootsIdentityStore.swift",
+                "State/RadrootsSessionStore.swift",
+                "State/RadrootsSupportingStores.swift",
+                "State/RadrootsTodayStore.swift",
+                "Views/RadrootsAddView.swift",
+                "Views/RadrootsSupportingViews.swift",
+                "Views/RadrootsTodayView.swift",
+                "Views/RuntimeStatusView.swift",
+            ],
+            resources: [
+                .process("Resources/PrivacyInfo.xcprivacy"),
+            ]
+        ),
+        .testTarget(
+            name: "RadrootsAppTests",
+            dependencies: ["RadrootsApp"],
+            path: "RadrootsTests"
+        ),
+        .testTarget(
+            name: "RadrootsAppPublicAPITests",
+            dependencies: ["RadrootsApp"],
+            path: "RadrootsPublicAPITests"
+        ),
+    ],
+    swiftLanguageModes: [.v6]
+)

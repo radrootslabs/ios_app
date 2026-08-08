@@ -9,54 +9,21 @@ configs:
   Release: release
 
 packages:
+  RadrootsApp:
+    path: .
   RadrootsKit:
     url: https://github.com/radrootslabs/apple_kit.git
-    revision: 265015fc537bfe507f12d801b9765be9764fbc95
+    revision: af6047761cd445e8861e11b7df15b1fc52c1fbbf
 
 targets:
-  RadrootsKitBindings:
-    type: framework
-    platform: iOS
-    deploymentTarget: "18.0"
-    sources:
-      - path: Radroots/Generated/RadrootsKitBindings.swift
-    settings:
-      base:
-        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
-        GENERATE_INFOPLIST_FILE: true
-        PRODUCT_BUNDLE_IDENTIFIER: org.radroots.RadrootsKitBindings
-        SWIFT_VERSION: 5.0
-        SWIFT_STRICT_CONCURRENCY: minimal
-    dependencies:
-      - framework: Radroots/Frameworks/RadrootsFFI.xcframework
-        embed: false
   Radroots:
     type: application
     platform: iOS
     deploymentTarget: "18.0"
     sources:
       - path: Radroots/App/App.swift
-      - path: Radroots/App/RadrootsAppDelegate.swift
-      - path: Radroots/App/AppEntry.swift
-      - path: Radroots/App/RadrootsAppModel.swift
-      - path: Radroots/App/RadrootsProvider.swift
-      - path: Radroots/App/RadrootsRootShell.swift
-      - path: Radroots/Runtime/RadrootsGeneratedRuntimeBackend.swift
-      - path: Radroots/Runtime/RadrootsAddMediaCoordinator.swift
-      - path: Radroots/Runtime/RadrootsLifecycleCoordinator.swift
-      - path: Radroots/Runtime/RadrootsRuntimeClient.swift
-      - path: Radroots/Runtime/RadrootsRuntimeModels.swift
-      - path: Radroots/State/RadrootsConfigurationStore.swift
-      - path: Radroots/State/RadrootsAddStore.swift
-      - path: Radroots/State/RadrootsIdentityStore.swift
-      - path: Radroots/State/RadrootsSessionStore.swift
-      - path: Radroots/State/RadrootsSupportingStores.swift
-      - path: Radroots/State/RadrootsTodayStore.swift
-      - path: Radroots/Views/RadrootsTodayView.swift
-      - path: Radroots/Views/RadrootsAddView.swift
-      - path: Radroots/Views/RadrootsSupportingViews.swift
-      - path: Radroots/Views/RuntimeStatusView.swift
-      - path: Radroots/Resources
+      - path: Radroots/Resources/Assets.xcassets
+      - path: Radroots/Resources/PrivacyInfo.xcprivacy
     settings:
       base:
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
@@ -66,15 +33,12 @@ targets:
       Debug: Radroots/Config/Debug.xcconfig
       Release: Radroots/Config/Release.xcconfig
     dependencies:
-      - target: RadrootsKitBindings
-        embed: true
-      - package: RadrootsKit
+      - package: RadrootsApp
     preBuildScripts:
-      - name: Generate git SHA xcconfig
+      - name: Verify installed FFI artifacts
         basedOnDependencyAnalysis: false
         script: |
-          GIT_SHA=$(git rev-parse --short HEAD || echo "unknown")
-          echo "GIT_SHA = $GIT_SHA" > "$SRCROOT/Radroots/radroots.git.xcconfig"
+          "$SRCROOT/RadrootsFFI/scripts/verify-installed-artifacts.sh"
   RadrootsTests:
     type: bundle.unit-test
     platform: iOS
@@ -94,6 +58,8 @@ targets:
         GENERATE_INFOPLIST_FILE: true
     dependencies:
       - target: Radroots
+      - package: RadrootsApp
+      - package: RadrootsKit
   RadrootsUITests:
     type: bundle.ui-testing
     platform: iOS

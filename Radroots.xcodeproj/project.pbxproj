@@ -7,51 +7,23 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0486BFE6223D0FF0ACFA4249 /* RadrootsAddStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA2E3E5B1D1A0E1A32A83100 /* RadrootsAddStore.swift */; };
+		0376BB3ECA35B44625702BFE /* RadrootsApp in Frameworks */ = {isa = PBXBuildFile; productRef = E17BA8C6979DF56FB5F385B8 /* RadrootsApp */; };
 		27B7FB991398E2BE7034C72E /* RadrootsAddStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42C296DF1E35100FE59C04D3 /* RadrootsAddStoreTests.swift */; };
-		27F796571E92A6589E0111E3 /* RadrootsKitBindings.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FF8CEF5491290B1218ACFCE7 /* RadrootsKitBindings.framework */; };
-		3233513A881D056514142457 /* RadrootsAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE3D78A3EDB345DB46C8E547 /* RadrootsAppDelegate.swift */; };
 		3BCAFE2B1A96BBE5D741D8FC /* RadrootsSupportingStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41B94CEAFD958CE92D6B9265 /* RadrootsSupportingStoreTests.swift */; };
-		3C16EC0B109F76EEE8D3031A /* RadrootsSupportingStores.swift in Sources */ = {isa = PBXBuildFile; fileRef = 478127DF070D6065A282C44A /* RadrootsSupportingStores.swift */; };
-		41B5CB28ACA51221A1BA59D5 /* RadrootsSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F84D4706216F743E373F2A /* RadrootsSessionStore.swift */; };
-		47D9564F81A5E7CEA86B759C /* RadrootsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57C4A7EB045E43F109C4DCA1 /* RadrootsProvider.swift */; };
-		499BCC8FC845FDD77E74FD99 /* RadrootsTodayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A6A6D1850A21E5516060E5E /* RadrootsTodayStore.swift */; };
-		509FF909EFFD7FD9BAEC537C /* RadrootsRootShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF529B919921D63157110E44 /* RadrootsRootShell.swift */; };
 		51FE0A95B71A5D4EDCEB0748 /* RadrootsStateMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C26D512B6CBD1A9BE4780682 /* RadrootsStateMigrationTests.swift */; };
-		5DAE76BBC71E4A192E029785 /* RadrootsGeneratedRuntimeBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B14CE9958D4C71AFB41D2DD /* RadrootsGeneratedRuntimeBackend.swift */; };
-		69326B7DA05C115D0055AD13 /* RadrootsKitBindings.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FF8CEF5491290B1218ACFCE7 /* RadrootsKitBindings.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		74082509C257766A166662FA /* RadrootsAppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 343F115F383EB9C8A796AC9C /* RadrootsAppModel.swift */; };
-		75275CDCE16FB99248793AB4 /* RadrootsSupportingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29DD502141AA86FD5C948618 /* RadrootsSupportingViews.swift */; };
+		60B853393C8DF4FDF2C01CAF /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 81E991EAE0A0EAB4853747C6 /* PrivacyInfo.xcprivacy */; };
 		75C044403AF08F7230DE9485 /* RadrootsRootShellUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF484F988B3D1D3D81880388 /* RadrootsRootShellUITests.swift */; };
-		7A1131CC1E9308706ECE4B7B /* RadrootsLifecycleCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAAFF0BC944ECC04D0BDF41 /* RadrootsLifecycleCoordinator.swift */; };
 		7CF6D05AC3F7C8CAD56E3A91 /* RadrootsRootShellTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8F89E4B3A775E88F661B891 /* RadrootsRootShellTests.swift */; };
-		86DF51D41F92E1A695D83205 /* RadrootsTodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78F57CD1A43D46EE8CB35591 /* RadrootsTodayView.swift */; };
-		AA7D80A73CD6C22ED5080781 /* RadrootsKitBindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 879C89400666972D90996AE5 /* RadrootsKitBindings.swift */; };
-		B356719A54375706DBBDC118 /* RadrootsRuntimeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DDB24124BB8917DBB49EC2C /* RadrootsRuntimeModels.swift */; };
-		BB932CEEA2713588E14AC3ED /* RadrootsAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0C073F20D8716C60FCCF2C /* RadrootsAddView.swift */; };
 		C356F2A068722087ED91256C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 298DA81B0A000E307098C840 /* Assets.xcassets */; };
-		CA827A410369AC55B0FEE305 /* RuntimeStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9469790A906080D90F8735CB /* RuntimeStatusView.swift */; };
-		CAD7B38817DC65AAF19576F7 /* RadrootsFFI.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD7B47A576C4D5CE9318D3E6 /* RadrootsFFI.xcframework */; };
 		CD88BB6222151E0B8242F84A /* RadrootsLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D95CB1F4A964D87D2256DA9C /* RadrootsLifecycleTests.swift */; };
 		CEED5B97CB1F94445162D662 /* RadrootsRuntimeClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0451E8A8521D320172FFA35 /* RadrootsRuntimeClientTests.swift */; };
-		D03C81CCF4FBC6D7D5634D35 /* RadrootsConfigurationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF9FBA655BDA52E08FB62EED /* RadrootsConfigurationStore.swift */; };
+		D86E464EADF0C7904AB2FF90 /* RadrootsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 54C7F50B545852A8B313DAA7 /* RadrootsKit */; };
 		E236CCF8D8F8AC12AF59932E /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 397ED29DF8E9BF73B4BBFDEC /* App.swift */; };
-		ED326EC0067A550727A1680D /* AppEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E0D9C4E6CAE584304521D08 /* AppEntry.swift */; };
-		F3E40E5A76B4EA19AC7603D2 /* RadrootsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2DAD90EBF8EB00ACDD7611CD /* RadrootsKit */; };
-		F6F36A06BD77BCFA64FC3541 /* RadrootsIdentityStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D0BC5AE5000DE34D9303379 /* RadrootsIdentityStore.swift */; };
-		F7EEF54776B037D98F389AD6 /* RadrootsRuntimeClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57F5216F7C18E2EE21B8528A /* RadrootsRuntimeClient.swift */; };
-		F9EA6E6935307271FF920B7D /* RadrootsAddMediaCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7098C419BAC4E8E058A2B3C2 /* RadrootsAddMediaCoordinator.swift */; };
+		F3E40E5A76B4EA19AC7603D2 /* RadrootsApp in Frameworks */ = {isa = PBXBuildFile; productRef = 5EB99D569A31C7F8987A9440 /* RadrootsApp */; };
 		FE9376121B0780485673EC06 /* RadrootsTodayStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91770F919A06DB39186281B /* RadrootsTodayStoreTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		51F4BD021D143679140FF35F /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 572C41532B5066EC7641561C /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 1C22115E511334B291A71594;
-			remoteInfo = RadrootsKitBindings;
-		};
 		5B242C3EC56D6F3216103D77 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 572C41532B5066EC7641561C /* Project object */;
@@ -68,76 +40,41 @@
 		};
 /* End PBXContainerItemProxy section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		271D40E26A903BC9F058633E /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				69326B7DA05C115D0055AD13 /* RadrootsKitBindings.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
 		298DA81B0A000E307098C840 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		29DD502141AA86FD5C948618 /* RadrootsSupportingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsSupportingViews.swift; sourceTree = "<group>"; };
-		2A6A6D1850A21E5516060E5E /* RadrootsTodayStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsTodayStore.swift; sourceTree = "<group>"; };
-		2D0BC5AE5000DE34D9303379 /* RadrootsIdentityStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsIdentityStore.swift; sourceTree = "<group>"; };
 		30A8A8321A8A261F6D1B480D /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		318804462AADCA05FB04ACD9 /* RadrootsTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RadrootsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		343F115F383EB9C8A796AC9C /* RadrootsAppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsAppModel.swift; sourceTree = "<group>"; };
 		397ED29DF8E9BF73B4BBFDEC /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
-		3DDB24124BB8917DBB49EC2C /* RadrootsRuntimeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsRuntimeModels.swift; sourceTree = "<group>"; };
 		41B94CEAFD958CE92D6B9265 /* RadrootsSupportingStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsSupportingStoreTests.swift; sourceTree = "<group>"; };
 		42C296DF1E35100FE59C04D3 /* RadrootsAddStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsAddStoreTests.swift; sourceTree = "<group>"; };
 		43B0EA447E213CD1B96846D6 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
-		478127DF070D6065A282C44A /* RadrootsSupportingStores.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsSupportingStores.swift; sourceTree = "<group>"; };
-		4E0D9C4E6CAE584304521D08 /* AppEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEntry.swift; sourceTree = "<group>"; };
-		57C4A7EB045E43F109C4DCA1 /* RadrootsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsProvider.swift; sourceTree = "<group>"; };
-		57F5216F7C18E2EE21B8528A /* RadrootsRuntimeClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsRuntimeClient.swift; sourceTree = "<group>"; };
-		5B14CE9958D4C71AFB41D2DD /* RadrootsGeneratedRuntimeBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsGeneratedRuntimeBackend.swift; sourceTree = "<group>"; };
-		7098C419BAC4E8E058A2B3C2 /* RadrootsAddMediaCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsAddMediaCoordinator.swift; sourceTree = "<group>"; };
-		76F84D4706216F743E373F2A /* RadrootsSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsSessionStore.swift; sourceTree = "<group>"; };
-		78F57CD1A43D46EE8CB35591 /* RadrootsTodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsTodayView.swift; sourceTree = "<group>"; };
-		879C89400666972D90996AE5 /* RadrootsKitBindings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsKitBindings.swift; sourceTree = "<group>"; };
-		8DAAFF0BC944ECC04D0BDF41 /* RadrootsLifecycleCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsLifecycleCoordinator.swift; sourceTree = "<group>"; };
+		81E991EAE0A0EAB4853747C6 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		93AA285819DD1269C3EAD80A /* Radroots.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Radroots.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		9469790A906080D90F8735CB /* RuntimeStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeStatusView.swift; sourceTree = "<group>"; };
+		9F54FC4930051FC4611B37D3 /* ios_app */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ios_app; path = .; sourceTree = SOURCE_ROOT; };
 		B8F89E4B3A775E88F661B891 /* RadrootsRootShellTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsRootShellTests.swift; sourceTree = "<group>"; };
-		BD7B47A576C4D5CE9318D3E6 /* RadrootsFFI.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = RadrootsFFI.xcframework; path = Radroots/Frameworks/RadrootsFFI.xcframework; sourceTree = "<group>"; };
 		C26D512B6CBD1A9BE4780682 /* RadrootsStateMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsStateMigrationTests.swift; sourceTree = "<group>"; };
 		CAD74320A58874A7F7370505 /* RadrootsUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RadrootsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		CE0C073F20D8716C60FCCF2C /* RadrootsAddView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsAddView.swift; sourceTree = "<group>"; };
 		CF484F988B3D1D3D81880388 /* RadrootsRootShellUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsRootShellUITests.swift; sourceTree = "<group>"; };
-		CF529B919921D63157110E44 /* RadrootsRootShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsRootShell.swift; sourceTree = "<group>"; };
 		D0451E8A8521D320172FFA35 /* RadrootsRuntimeClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsRuntimeClientTests.swift; sourceTree = "<group>"; };
 		D91770F919A06DB39186281B /* RadrootsTodayStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsTodayStoreTests.swift; sourceTree = "<group>"; };
 		D95CB1F4A964D87D2256DA9C /* RadrootsLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsLifecycleTests.swift; sourceTree = "<group>"; };
-		DA2E3E5B1D1A0E1A32A83100 /* RadrootsAddStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsAddStore.swift; sourceTree = "<group>"; };
-		DF9FBA655BDA52E08FB62EED /* RadrootsConfigurationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsConfigurationStore.swift; sourceTree = "<group>"; };
-		EE3D78A3EDB345DB46C8E547 /* RadrootsAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadrootsAppDelegate.swift; sourceTree = "<group>"; };
-		FF8CEF5491290B1218ACFCE7 /* RadrootsKitBindings.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RadrootsKitBindings.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		044C68780F358BC2C58657B8 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				CAD7B38817DC65AAF19576F7 /* RadrootsFFI.xcframework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		1384F9BE8BB29250A1B4A26A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27F796571E92A6589E0111E3 /* RadrootsKitBindings.framework in Frameworks */,
-				F3E40E5A76B4EA19AC7603D2 /* RadrootsKit in Frameworks */,
+				F3E40E5A76B4EA19AC7603D2 /* RadrootsApp in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ACCF9244C9199579A4D93444 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0376BB3ECA35B44625702BFE /* RadrootsApp in Frameworks */,
+				D86E464EADF0C7904AB2FF90 /* RadrootsKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -172,66 +109,34 @@
 			isa = PBXGroup;
 			children = (
 				93AA285819DD1269C3EAD80A /* Radroots.app */,
-				FF8CEF5491290B1218ACFCE7 /* RadrootsKitBindings.framework */,
 				318804462AADCA05FB04ACD9 /* RadrootsTests.xctest */,
 				CAD74320A58874A7F7370505 /* RadrootsUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		64C889EFCEB42611797110F7 /* Runtime */ = {
+		9458C318B571871852A3FD1B /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				7098C419BAC4E8E058A2B3C2 /* RadrootsAddMediaCoordinator.swift */,
-				5B14CE9958D4C71AFB41D2DD /* RadrootsGeneratedRuntimeBackend.swift */,
-				8DAAFF0BC944ECC04D0BDF41 /* RadrootsLifecycleCoordinator.swift */,
-				57F5216F7C18E2EE21B8528A /* RadrootsRuntimeClient.swift */,
-				3DDB24124BB8917DBB49EC2C /* RadrootsRuntimeModels.swift */,
+				9F54FC4930051FC4611B37D3 /* ios_app */,
 			);
-			name = Runtime;
-			path = Radroots/Runtime;
+			name = Packages;
 			sourceTree = "<group>";
 		};
 		94F94915631E6DC54AAB0B89 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
 				298DA81B0A000E307098C840 /* Assets.xcassets */,
+				81E991EAE0A0EAB4853747C6 /* PrivacyInfo.xcprivacy */,
 			);
 			name = Resources;
 			path = Radroots/Resources;
-			sourceTree = "<group>";
-		};
-		97FA23F0FD7E25C1AF2585FB /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				BD7B47A576C4D5CE9318D3E6 /* RadrootsFFI.xcframework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		A2DE5BE1D645F19DA46B3FC5 /* State */ = {
-			isa = PBXGroup;
-			children = (
-				DA2E3E5B1D1A0E1A32A83100 /* RadrootsAddStore.swift */,
-				DF9FBA655BDA52E08FB62EED /* RadrootsConfigurationStore.swift */,
-				2D0BC5AE5000DE34D9303379 /* RadrootsIdentityStore.swift */,
-				76F84D4706216F743E373F2A /* RadrootsSessionStore.swift */,
-				478127DF070D6065A282C44A /* RadrootsSupportingStores.swift */,
-				2A6A6D1850A21E5516060E5E /* RadrootsTodayStore.swift */,
-			);
-			name = State;
-			path = Radroots/State;
 			sourceTree = "<group>";
 		};
 		C22A3ECCB9E9AF9E57B74576 /* App */ = {
 			isa = PBXGroup;
 			children = (
 				397ED29DF8E9BF73B4BBFDEC /* App.swift */,
-				4E0D9C4E6CAE584304521D08 /* AppEntry.swift */,
-				EE3D78A3EDB345DB46C8E547 /* RadrootsAppDelegate.swift */,
-				343F115F383EB9C8A796AC9C /* RadrootsAppModel.swift */,
-				57C4A7EB045E43F109C4DCA1 /* RadrootsProvider.swift */,
-				CF529B919921D63157110E44 /* RadrootsRootShell.swift */,
 			);
 			name = App;
 			path = Radroots/App;
@@ -242,37 +147,12 @@
 			children = (
 				C22A3ECCB9E9AF9E57B74576 /* App */,
 				401A3C62BEECB8BD5C500756 /* Config */,
-				D17ED36BEBE689794F31C2BB /* Generated */,
+				9458C318B571871852A3FD1B /* Packages */,
 				31C88176C5674CFF5F9CFBEA /* RadrootsTests */,
 				FD341F0384225E202A0845B1 /* RadrootsUITests */,
 				94F94915631E6DC54AAB0B89 /* Resources */,
-				64C889EFCEB42611797110F7 /* Runtime */,
-				A2DE5BE1D645F19DA46B3FC5 /* State */,
-				E05061D0ADB560FA929B4D9A /* Views */,
-				97FA23F0FD7E25C1AF2585FB /* Frameworks */,
 				6240123423927396E47D6B3E /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		D17ED36BEBE689794F31C2BB /* Generated */ = {
-			isa = PBXGroup;
-			children = (
-				879C89400666972D90996AE5 /* RadrootsKitBindings.swift */,
-			);
-			name = Generated;
-			path = Radroots/Generated;
-			sourceTree = "<group>";
-		};
-		E05061D0ADB560FA929B4D9A /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				CE0C073F20D8716C60FCCF2C /* RadrootsAddView.swift */,
-				29DD502141AA86FD5C948618 /* RadrootsSupportingViews.swift */,
-				78F57CD1A43D46EE8CB35591 /* RadrootsTodayView.swift */,
-				9469790A906080D90F8735CB /* RuntimeStatusView.swift */,
-			);
-			name = Views;
-			path = Radroots/Views;
 			sourceTree = "<group>";
 		};
 		FD341F0384225E202A0845B1 /* RadrootsUITests */ = {
@@ -283,52 +163,25 @@
 			path = RadrootsUITests;
 			sourceTree = "<group>";
 		};
-		"TEMP_C9716F76-7D47-4886-AA36-A6BB8236F43C" /* Localizations */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Localizations;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		1C22115E511334B291A71594 /* RadrootsKitBindings */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 4709AFBD0CA5DE7FC73BFC95 /* Build configuration list for PBXNativeTarget "RadrootsKitBindings" */;
-			buildPhases = (
-				21C962D4AD2665D5ED66E70F /* Sources */,
-				044C68780F358BC2C58657B8 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = RadrootsKitBindings;
-			packageProductDependencies = (
-			);
-			productName = RadrootsKitBindings;
-			productReference = FF8CEF5491290B1218ACFCE7 /* RadrootsKitBindings.framework */;
-			productType = "com.apple.product-type.framework";
-		};
 		469EC50C49E7266DF1C2000B /* Radroots */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2513910CE2A2ED545A78A163 /* Build configuration list for PBXNativeTarget "Radroots" */;
 			buildPhases = (
-				1687531B35A5B613B89DA261 /* Generate git SHA xcconfig */,
+				7C10FB7358EE7DB857A84E7B /* Verify installed FFI artifacts */,
 				78F7810CC77628CB591F8CD2 /* Sources */,
 				0FB0BFB846269AC353E4AD0E /* Resources */,
 				1384F9BE8BB29250A1B4A26A /* Frameworks */,
-				271D40E26A903BC9F058633E /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				3AF61EED138E0994701CAA79 /* PBXTargetDependency */,
 			);
 			name = Radroots;
 			packageProductDependencies = (
-				2DAD90EBF8EB00ACDD7611CD /* RadrootsKit */,
+				5EB99D569A31C7F8987A9440 /* RadrootsApp */,
 			);
 			productName = Radroots;
 			productReference = 93AA285819DD1269C3EAD80A /* Radroots.app */;
@@ -339,6 +192,7 @@
 			buildConfigurationList = DCDE79513C7AE684F9540473 /* Build configuration list for PBXNativeTarget "RadrootsTests" */;
 			buildPhases = (
 				4948BBB44D48B961DE81F508 /* Sources */,
+				ACCF9244C9199579A4D93444 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -347,6 +201,8 @@
 			);
 			name = RadrootsTests;
 			packageProductDependencies = (
+				E17BA8C6979DF56FB5F385B8 /* RadrootsApp */,
+				54C7F50B545852A8B313DAA7 /* RadrootsKit */,
 			);
 			productName = RadrootsTests;
 			productReference = 318804462AADCA05FB04ACD9 /* RadrootsTests.xctest */;
@@ -395,13 +251,13 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				5696E24009739E3BD13D6580 /* XCRemoteSwiftPackageReference "apple_kit" */,
+				03D9E5A7B556A6CD41FCF80D /* XCLocalSwiftPackageReference "." */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6240123423927396E47D6B3E /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				1C22115E511334B291A71594 /* RadrootsKitBindings */,
 				469EC50C49E7266DF1C2000B /* Radroots */,
 				67B2EF8D69F6CEA9BE5A8B04 /* RadrootsTests */,
 				D87D8771FD63904A45FAFB4D /* RadrootsUITests */,
@@ -415,13 +271,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				C356F2A068722087ED91256C /* Assets.xcassets in Resources */,
+				60B853393C8DF4FDF2C01CAF /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		1687531B35A5B613B89DA261 /* Generate git SHA xcconfig */ = {
+		7C10FB7358EE7DB857A84E7B /* Verify installed FFI artifacts */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -431,14 +288,14 @@
 			);
 			inputPaths = (
 			);
-			name = "Generate git SHA xcconfig";
+			name = "Verify installed FFI artifacts";
 			outputFileListPaths = (
 			);
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "GIT_SHA=$(git rev-parse --short HEAD || echo \"unknown\")\necho \"GIT_SHA = $GIT_SHA\" > \"$SRCROOT/Radroots/radroots.git.xcconfig\"\n";
+			shellScript = "\"$SRCROOT/RadrootsFFI/scripts/verify-installed-artifacts.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -448,14 +305,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				75C044403AF08F7230DE9485 /* RadrootsRootShellUITests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		21C962D4AD2665D5ED66E70F /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				AA7D80A73CD6C22ED5080781 /* RadrootsKitBindings.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -478,37 +327,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				E236CCF8D8F8AC12AF59932E /* App.swift in Sources */,
-				ED326EC0067A550727A1680D /* AppEntry.swift in Sources */,
-				F9EA6E6935307271FF920B7D /* RadrootsAddMediaCoordinator.swift in Sources */,
-				0486BFE6223D0FF0ACFA4249 /* RadrootsAddStore.swift in Sources */,
-				BB932CEEA2713588E14AC3ED /* RadrootsAddView.swift in Sources */,
-				3233513A881D056514142457 /* RadrootsAppDelegate.swift in Sources */,
-				74082509C257766A166662FA /* RadrootsAppModel.swift in Sources */,
-				D03C81CCF4FBC6D7D5634D35 /* RadrootsConfigurationStore.swift in Sources */,
-				5DAE76BBC71E4A192E029785 /* RadrootsGeneratedRuntimeBackend.swift in Sources */,
-				F6F36A06BD77BCFA64FC3541 /* RadrootsIdentityStore.swift in Sources */,
-				7A1131CC1E9308706ECE4B7B /* RadrootsLifecycleCoordinator.swift in Sources */,
-				47D9564F81A5E7CEA86B759C /* RadrootsProvider.swift in Sources */,
-				509FF909EFFD7FD9BAEC537C /* RadrootsRootShell.swift in Sources */,
-				F7EEF54776B037D98F389AD6 /* RadrootsRuntimeClient.swift in Sources */,
-				B356719A54375706DBBDC118 /* RadrootsRuntimeModels.swift in Sources */,
-				41B5CB28ACA51221A1BA59D5 /* RadrootsSessionStore.swift in Sources */,
-				3C16EC0B109F76EEE8D3031A /* RadrootsSupportingStores.swift in Sources */,
-				75275CDCE16FB99248793AB4 /* RadrootsSupportingViews.swift in Sources */,
-				499BCC8FC845FDD77E74FD99 /* RadrootsTodayStore.swift in Sources */,
-				86DF51D41F92E1A695D83205 /* RadrootsTodayView.swift in Sources */,
-				CA827A410369AC55B0FEE305 /* RuntimeStatusView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		3AF61EED138E0994701CAA79 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 1C22115E511334B291A71594 /* RadrootsKitBindings */;
-			targetProxy = 51F4BD021D143679140FF35F /* PBXContainerItemProxy */;
-		};
 		54F8C314CE8A0D06346F56DE /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 469EC50C49E7266DF1C2000B /* Radroots */;
@@ -522,37 +346,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		065194E2B92BBDACF3D27647 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "";
-				CURRENT_PROJECT_VERSION = 1;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"Radroots/Frameworks\"",
-				);
-				GENERATE_INFOPLIST_FILE = YES;
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = org.radroots.RadrootsKitBindings;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
-			};
-			name = Release;
-		};
 		5486087B252C6EA76ADD9BB8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 30A8A8321A8A261F6D1B480D /* Debug.xcconfig */;
@@ -569,37 +362,6 @@
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		762521A89ECC390CEE5533D2 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "";
-				CURRENT_PROJECT_VERSION = 1;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"Radroots/Frameworks\"",
-				);
-				GENERATE_INFOPLIST_FILE = YES;
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = org.radroots.RadrootsKitBindings;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
 		};
@@ -829,15 +591,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		4709AFBD0CA5DE7FC73BFC95 /* Build configuration list for PBXNativeTarget "RadrootsKitBindings" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				762521A89ECC390CEE5533D2 /* Debug */,
-				065194E2B92BBDACF3D27647 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
-		};
 		B3DDD079CA522503021BDB85 /* Build configuration list for PBXNativeTarget "RadrootsUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -867,22 +620,37 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		03D9E5A7B556A6CD41FCF80D /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		5696E24009739E3BD13D6580 /* XCRemoteSwiftPackageReference "apple_kit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/radrootslabs/apple_kit.git";
 			requirement = {
 				kind = revision;
-				revision = 265015fc537bfe507f12d801b9765be9764fbc95;
+				revision = af6047761cd445e8861e11b7df15b1fc52c1fbbf;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		2DAD90EBF8EB00ACDD7611CD /* RadrootsKit */ = {
+		54C7F50B545852A8B313DAA7 /* RadrootsKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 5696E24009739E3BD13D6580 /* XCRemoteSwiftPackageReference "apple_kit" */;
 			productName = RadrootsKit;
+		};
+		5EB99D569A31C7F8987A9440 /* RadrootsApp */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RadrootsApp;
+		};
+		E17BA8C6979DF56FB5F385B8 /* RadrootsApp */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RadrootsApp;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

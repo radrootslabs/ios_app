@@ -18,7 +18,6 @@
 **/*.rs.bk
 
 # Generated artifacts
-Radroots/radroots.git.xcconfig
 RadrootsKit/Artifacts/
 RadrootsKit/Sources/RadrootsKit/Generated/
 Radroots/Frameworks/RadrootsFFI.xcframework/

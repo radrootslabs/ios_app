@@ -1,7 +1,11 @@
 import UIKit
 
-final class RadrootsAppDelegate: NSObject, UIApplicationDelegate {
-    func application(
+public final class RadrootsAppDelegate: NSObject, UIApplicationDelegate {
+    override public init() {
+        super.init()
+    }
+
+    public func application(
         _: UIApplication,
         handleEventsForBackgroundURLSession identifier: String,
         completionHandler: @escaping () -> Void
@@ -15,7 +19,7 @@ final class RadrootsAppDelegate: NSObject, UIApplicationDelegate {
         }
     }
 
-    func applicationWillTerminate(_: UIApplication) {
+    public func applicationWillTerminate(_: UIApplication) {
         Task {
             await RadrootsLifecycleBridge.shared.requestShutdown()
         }

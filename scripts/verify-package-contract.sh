@@ -1,0 +1,67 @@
+#!/bin/sh
+set -eu
+
+repo_root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
+package="$repo_root/Package.swift"
+source_lock="$repo_root/RadrootsFFI/source.lock"
+consumer_lock="$repo_root/radroots.lib.source-lock.v1.toml"
+
+make_value() {
+    key=$1
+    awk -v key="$key" '$2 == key && $3 == ":=" { print $4 }' "$source_lock"
+}
+
+release_version=$(make_value RADROOTS_FIELD_FFI_CRATE_VERSION)
+lib_revision=$(make_value RADROOTS_FIELD_LIB_GIT_REV)
+apple_revision=$(sed -n '/url: "https:\/\/github.com\/radrootslabs\/apple_kit.git"/{n;s/.*revision: "\([0-9a-f]*\)".*/\1/p;}' "$package")
+
+if ! printf '%s\n' "$apple_revision" | grep -Eq '^[0-9a-f]{40}$'; then
+    echo "error: apple_kit must use an exact 40-character Git revision" >&2
+    exit 1
+fi
+
+grep -Fq "repository = \"https://github.com/radrootslabs/lib\"" "$consumer_lock"
+grep -Fq "revision = \"$lib_revision\"" "$consumer_lock"
+grep -Fq "version = \"$release_version\"" "$consumer_lock"
+grep -Fq "public static let version = \"$release_version\"" "$repo_root/Radroots/App/AppEntry.swift"
+grep -Fq "revision: $apple_revision" "$repo_root/project.yml"
+grep -Fq "XCTAssertEqual(RadrootsAppRelease.version, \"$release_version\")" \
+    "$repo_root/RadrootsPublicAPITests/RadrootsAppPublicAPITests.swift"
+grep -Fq "NSPrivacyAccessedAPICategoryUserDefaults" \
+    "$repo_root/Radroots/Resources/PrivacyInfo.xcprivacy"
+grep -Fq "CA92.1" "$repo_root/Radroots/Resources/PrivacyInfo.xcprivacy"
+plutil -lint "$repo_root/Radroots/Resources/PrivacyInfo.xcprivacy" >/dev/null
+
+for resolved in \
+    "$repo_root/Package.resolved" \
+    "$repo_root/Radroots.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+do
+    if [ ! -f "$resolved" ]; then
+        echo "error: missing Swift package lock: $resolved" >&2
+        exit 1
+    fi
+    jq -e --arg apple_revision "$apple_revision" '
+        (.version == 3) and
+        (.pins | length == 2) and
+        (all(.pins[];
+            (.kind == "remoteSourceControl") and
+            (.location | startswith("https://")) and
+            (.state.revision | test("^[0-9a-f]{40}$")))) and
+        (any(.pins[];
+            .location == "https://github.com/radrootslabs/apple_kit.git" and
+            .state.revision == $apple_revision)) and
+        (any(.pins[];
+            .location == "https://github.com/21-DOT-DEV/swift-secp256k1.git" and
+            .state.revision == "e70a10e036a55fffea31568f0af92d69b6d449cd"))
+    ' "$resolved" >/dev/null
+done
+
+package_pins=$(jq -cS '.pins | sort_by(.identity)' "$repo_root/Package.resolved")
+project_pins=$(jq -cS '.pins | sort_by(.identity)' \
+    "$repo_root/Radroots.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved")
+if [ "$package_pins" != "$project_pins" ]; then
+    echo "error: Swift package and Xcode project locks disagree" >&2
+    exit 1
+fi
+
+echo "package contracts agree at $release_version; apple_kit@$apple_revision"

@@ -1,0 +1,50 @@
+# Radroots iOS App
+
+Radroots is a public iOS 18 app for discovering and publishing local farm
+updates, asks, in-person events, and food listings over Nostr. The product has
+exactly two bottom tabs: Today for discovery and Add for authored operations.
+
+The current public release is `0.1.0-alpha`.
+
+## Requirements
+
+- macOS with Xcode and an iOS 18-or-newer simulator
+- XcodeGen
+- Rust `1.97.1-aarch64-apple-darwin` with the iOS device and simulator targets
+- `cargo-extbuild` configured for the checkout
+
+## Bootstrap and verify
+
+The first bootstrap requires network access. It checks out the exact Rust
+source revision, builds the deterministic UniFFI XCFramework and Swift
+bindings, resolves exact Swift package revisions, and generates the Xcode
+project:
+
+```sh
+cargo extbuild doctor
+make bootstrap
+```
+
+After bootstrap, the complete package and Xcode build/test lane uses the
+resolved revisions without automatic dependency updates:
+
+```sh
+make verify
+```
+
+Use `SIMULATOR_NAME="Device Name" make verify` when the default simulator is
+not installed. `make clean` removes only rebuildable external build output and
+the ignored XCFramework; it preserves tracked generated bindings, locks,
+snapshots, project sources, and user files.
+
+## Package surface
+
+`Package.swift` publishes the `RadrootsApp` library used by the generated Xcode
+application wrapper. It pins AppleKit by exact HTTPS Git revision and consumes
+the locally bootstrapped `RadrootsFFI.xcframework`. Ordinary Xcode compilation
+never writes repository source: a read-only preflight rejects missing or stale
+FFI artifacts and directs the developer to run `make bootstrap`.
+
+The Rust source lock, generated bindings, XCFramework hashes, provenance, Swift
+package locks, privacy manifests, and public API snapshots are checked as part
+of the release lane.

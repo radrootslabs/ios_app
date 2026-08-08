@@ -90,9 +90,6 @@ print-config:
 
 clean:
 	rm -rf $(TARGET_DIR) $(OUT_DIR) $(ARTIFACTS_DIR)/$(FFI_OUTPUT_NAME).xcframework
-	if [ -d $(GENERATED_SWIFT_DIR) ]; then \
-		find $(GENERATED_SWIFT_DIR) -maxdepth 1 -type f -name '*.swift' -delete; \
-	fi
 
 distclean: clean
 	rm -rf $(SOURCE_ROOT)

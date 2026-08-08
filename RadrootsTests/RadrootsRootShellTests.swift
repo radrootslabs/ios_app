@@ -1,4 +1,4 @@
-@testable import Radroots
+@testable import RadrootsApp
 import XCTest
 
 final class RadrootsRootShellTests: XCTestCase {

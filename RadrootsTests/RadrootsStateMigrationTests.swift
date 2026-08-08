@@ -1,5 +1,5 @@
 import Foundation
-@testable import Radroots
+@testable import RadrootsApp
 import RadrootsKit
 import XCTest
 

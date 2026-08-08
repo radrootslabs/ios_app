@@ -1,5 +1,19 @@
 import SwiftUI
 
+public enum RadrootsAppRelease: Sendable {
+    public static let version = "0.1.0-alpha"
+}
+
+public struct RadrootsAppView: View {
+    public init() {}
+
+    public var body: some View {
+        RadrootsProvider {
+            AppEntry()
+        }
+    }
+}
+
 struct AppEntry: View {
     @EnvironmentObject private var appModel: RadrootsAppModel
 
