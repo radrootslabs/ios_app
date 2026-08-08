@@ -341,6 +341,9 @@ struct RadrootsTodayCard: Sendable, Equatable, Hashable, Identifiable {
     let priceCurrency: String?
     let priceUnit: String?
     let quantity: String?
+    let foodSummary: String?
+    let foodPublishedAtUnixSeconds: UInt64?
+    let foodStatus: String?
     let contextRank: UInt8
     let inclusionReason: String
     let media: [RadrootsMediaReference]
@@ -572,6 +575,7 @@ struct RadrootsAddForm: Sendable, Equatable, Hashable {
     var currency: String?
     var unit: String?
     var quantity: String?
+    var foodPublishedAtUnixSeconds: UInt64?
     var foodStatus: String?
     var media: [RadrootsPreparedMedia] = []
 

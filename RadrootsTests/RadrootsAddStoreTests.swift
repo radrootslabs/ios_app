@@ -71,6 +71,9 @@ final class RadrootsAddStoreTests: XCTestCase {
         XCTAssertNil(store.activeDraft)
         XCTAssertEqual(store.form.commandType, .createFoodAvailability)
         XCTAssertEqual(store.form.identifier, "carrots")
+        XCTAssertEqual(store.form.summary, "Fresh carrots")
+        XCTAssertEqual(store.form.foodPublishedAtUnixSeconds, 1_799_999_900)
+        XCTAssertEqual(store.form.foodStatus, "active")
         XCTAssertTrue(store.message?.contains("separate revised copy") == true)
         _ = try await client.stop()
     }
@@ -188,6 +191,9 @@ final class RadrootsAddStoreTests: XCTestCase {
             priceCurrency: "CAD",
             priceUnit: "lb",
             quantity: "12",
+            foodSummary: "Fresh carrots",
+            foodPublishedAtUnixSeconds: 1_799_999_900,
+            foodStatus: "active",
             contextRank: 1,
             inclusionReason: "local",
             media: [],

@@ -520,6 +520,10 @@ final class RadrootsAddStore: ObservableObject {
                 form.eventStartDate = dateString(start)
                 form.eventEndDate = card.eventEndUnixSeconds.map(dateString)
             }
+        } else if command == .createFoodAvailability {
+            form.summary = card.foodSummary ?? card.content
+            form.foodPublishedAtUnixSeconds = card.foodPublishedAtUnixSeconds ?? card.effectiveAtUnixSeconds
+            form.foodStatus = card.foodStatus ?? card.lifecycle.rawValue
         }
         return form
     }

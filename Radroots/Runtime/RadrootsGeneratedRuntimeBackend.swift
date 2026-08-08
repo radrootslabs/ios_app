@@ -615,6 +615,9 @@ private extension FfiTodayCardRecord {
             priceCurrency: priceCurrency,
             priceUnit: priceUnit,
             quantity: quantity,
+            foodSummary: foodSummary,
+            foodPublishedAtUnixSeconds: foodPublishedAtUnixS,
+            foodStatus: foodStatus,
             contextRank: contextRank,
             inclusionReason: inclusionReason,
             media: media.map(\.appValue),
@@ -850,6 +853,7 @@ private extension RadrootsAddRuntimeInput {
             currency: form.currency,
             unit: form.unit,
             quantity: form.quantity,
+            foodPublishedAtUnixS: form.foodPublishedAtUnixSeconds,
             foodStatus: form.foodStatus,
             media: media.map(\.generatedValue)
         )
@@ -909,6 +913,7 @@ private extension FfiDraftFormRecord {
             currency: currency,
             unit: unit,
             quantity: quantity,
+            foodPublishedAtUnixSeconds: foodPublishedAtUnixS,
             foodStatus: foodStatus,
             media: media.map(\.appValue)
         )
