@@ -26,9 +26,15 @@ enum RadrootsSessionPhase: Sendable, Equatable {
     case protectedDataUnavailable(RadrootsAppIdentity)
     case recoveryRequired(RadrootsAppIdentity)
     case corruptIdentity(RadrootsAppIdentity)
+    case configurationReconfigurationRequired(RadrootsConfigurationReconfigurationRequirement)
     case running(RadrootsRuntimeSnapshot)
     case stopped
     case failed(RadrootsRuntimeFailure)
+}
+
+struct RadrootsConfigurationReconfigurationRequirement: Sendable, Equatable {
+    let generation: UInt64
+    let previousBlossomConfigFingerprint: String?
 }
 
 actor RadrootsSessionStore {
@@ -106,6 +112,14 @@ actor RadrootsSessionStore {
     }
 
     func start() async -> RadrootsSessionPhase {
+        await start(acceptingReconfiguration: false)
+    }
+
+    func applyConfigurationReconfiguration() async -> RadrootsSessionPhase {
+        await start(acceptingReconfiguration: true)
+    }
+
+    private func start(acceptingReconfiguration: Bool) async -> RadrootsSessionPhase {
         generation &+= 1
         let requestedGeneration = generation
         phase = .starting
@@ -127,6 +141,18 @@ actor RadrootsSessionStore {
                 phase = .corruptIdentity(identity)
             case .unlocked:
                 let configuration = try await configurationStore.load()
+                if configuration.activationState == .reconfigurationRequired,
+                   !acceptingReconfiguration
+                {
+                    phase = .configurationReconfigurationRequired(
+                        RadrootsConfigurationReconfigurationRequirement(
+                            generation: configuration.generation,
+                            previousBlossomConfigFingerprint: configuration
+                                .previousBlossomConfigFingerprint
+                        )
+                    )
+                    return phase
+                }
                 phase = try await startRuntime(
                     configuration: configuration,
                     identity: identity,
@@ -248,6 +274,19 @@ actor RadrootsSessionStore {
                 signer: signer
             )
         )
+        guard generation == requestedGeneration else {
+            _ = try? await runtimeClient.stop()
+            throw RadrootsRuntimeClientError.superseded
+        }
+        do {
+            try await configurationStore.confirmCanonicalBlossomConfiguration(
+                snapshot.blossomConfiguration,
+                expectedGeneration: configuration.generation
+            )
+        } catch {
+            _ = try? await runtimeClient.stop()
+            throw error
+        }
         guard generation == requestedGeneration else {
             _ = try? await runtimeClient.stop()
             throw RadrootsRuntimeClientError.superseded

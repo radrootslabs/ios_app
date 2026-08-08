@@ -6,6 +6,7 @@ struct RuntimeStatusView: View {
     let createIdentity: () -> Void
     let unlockIdentity: () -> Void
     let recoverIdentity: () -> Void
+    let applyConfigurationReconfiguration: () -> Void
 
     var body: some View {
         NavigationStack {
@@ -33,6 +34,10 @@ struct RuntimeStatusView: View {
                     Button("Recover identity", action: recoverIdentity)
                         .buttonStyle(.borderedProminent)
                         .accessibilityIdentifier("radroots.identity.recover")
+                } else if case .configurationReconfigurationRequired = phase {
+                    Button("Apply network configuration", action: applyConfigurationReconfiguration)
+                        .buttonStyle(.borderedProminent)
+                        .accessibilityIdentifier("radroots.configuration.reconfigure")
                 } else if case .failed = phase {
                     Button("Retry", action: retry)
                         .buttonStyle(.borderedProminent)
@@ -54,6 +59,7 @@ struct RuntimeStatusView: View {
         case .protectedDataUnavailable: "lock.iphone"
         case .recoveryRequired: "wrench.and.screwdriver"
         case .corruptIdentity: "exclamationmark.shield"
+        case .configurationReconfigurationRequired: "arrow.triangle.2.circlepath"
         case .running: "checkmark.circle"
         case .failed: "exclamationmark.triangle"
         case .stopped: "pause.circle"
@@ -63,6 +69,7 @@ struct RuntimeStatusView: View {
     private var symbolColor: Color {
         switch phase {
         case .failed, .corruptIdentity: .red
+        case .configurationReconfigurationRequired: .orange
         case .running: .green
         default: .accentColor
         }
@@ -76,6 +83,7 @@ struct RuntimeStatusView: View {
         case .protectedDataUnavailable: "Unlock this device"
         case .recoveryRequired: "Recover your identity"
         case .corruptIdentity: "Identity data needs repair"
+        case .configurationReconfigurationRequired: "Network configuration changed"
         case .running: "Radroots is ready"
         case .failed: "Radroots needs attention"
         case .stopped: "Radroots is paused"
@@ -96,6 +104,12 @@ struct RuntimeStatusView: View {
             identity.recoveryCode ?? "A previous identity operation needs recovery."
         case let .corruptIdentity(identity):
             identity.recoveryCode ?? "Stored identity state is corrupt; it was not treated as absent."
+        case let .configurationReconfigurationRequired(requirement):
+            if let fingerprint = requirement.previousBlossomConfigFingerprint {
+                "Review and apply the new network configuration. Existing uploads remain bound to configuration \(fingerprint.prefix(12))…."
+            } else {
+                "Review and apply the new network configuration. Existing local identity and drafts are preserved."
+            }
         case let .running(snapshot):
             "Runtime \(snapshot.crateVersion) is connected to your local data."
         case let .failed(failure):

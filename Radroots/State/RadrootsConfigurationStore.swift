@@ -1,4 +1,5 @@
 import Darwin
+import CryptoKit
 import Foundation
 import RadrootsKit
 import Security
@@ -24,6 +25,14 @@ struct RadrootsAppConfiguration: Sendable, Equatable {
     let keychainServicePrefix: String
     let bundleIdentifier: String
     let appMetadata: RadrootsRuntimeAppMetadata
+    let generation: UInt64
+    let activationState: RadrootsConfigurationActivationState
+    let previousBlossomConfigFingerprint: String?
+}
+
+enum RadrootsConfigurationActivationState: String, Codable, Sendable, Equatable {
+    case current
+    case reconfigurationRequired = "reconfiguration_required"
 }
 
 struct RadrootsConfigurationBootstrap: Sendable, Equatable {
@@ -67,13 +76,24 @@ extension RadrootsConfigurationError: LocalizedError {
 }
 
 actor RadrootsConfigurationStore {
-    private struct StoredConfigurationV3: Codable {
+    private struct StoredConfigurationV3: Codable, Equatable {
         static let format = "radroots_ios_configuration_v3"
 
         let format: String
         let profile: RadrootsAppNetworkProfile
         let writableRelays: [String]
         let blossom: RadrootsBlossomEndpointConfiguration?
+        let generation: UInt64?
+        let activationState: RadrootsConfigurationActivationState?
+        let bootstrapFingerprint: String?
+        let canonicalBlossomConfigFingerprint: String?
+        let previousBlossomConfigFingerprint: String?
+    }
+
+    private struct BootstrapNetworkIdentity: Codable {
+        let profile: RadrootsAppNetworkProfile
+        let relayURLs: [String]
+        let blossomOrigins: [String]
     }
 
     private struct StoredConfigurationV2: Codable {
@@ -119,17 +139,34 @@ actor RadrootsConfigurationStore {
 
     func load() throws -> RadrootsAppConfiguration {
         let profile = try Self.profile(for: bootstrap.runtimeMode)
+        let bootstrapFingerprint = try Self.bootstrapFingerprint(bootstrap, profile: profile)
         let selected: StoredConfigurationV3
         if let stored = try readStoredConfiguration() {
             guard stored.format == StoredConfigurationV3.format else {
                 throw RadrootsConfigurationError.corruptStoredConfiguration
             }
-            if stored.profile == profile,
-               Self.blossomMatchesProfile(stored.blossom, profile: profile)
+            let upgraded = try Self.upgradeStoredConfiguration(
+                stored,
+                bootstrapFingerprint: bootstrapFingerprint
+            )
+            if upgraded.profile == profile,
+               Self.blossomMatchesProfile(upgraded.blossom, profile: profile),
+               upgraded.bootstrapFingerprint == bootstrapFingerprint
             {
-                selected = stored
+                selected = upgraded
+                if selected != stored {
+                    try persist(selected)
+                }
             } else {
-                selected = Self.bootstrapConfiguration(bootstrap, profile: profile)
+                selected = Self.bootstrapConfiguration(
+                    bootstrap,
+                    profile: profile,
+                    generation: (upgraded.generation ?? 0) + 1,
+                    activationState: .reconfigurationRequired,
+                    bootstrapFingerprint: bootstrapFingerprint,
+                    previousBlossomConfigFingerprint: upgraded.canonicalBlossomConfigFingerprint
+                        ?? upgraded.previousBlossomConfigFingerprint
+                )
                 try persist(selected)
             }
         } else if let stored = try readV2Configuration() {
@@ -144,10 +181,21 @@ actor RadrootsConfigurationStore {
                     blossom: Self.blossomConfiguration(
                         origins: stored.blossomOrigins,
                         profile: profile
-                    )
+                    ),
+                    generation: 1,
+                    activationState: .current,
+                    bootstrapFingerprint: bootstrapFingerprint,
+                    canonicalBlossomConfigFingerprint: nil,
+                    previousBlossomConfigFingerprint: nil
                 )
             } else {
-                Self.bootstrapConfiguration(bootstrap, profile: profile)
+                Self.bootstrapConfiguration(
+                    bootstrap,
+                    profile: profile,
+                    generation: 1,
+                    activationState: .reconfigurationRequired,
+                    bootstrapFingerprint: bootstrapFingerprint
+                )
             }
             try persist(selected)
         } else if let legacy = try readLegacyConfiguration() {
@@ -161,11 +209,22 @@ actor RadrootsConfigurationStore {
                 blossom: Self.blossomConfiguration(
                     origins: bootstrap.blossomOrigins,
                     profile: profile
-                )
+                ),
+                generation: 1,
+                activationState: .current,
+                bootstrapFingerprint: bootstrapFingerprint,
+                canonicalBlossomConfigFingerprint: nil,
+                previousBlossomConfigFingerprint: nil
             )
             try persist(selected)
         } else {
-            selected = Self.bootstrapConfiguration(bootstrap, profile: profile)
+            selected = Self.bootstrapConfiguration(
+                bootstrap,
+                profile: profile,
+                generation: 1,
+                activationState: .current,
+                bootstrapFingerprint: bootstrapFingerprint
+            )
             try persist(selected)
         }
 
@@ -184,7 +243,63 @@ actor RadrootsConfigurationStore {
             blossom: selected.blossom,
             keychainServicePrefix: bootstrap.keychainServicePrefix,
             bundleIdentifier: bootstrap.bundleIdentifier,
-            appMetadata: bootstrap.appMetadata
+            appMetadata: bootstrap.appMetadata,
+            generation: selected.generation ?? 1,
+            activationState: selected.activationState ?? .current,
+            previousBlossomConfigFingerprint: selected.previousBlossomConfigFingerprint
+        )
+    }
+
+    func confirmCanonicalBlossomConfiguration(
+        _ canonical: RadrootsBlossomConfigurationStatus?,
+        expectedGeneration: UInt64
+    ) throws {
+        guard let stored = try readStoredConfiguration(),
+              stored.format == StoredConfigurationV3.format,
+              stored.generation == expectedGeneration,
+              let bootstrapFingerprint = stored.bootstrapFingerprint
+        else {
+            throw RadrootsConfigurationError.persistenceFailed
+        }
+        let canonicalBlossom: RadrootsBlossomEndpointConfiguration?
+        let canonicalFingerprint: String?
+        switch (stored.blossom, canonical) {
+        case (nil, nil):
+            canonicalBlossom = nil
+            canonicalFingerprint = nil
+        case let (.some(selected), .some(canonical)):
+            guard let hostKind = RadrootsBlossomHostKind(rawValue: canonical.hostKind),
+                  let endpointAuthority = RadrootsBlossomEndpointAuthority(
+                      rawValue: canonical.endpointAuthority
+                  ),
+                  hostKind == selected.hostKind,
+                  endpointAuthority == selected.endpointAuthority,
+                  Self.isFingerprint(canonical.configFingerprint)
+            else {
+                throw RadrootsConfigurationError.invalid("canonical_blossom_configuration")
+            }
+            canonicalBlossom = RadrootsBlossomEndpointConfiguration(
+                hostKind: hostKind,
+                endpointAuthority: endpointAuthority,
+                primaryOrigin: canonical.primaryOrigin,
+                fallbackOrigins: canonical.fallbackOrigins
+            )
+            canonicalFingerprint = canonical.configFingerprint
+        default:
+            throw RadrootsConfigurationError.invalid("canonical_blossom_configuration")
+        }
+        try persist(
+            StoredConfigurationV3(
+                format: StoredConfigurationV3.format,
+                profile: stored.profile,
+                writableRelays: stored.writableRelays,
+                blossom: canonicalBlossom,
+                generation: expectedGeneration,
+                activationState: .current,
+                bootstrapFingerprint: bootstrapFingerprint,
+                canonicalBlossomConfigFingerprint: canonicalFingerprint,
+                previousBlossomConfigFingerprint: nil
+            )
         )
     }
 
@@ -280,14 +395,95 @@ actor RadrootsConfigurationStore {
 
     private static func bootstrapConfiguration(
         _ bootstrap: RadrootsConfigurationBootstrap,
-        profile: RadrootsAppNetworkProfile
+        profile: RadrootsAppNetworkProfile,
+        generation: UInt64,
+        activationState: RadrootsConfigurationActivationState,
+        bootstrapFingerprint: String,
+        previousBlossomConfigFingerprint: String? = nil
     ) -> StoredConfigurationV3 {
         StoredConfigurationV3(
             format: StoredConfigurationV3.format,
             profile: profile,
             writableRelays: bootstrap.relayURLs,
-            blossom: blossomConfiguration(origins: bootstrap.blossomOrigins, profile: profile)
+            blossom: blossomConfiguration(origins: bootstrap.blossomOrigins, profile: profile),
+            generation: generation,
+            activationState: activationState,
+            bootstrapFingerprint: bootstrapFingerprint,
+            canonicalBlossomConfigFingerprint: nil,
+            previousBlossomConfigFingerprint: previousBlossomConfigFingerprint
         )
+    }
+
+    private static func upgradeStoredConfiguration(
+        _ stored: StoredConfigurationV3,
+        bootstrapFingerprint: String
+    ) throws -> StoredConfigurationV3 {
+        if let generation = stored.generation,
+           let activationState = stored.activationState,
+           let persistedBootstrapFingerprint = stored.bootstrapFingerprint
+        {
+            guard generation > 0,
+                  isFingerprint(persistedBootstrapFingerprint),
+                  stored.canonicalBlossomConfigFingerprint.map(isFingerprint) ?? true,
+                  stored.previousBlossomConfigFingerprint.map(isFingerprint) ?? true
+            else {
+                throw RadrootsConfigurationError.corruptStoredConfiguration
+            }
+            return StoredConfigurationV3(
+                format: stored.format,
+                profile: stored.profile,
+                writableRelays: stored.writableRelays,
+                blossom: stored.blossom,
+                generation: generation,
+                activationState: activationState,
+                bootstrapFingerprint: persistedBootstrapFingerprint,
+                canonicalBlossomConfigFingerprint: stored.canonicalBlossomConfigFingerprint,
+                previousBlossomConfigFingerprint: stored.previousBlossomConfigFingerprint
+            )
+        }
+        guard stored.generation == nil,
+              stored.activationState == nil,
+              stored.bootstrapFingerprint == nil,
+              stored.canonicalBlossomConfigFingerprint == nil,
+              stored.previousBlossomConfigFingerprint == nil
+        else {
+            throw RadrootsConfigurationError.corruptStoredConfiguration
+        }
+        return StoredConfigurationV3(
+            format: stored.format,
+            profile: stored.profile,
+            writableRelays: stored.writableRelays,
+            blossom: stored.blossom,
+            generation: 1,
+            activationState: .current,
+            bootstrapFingerprint: bootstrapFingerprint,
+            canonicalBlossomConfigFingerprint: nil,
+            previousBlossomConfigFingerprint: nil
+        )
+    }
+
+    private static func bootstrapFingerprint(
+        _ bootstrap: RadrootsConfigurationBootstrap,
+        profile: RadrootsAppNetworkProfile
+    ) throws -> String {
+        do {
+            let data = try JSONEncoder.radroots.encode(
+                BootstrapNetworkIdentity(
+                    profile: profile,
+                    relayURLs: bootstrap.relayURLs,
+                    blossomOrigins: bootstrap.blossomOrigins
+                )
+            )
+            return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        } catch {
+            throw RadrootsConfigurationError.invalid("bootstrap_network_identity")
+        }
+    }
+
+    private static func isFingerprint(_ value: String) -> Bool {
+        value.count == 64
+            && value == value.lowercased()
+            && value.allSatisfy(\.isHexDigit)
     }
 
     private static func blossomConfiguration(

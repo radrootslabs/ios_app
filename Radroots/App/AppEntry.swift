@@ -33,7 +33,10 @@ struct AppEntry: View {
                     retry: { Task { await appModel.retry() } },
                     createIdentity: { Task { await appModel.createIdentity() } },
                     unlockIdentity: { Task { await appModel.unlockIdentity() } },
-                    recoverIdentity: { Task { await appModel.recoverIdentity() } }
+                    recoverIdentity: { Task { await appModel.recoverIdentity() } },
+                    applyConfigurationReconfiguration: {
+                        Task { await appModel.applyConfigurationReconfiguration() }
+                    }
                 )
             }
         }

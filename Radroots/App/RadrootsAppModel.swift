@@ -55,11 +55,15 @@ final class RadrootsAppModel: ObservableObject {
         } else {
             do {
                 let runtimeClient = runtimeClient ?? .production()
-                self.sessionStore = try .production(runtimeClient: runtimeClient)
+                let sessionStore = try RadrootsSessionStore.production(
+                    runtimeClient: runtimeClient
+                )
+                let mediaCoordinator = try Self.productionMediaCoordinator()
+                self.sessionStore = sessionStore
                 todayStore = RadrootsTodayStore(runtimeClient: runtimeClient)
                 addStore = RadrootsAddStore(
                     runtimeClient: runtimeClient,
-                    media: Self.productionMediaCoordinator()
+                    media: mediaCoordinator
                 )
                 searchStore = RadrootsSearchStore(runtimeClient: runtimeClient)
                 meStore = RadrootsMeStore(runtimeClient: runtimeClient)
@@ -115,6 +119,12 @@ final class RadrootsAppModel: ObservableObject {
     func recoverIdentity() async {
         await run(name: "identity_recover", showsStarting: true) { store in
             await store.recoverIdentity()
+        }
+    }
+
+    func applyConfigurationReconfiguration() async {
+        await run(name: "configuration_reconfigure", showsStarting: true) { store in
+            await store.applyConfigurationReconfiguration()
         }
     }
 
@@ -234,17 +244,20 @@ final class RadrootsAppModel: ObservableObject {
         case .protectedDataUnavailable: "protected_data_unavailable"
         case .recoveryRequired: "recovery_required"
         case .corruptIdentity: "corrupt_identity"
+        case .configurationReconfigurationRequired: "configuration_reconfiguration_required"
         case .running: "running"
         case .stopped: "stopped"
         case .failed: "failed"
         }
     }
 
-    private static func productionMediaCoordinator(bundle: Bundle = .main) -> RadrootsAddMediaCoordinator? {
+    private static func productionMediaCoordinator(
+        bundle: Bundle = .main
+    ) throws -> RadrootsAddMediaCoordinator {
         guard let bundleIdentifier = bundle.bundleIdentifier else {
-            return nil
+            throw RadrootsConfigurationError.missing("bundle_identifier")
         }
-        return try? RadrootsAddMediaCoordinator.production(bundleIdentifier: bundleIdentifier)
+        return try RadrootsAddMediaCoordinator.production(bundleIdentifier: bundleIdentifier)
     }
 }
 

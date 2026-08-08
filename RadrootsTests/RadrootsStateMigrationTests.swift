@@ -123,6 +123,21 @@ final class RadrootsStateMigrationTests: XCTestCase {
         let blossom = try XCTUnwrap(persisted["blossom"] as? [String: Any])
         XCTAssertEqual(blossom["hostKind"] as? String, "simulator")
         XCTAssertEqual(blossom["endpointAuthority"] as? String, "loopback_development")
+        XCTAssertEqual(persisted["activationState"] as? String, "current")
+        XCTAssertEqual(persisted["generation"] as? UInt64, 1)
+
+        let fingerprint = String(repeating: "a", count: 64)
+        try await store.confirmCanonicalBlossomConfiguration(
+            canonicalBlossomConfiguration(
+                primaryOrigin: "http://127.0.0.1:3000",
+                fallbackOrigins: ["http://localhost:3001"],
+                fingerprint: fingerprint
+            ),
+            expectedGeneration: first.generation
+        )
+        let confirmed = try configurationObject(fileAccess)
+        XCTAssertEqual(confirmed["canonicalBlossomConfigFingerprint"] as? String, fingerprint)
+        XCTAssertEqual(confirmed["activationState"] as? String, "current")
     }
 
     func testStoredProfileDriftRecoversFromCurrentBootstrap() async throws {
@@ -133,6 +148,15 @@ final class RadrootsStateMigrationTests: XCTestCase {
             bootstrap: fixture.bootstrap,
             roots: fixture.roots
         ).load()
+        let originalFingerprint = String(repeating: "b", count: 64)
+        let originalStore = RadrootsConfigurationStore(
+            bootstrap: fixture.bootstrap,
+            roots: fixture.roots
+        )
+        try await originalStore.confirmCanonicalBlossomConfiguration(
+            canonicalBlossomConfiguration(fingerprint: originalFingerprint),
+            expectedGeneration: 1
+        )
         let production = RadrootsConfigurationBootstrap(
             runtimeMode: "production",
             relayURLs: ["wss://write.example"],
@@ -146,6 +170,9 @@ final class RadrootsStateMigrationTests: XCTestCase {
         let recovered = try await store.load()
 
         XCTAssertEqual(recovered.profile, .publicNetwork)
+        XCTAssertEqual(recovered.activationState, .reconfigurationRequired)
+        XCTAssertEqual(recovered.generation, 2)
+        XCTAssertEqual(recovered.previousBlossomConfigFingerprint, originalFingerprint)
         XCTAssertEqual(recovered.writableRelays, ["wss://write.example"])
         XCTAssertEqual(
             recovered.blossom,
@@ -161,6 +188,67 @@ final class RadrootsStateMigrationTests: XCTestCase {
 
         let persisted = try configurationObject(fileAccess)
         XCTAssertEqual(persisted["profile"] as? String, "public")
+        XCTAssertEqual(persisted["activationState"] as? String, "reconfiguration_required")
+        XCTAssertNil(persisted["canonicalBlossomConfigFingerprint"])
+        XCTAssertEqual(
+            persisted["previousBlossomConfigFingerprint"] as? String,
+            originalFingerprint
+        )
+    }
+
+    func testBootstrapInputDriftRequiresExplicitGenerationAwareActivation() async throws {
+        let fixture = try StateFixture()
+        defer { fixture.remove() }
+        let original = RadrootsConfigurationStore(
+            bootstrap: fixture.bootstrap,
+            roots: fixture.roots
+        )
+        let first = try await original.load()
+        let originalFingerprint = String(repeating: "c", count: 64)
+        try await original.confirmCanonicalBlossomConfiguration(
+            canonicalBlossomConfiguration(fingerprint: originalFingerprint),
+            expectedGeneration: first.generation
+        )
+        let changedBootstrap = RadrootsConfigurationBootstrap(
+            runtimeMode: fixture.bootstrap.runtimeMode,
+            relayURLs: ["ws://127.0.0.1:7448"],
+            blossomOrigins: ["http://127.0.0.1:3001"],
+            keychainServicePrefix: fixture.bootstrap.keychainServicePrefix,
+            bundleIdentifier: fixture.bootstrap.bundleIdentifier,
+            appMetadata: fixture.bootstrap.appMetadata
+        )
+        let changed = RadrootsConfigurationStore(
+            bootstrap: changedBootstrap,
+            roots: fixture.roots
+        )
+
+        let pending = try await changed.load()
+
+        XCTAssertEqual(pending.activationState, .reconfigurationRequired)
+        XCTAssertEqual(pending.generation, first.generation + 1)
+        XCTAssertEqual(pending.previousBlossomConfigFingerprint, originalFingerprint)
+        XCTAssertEqual(pending.writableRelays, ["ws://127.0.0.1:7448"])
+        XCTAssertEqual(pending.blossom?.primaryOrigin, "http://127.0.0.1:3001")
+
+        let replacementFingerprint = String(repeating: "d", count: 64)
+        try await changed.confirmCanonicalBlossomConfiguration(
+            canonicalBlossomConfiguration(
+                primaryOrigin: "http://127.0.0.1:3001",
+                fingerprint: replacementFingerprint
+            ),
+            expectedGeneration: pending.generation
+        )
+        let active = try await changed.load()
+        XCTAssertEqual(active.activationState, .current)
+        XCTAssertEqual(active.generation, pending.generation)
+        XCTAssertNil(active.previousBlossomConfigFingerprint)
+        let persisted = try configurationObject(
+            RadrootsAppleFileAccess(roots: fixture.roots)
+        )
+        XCTAssertEqual(
+            persisted["canonicalBlossomConfigFingerprint"] as? String,
+            replacementFingerprint
+        )
     }
 
     func testStoredBlossomAuthorityDriftRecoversWithinProfile() async throws {
@@ -211,6 +299,21 @@ final class RadrootsStateMigrationTests: XCTestCase {
             throw RadrootsConfigurationError.persistenceFailed
         }
         return object
+    }
+
+    private func canonicalBlossomConfiguration(
+        primaryOrigin: String = "http://127.0.0.1:3000",
+        fallbackOrigins: [String] = [],
+        fingerprint: String
+    ) -> RadrootsBlossomConfigurationStatus {
+        RadrootsBlossomConfigurationStatus(
+            schemaVersion: 1,
+            hostKind: "simulator",
+            endpointAuthority: "loopback_development",
+            primaryOrigin: primaryOrigin,
+            fallbackOrigins: fallbackOrigins,
+            configFingerprint: fingerprint
+        )
     }
 
     func testSourceGenerationAndVisualIdentitySurviveStoreRecreation() async throws {
