@@ -26,18 +26,34 @@ enum RadrootsRootTab: String, CaseIterable, Sendable {
 struct RadrootsRootShell: View {
     let snapshot: RadrootsRuntimeSnapshot
     let todayStore: RadrootsTodayStore?
+    let addStore: RadrootsAddStore?
     @SceneStorage("radroots.selected_root_tab") private var storedSelection = RadrootsRootTab.today.rawValue
 
-    init(snapshot: RadrootsRuntimeSnapshot, todayStore: RadrootsTodayStore? = nil) {
+    init(
+        snapshot: RadrootsRuntimeSnapshot,
+        todayStore: RadrootsTodayStore? = nil,
+        addStore: RadrootsAddStore? = nil
+    ) {
         self.snapshot = snapshot
         self.todayStore = todayStore
+        self.addStore = addStore
     }
 
     var body: some View {
         TabView(selection: selection) {
             NavigationStack {
                 if let todayStore {
-                    RadrootsTodayView(snapshot: snapshot, store: todayStore)
+                    RadrootsTodayView(
+                        snapshot: snapshot,
+                        store: todayStore,
+                        revise: { card in
+                            guard let addStore else { return }
+                            Task {
+                                await addStore.retractAndRevise(card)
+                                storedSelection = RadrootsRootTab.add.rawValue
+                            }
+                        }
+                    )
                 } else {
                     RadrootsTodayLanding(snapshot: snapshot)
                 }
@@ -47,7 +63,11 @@ struct RadrootsRootShell: View {
             .accessibilityIdentifier("radroots.tab.today")
 
             NavigationStack {
-                RadrootsAddLanding()
+                if let addStore {
+                    RadrootsAddView(store: addStore)
+                } else {
+                    RadrootsAddUnavailable()
+                }
             }
             .tabItem { Label("Add", systemImage: "plus.circle.fill") }
             .tag(RadrootsRootTab.add)
@@ -158,7 +178,7 @@ struct RadrootsAccountSheet: View {
     }
 }
 
-private struct RadrootsAddLanding: View {
+private struct RadrootsAddUnavailable: View {
     var body: some View {
         ContentUnavailableView {
             Label("Add", systemImage: "plus.circle.fill")

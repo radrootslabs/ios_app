@@ -6,6 +6,7 @@ final class RadrootsAppModel: ObservableObject {
 
     @Published private(set) var phase: Phase = .starting
     private(set) var todayStore: RadrootsTodayStore?
+    private(set) var addStore: RadrootsAddStore?
 
     private let sessionStore: RadrootsSessionStore?
     private let bootstrapFailure: RadrootsRuntimeFailure?
@@ -20,6 +21,7 @@ final class RadrootsAppModel: ObservableObject {
             if ProcessInfo.processInfo.environment["RADROOTS_IOS_UI_TEST_SHELL"] == "1" {
                 self.sessionStore = nil
                 todayStore = nil
+                addStore = nil
                 bootstrapFailure = nil
                 isShellUITest = true
                 phase = .running(.shellUITest)
@@ -30,16 +32,22 @@ final class RadrootsAppModel: ObservableObject {
         if let sessionStore {
             self.sessionStore = sessionStore
             todayStore = runtimeClient.map { RadrootsTodayStore(runtimeClient: $0) }
+            addStore = runtimeClient.map { RadrootsAddStore(runtimeClient: $0) }
             bootstrapFailure = nil
         } else {
             do {
                 let runtimeClient = runtimeClient ?? .production()
                 self.sessionStore = try .production(runtimeClient: runtimeClient)
                 todayStore = RadrootsTodayStore(runtimeClient: runtimeClient)
+                addStore = RadrootsAddStore(
+                    runtimeClient: runtimeClient,
+                    media: Self.productionMediaCoordinator()
+                )
                 bootstrapFailure = nil
             } catch let error as LocalizedError {
                 self.sessionStore = nil
                 todayStore = nil
+                addStore = nil
                 bootstrapFailure = .local(
                     operation: "app.bootstrap",
                     code: "ios.app.configuration_invalid",
@@ -48,6 +56,7 @@ final class RadrootsAppModel: ObservableObject {
             } catch {
                 self.sessionStore = nil
                 todayStore = nil
+                addStore = nil
                 bootstrapFailure = .local(
                     operation: "app.bootstrap",
                     code: "ios.app.configuration_invalid",
@@ -101,8 +110,33 @@ final class RadrootsAppModel: ObservableObject {
         guard generation == requestedGeneration else { return }
         if case let .running(snapshot) = result {
             todayStore?.configure(snapshot: snapshot)
+            addStore?.configure(snapshot: snapshot)
         }
         phase = result
+    }
+
+    private static func productionMediaCoordinator(bundle: Bundle = .main) -> RadrootsAddMediaCoordinator? {
+        guard let bundleIdentifier = bundle.bundleIdentifier,
+              let origin = configuredValues("RADROOTS_FIELD_IOS_BLOSSOM_ORIGINS", bundle: bundle).first,
+              let url = URL(string: origin)
+        else {
+            return nil
+        }
+        return try? RadrootsAddMediaCoordinator.production(
+            bundleIdentifier: bundleIdentifier,
+            blossomOrigin: url
+        )
+    }
+
+    private static func configuredValues(_ key: String, bundle: Bundle) -> [String] {
+        if let values = bundle.object(forInfoDictionaryKey: key) as? [String] {
+            return values.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+        }
+        guard let value = bundle.object(forInfoDictionaryKey: key) as? String else { return [] }
+        return value.components(separatedBy: CharacterSet(charactersIn: ",; \n\r\t"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
 }
 

@@ -1,0 +1,350 @@
+import SwiftUI
+
+struct RadrootsAddView: View {
+    @ObservedObject var store: RadrootsAddStore
+    @State private var showsDrafts = false
+
+    var body: some View {
+        Form {
+            if let message = store.message {
+                Section {
+                    Label(message, systemImage: statusSymbol)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("radroots.add.status")
+                }
+            }
+
+            Section("What are you sharing?") {
+                Picker("Type", selection: typeBinding) {
+                    ForEach(availableTypes) { type in
+                        Text(type.label).tag(type)
+                    }
+                }
+                .pickerStyle(.navigationLink)
+                .disabled(!store.isFormEditable)
+                .accessibilityIdentifier("radroots.add.type")
+            }
+
+            composerFields
+
+            if store.form.commandType.acceptsMedia {
+                mediaSection
+            }
+
+            Section {
+                Button("Save draft") { Task { await store.save() } }
+                    .disabled(!store.canSave)
+                    .accessibilityIdentifier("radroots.add.save")
+
+                Button(submitLabel) { Task { await store.submit() } }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!store.canSubmit)
+                    .accessibilityIdentifier("radroots.add.submit")
+
+                if let active = store.activeDraft, active.state.canCancel {
+                    Button("Cancel local work", role: .destructive) {
+                        Task { await store.cancel(active) }
+                    }
+                    .disabled(store.isWorking)
+                    .accessibilityIdentifier("radroots.add.cancel")
+                }
+            } footer: {
+                Text("Submit saves an immutable local snapshot first. If signing, media, or a relay is unavailable, the saved operation remains available to retry.")
+            }
+        }
+        .disabled(store.isWorking)
+        .overlay {
+            if store.isWorking {
+                ProgressView("Saving…")
+                    .padding()
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .accessibilityIdentifier("radroots.add.progress")
+            }
+        }
+        .navigationTitle("Add")
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Drafts") { showsDrafts = true }
+                    .accessibilityIdentifier("radroots.add.drafts")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    store.newDraft()
+                } label: {
+                    Label("New", systemImage: "square.and.pencil")
+                }
+                .accessibilityIdentifier("radroots.add.new")
+            }
+        }
+        .sheet(isPresented: $showsDrafts) {
+            RadrootsDraftsSheet(store: store)
+        }
+        .task { await store.start() }
+        .accessibilityIdentifier("radroots.add.root")
+    }
+
+    @ViewBuilder
+    private var composerFields: some View {
+        switch store.form.commandType {
+        case .createUpdate:
+            Section("Update") { contentEditor(prompt: "What’s happening locally?") }
+        case .createPhotoUpdate:
+            Section("Photo update") { contentEditor(prompt: "What should neighbors know?") }
+        case .createAsk:
+            Section("Ask") { contentEditor(prompt: "What do you need or want to know?") }
+        case .createEvent:
+            eventFields
+        case .createFoodAvailability:
+            foodFields
+        }
+    }
+
+    private var eventFields: some View {
+        Section("Event") {
+            TextField("Title", text: optional(\.title))
+                .accessibilityIdentifier("radroots.add.title")
+            contentEditor(prompt: "Event details (optional)")
+            TextField("Location (optional)", text: optional(\.location))
+                .accessibilityIdentifier("radroots.add.location")
+            Picker("When", selection: optionalTiming) {
+                ForEach(RadrootsEventTiming.allCases) { timing in
+                    Text(timing.label).tag(Optional(timing))
+                }
+            }
+            .accessibilityIdentifier("radroots.add.event_timing")
+            if store.form.eventTiming == .allDay {
+                DatePicker("Starts", selection: allDayStart, displayedComponents: .date)
+                DatePicker("Ends", selection: allDayEnd, displayedComponents: .date)
+            } else {
+                DatePicker("Starts", selection: timedStart)
+                DatePicker("Ends", selection: timedEnd)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var foodFields: some View {
+        Section("Food availability") {
+            TextField("Food", text: optional(\.title))
+                .accessibilityIdentifier("radroots.add.title")
+            TextField("Short summary (optional)", text: optional(\.summary))
+            contentEditor(prompt: "Details (optional)")
+            TextField("Location", text: optional(\.location))
+                .accessibilityIdentifier("radroots.add.location")
+        }
+        Section("Price and quantity") {
+            TextField("Price", text: optional(\.priceAmount))
+                .keyboardType(.decimalPad)
+                .accessibilityIdentifier("radroots.add.price")
+            TextField("Currency", text: optional(\.currency))
+                .textInputAutocapitalization(.characters)
+            TextField("Unit", text: optional(\.unit))
+            TextField("Quantity available (optional)", text: optional(\.quantity))
+                .keyboardType(.decimalPad)
+        }
+    }
+
+    private var mediaSection: some View {
+        Section("Photos") {
+            ForEach(store.form.media) { media in
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Prepared image", systemImage: "checkmark.shield")
+                        .font(.subheadline.weight(.semibold))
+                    Text("\(media.width) × \(media.height) · \(ByteCountFormatter.string(fromByteCount: Int64(media.byteSize), countStyle: .file))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextField(
+                        "Describe this photo",
+                        text: Binding(
+                            get: { media.alt },
+                            set: { store.updateMediaAlt(id: media.id, alt: $0) }
+                        )
+                    )
+                    .accessibilityIdentifier("radroots.add.media.alt.\(media.id)")
+                    Button("Remove photo", role: .destructive) { store.removeMedia(id: media.id) }
+                }
+                .accessibilityElement(children: .contain)
+            }
+
+            HStack {
+                Button {
+                    Task { await store.importPhotos() }
+                } label: {
+                    Label("Photo Library", systemImage: "photo.on.rectangle")
+                }
+                .disabled(!store.mediaSupport.library || !store.isFormEditable)
+                .accessibilityIdentifier("radroots.add.media.library")
+
+                Spacer()
+
+                Button {
+                    Task { await store.capturePhoto() }
+                } label: {
+                    Label("Camera", systemImage: "camera")
+                }
+                .disabled(!store.mediaSupport.camera || !store.isFormEditable)
+                .accessibilityIdentifier("radroots.add.media.camera")
+            }
+        }
+    }
+
+    private func contentEditor(prompt: String) -> some View {
+        ZStack(alignment: .topLeading) {
+            TextEditor(text: required(\.content))
+                .frame(minHeight: 110)
+                .accessibilityIdentifier("radroots.add.content")
+            if store.form.content.isEmpty {
+                Text(prompt)
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 8)
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+
+    private var availableTypes: [RadrootsAddCommandType] {
+        let types = store.schemas.map(\.commandType)
+        return types.isEmpty ? RadrootsAddCommandType.allCases : types
+    }
+
+    private var typeBinding: Binding<RadrootsAddCommandType> {
+        Binding(get: { store.form.commandType }, set: { store.selectType($0) })
+    }
+
+    private var optionalTiming: Binding<RadrootsEventTiming?> {
+        Binding(get: { store.form.eventTiming }, set: { store.updateForm(\.eventTiming, $0) })
+    }
+
+    private func optional(_ keyPath: WritableKeyPath<RadrootsAddForm, String?>) -> Binding<String> {
+        Binding(
+            get: { store.form[keyPath: keyPath] ?? "" },
+            set: { store.updateForm(keyPath, $0.isEmpty ? nil : $0) }
+        )
+    }
+
+    private func required(_ keyPath: WritableKeyPath<RadrootsAddForm, String>) -> Binding<String> {
+        Binding(
+            get: { store.form[keyPath: keyPath] },
+            set: { store.updateForm(keyPath, $0) }
+        )
+    }
+
+    private var timedStart: Binding<Date> {
+        secondsBinding(\.eventStartUnixSeconds, defaultOffset: 3600)
+    }
+
+    private var timedEnd: Binding<Date> {
+        secondsBinding(\.eventEndUnixSeconds, defaultOffset: 7200)
+    }
+
+    private func secondsBinding(
+        _ keyPath: WritableKeyPath<RadrootsAddForm, UInt64?>,
+        defaultOffset: TimeInterval
+    ) -> Binding<Date> {
+        Binding(
+            get: {
+                store.form[keyPath: keyPath]
+                    .map { Date(timeIntervalSince1970: TimeInterval($0)) }
+                    ?? Date().addingTimeInterval(defaultOffset)
+            },
+            set: { store.updateForm(keyPath, UInt64(max(1, $0.timeIntervalSince1970))) }
+        )
+    }
+
+    private var allDayStart: Binding<Date> {
+        dateBinding(\.eventStartDate, defaultOffset: 86400)
+    }
+
+    private var allDayEnd: Binding<Date> {
+        dateBinding(\.eventEndDate, defaultOffset: 172_800)
+    }
+
+    private func dateBinding(
+        _ keyPath: WritableKeyPath<RadrootsAddForm, String?>,
+        defaultOffset: TimeInterval
+    ) -> Binding<Date> {
+        Binding(
+            get: {
+                store.form[keyPath: keyPath].flatMap(Self.dateFormatter.date(from:))
+                    ?? Calendar.current.startOfDay(for: Date().addingTimeInterval(defaultOffset))
+            },
+            set: { store.updateForm(keyPath, Self.dateFormatter.string(from: $0)) }
+        )
+    }
+
+    private var submitLabel: String {
+        if let state = store.activeDraft?.state, state.canAdvance {
+            return "Retry delivery"
+        }
+        return "Submit"
+    }
+
+    private var statusSymbol: String {
+        switch store.activeDraft?.state {
+        case .complete: "checkmark.circle.fill"
+        case .partiallyDelivered, .retryable: "exclamationmark.arrow.triangle.2.circlepath"
+        case .terminal: "xmark.octagon"
+        case .cancelled: "slash.circle"
+        default: "info.circle"
+        }
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+}
+
+private struct RadrootsDraftsSheet: View {
+    @ObservedObject var store: RadrootsAddStore
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if store.drafts.isEmpty {
+                    ContentUnavailableView("No saved drafts", systemImage: "tray")
+                }
+                ForEach(store.drafts) { draft in
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text(draft.commandType.label).font(.headline)
+                            Spacer()
+                            Text(draft.state.label).font(.caption).foregroundStyle(.secondary)
+                        }
+                        Text(draft.honestSummary).font(.subheadline)
+                        HStack {
+                            if draft.form != nil {
+                                Button(draft.state.isEditable ? "Reopen" : "View") {
+                                    store.reopen(draft)
+                                    dismiss()
+                                }
+                            }
+                            if draft.state.canAdvance {
+                                Button("Retry") { Task { await store.retry(draft) } }
+                            }
+                            if draft.state.canCancel {
+                                Button("Cancel", role: .destructive) { Task { await store.cancel(draft) } }
+                            }
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("radroots.add.draft.\(draft.id)")
+                }
+            }
+            .navigationTitle("Drafts & outbox")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .accessibilityIdentifier("radroots.add.drafts.sheet")
+    }
+}

@@ -179,6 +179,7 @@ enum RadrootsRuntimeClientError: Error, Sendable, Equatable {
     case subscription(RadrootsRuntimeFailure)
     case status(RadrootsRuntimeFailure)
     case today(RadrootsRuntimeFailure)
+    case add(RadrootsRuntimeFailure)
     case shutdown(RadrootsRuntimeFailure)
 }
 
@@ -195,6 +196,7 @@ extension RadrootsRuntimeClientError: LocalizedError {
              let .subscription(failure),
              let .status(failure),
              let .today(failure),
+             let .add(failure),
              let .shutdown(failure):
             failure.safeMessage
         }
@@ -425,6 +427,312 @@ struct RadrootsTodayRefreshReceipt: Sendable, Equatable {
     let threadEntries: UInt64
     let contentGeneration: UInt64
     let changed: Bool
+}
+
+enum RadrootsAddCommandType: String, CaseIterable, Sendable, Equatable, Hashable, Identifiable {
+    case createUpdate
+    case createPhotoUpdate
+    case createAsk
+    case createEvent
+    case createFoodAvailability
+
+    var id: String {
+        rawValue
+    }
+
+    var label: String {
+        switch self {
+        case .createUpdate: "Update"
+        case .createPhotoUpdate: "Photo update"
+        case .createAsk: "Ask"
+        case .createEvent: "Event"
+        case .createFoodAvailability: "Food availability"
+        }
+    }
+
+    var todayCardType: RadrootsTodayCardType {
+        switch self {
+        case .createUpdate: .update
+        case .createPhotoUpdate: .photoUpdate
+        case .createAsk: .ask
+        case .createEvent: .event
+        case .createFoodAvailability: .foodAvailability
+        }
+    }
+
+    var acceptsMedia: Bool {
+        self != .createUpdate
+    }
+
+    var requiresMedia: Bool {
+        self == .createPhotoUpdate
+    }
+}
+
+enum RadrootsAddFieldKind: Sendable, Equatable, Hashable {
+    case text
+    case multilineText
+    case date
+    case dateTime
+    case decimal
+    case choice
+    case location
+    case media
+}
+
+struct RadrootsAddField: Sendable, Equatable, Hashable, Identifiable {
+    let schemaVersion: UInt16
+    let id: String
+    let label: String
+    let kind: RadrootsAddFieldKind
+    let required: Bool
+    let choices: [String]
+    let maxBytes: UInt64?
+}
+
+struct RadrootsAddSchema: Sendable, Equatable, Hashable, Identifiable {
+    let schemaVersion: UInt16
+    let commandType: RadrootsAddCommandType
+    let label: String
+    let fields: [RadrootsAddField]
+
+    var id: RadrootsAddCommandType {
+        commandType
+    }
+}
+
+enum RadrootsEventTiming: String, Sendable, Equatable, Hashable, CaseIterable, Identifiable {
+    case allDay
+    case timed
+
+    var id: String {
+        rawValue
+    }
+
+    var label: String {
+        self == .allDay ? "All day" : "Specific time"
+    }
+}
+
+struct RadrootsPreparedMedia: Sendable, Equatable, Hashable, Identifiable {
+    let opaqueReference: String
+    let url: String
+    let sha256: String
+    let mediaType: String
+    let byteSize: UInt64
+    let width: UInt32
+    let height: UInt32
+    var alt: String
+    let preparedAtUnixSeconds: UInt64
+
+    var id: String {
+        opaqueReference
+    }
+}
+
+struct RadrootsPreparedMediaHandle: Sendable, Equatable {
+    let media: RadrootsPreparedMedia
+    let fileDescriptor: UInt64
+}
+
+struct RadrootsAddForm: Sendable, Equatable, Hashable {
+    var commandType: RadrootsAddCommandType
+    var content: String = ""
+    var identifier: String?
+    var title: String?
+    var summary: String?
+    var location: String?
+    var eventTiming: RadrootsEventTiming?
+    var eventStartDate: String?
+    var eventEndDate: String?
+    var eventStartUnixSeconds: UInt64?
+    var eventEndUnixSeconds: UInt64?
+    var eventTimezone: String?
+    var priceAmount: String?
+    var currency: String?
+    var unit: String?
+    var quantity: String?
+    var foodStatus: String?
+    var media: [RadrootsPreparedMedia] = []
+
+    static func empty(_ type: RadrootsAddCommandType = .createUpdate) -> Self {
+        var form = Self(commandType: type)
+        if type == .createEvent {
+            form.identifier = UUID().uuidString.lowercased()
+            form.eventTiming = .timed
+            form.eventTimezone = TimeZone.current.identifier
+        } else if type == .createFoodAvailability {
+            form.identifier = UUID().uuidString.lowercased()
+            form.foodStatus = "active"
+        }
+        return form
+    }
+}
+
+struct RadrootsAddRuntimeInput: Sendable, Equatable {
+    let form: RadrootsAddForm
+    let media: [RadrootsPreparedMediaHandle]
+}
+
+enum RadrootsDraftKind: String, Sendable, Equatable, Hashable {
+    case add
+    case retraction
+}
+
+enum RadrootsOutboxState: String, Sendable, Equatable, Hashable {
+    case draft
+    case mediaPreparing
+    case mediaUploading
+    case readyToSign
+    case signing
+    case signed
+    case queued
+    case delivering
+    case partiallyDelivered
+    case retryable
+    case terminal
+    case cancelled
+    case complete
+
+    var isEditable: Bool {
+        self == .draft || self == .mediaPreparing
+    }
+
+    var canAdvance: Bool {
+        self == .queued || self == .retryable || self == .partiallyDelivered
+    }
+
+    var canCancel: Bool {
+        ![.cancelled, .complete, .terminal].contains(self)
+    }
+
+    var label: String {
+        rawValue
+            .replacingOccurrences(of: "([a-z])([A-Z])", with: "$1 $2", options: .regularExpression)
+            .capitalized
+    }
+}
+
+enum RadrootsDraftMediaStage: String, Sendable, Equatable, Hashable {
+    case pending
+    case preparing
+    case uploading
+    case verified
+    case failed
+    case orphaned
+}
+
+struct RadrootsDraftMediaStatus: Sendable, Equatable, Hashable {
+    let url: String
+    let stage: RadrootsDraftMediaStage
+    let uploadAttempts: UInt8
+    let verifiedAtUnixMilliseconds: UInt64?
+    let possibleOrphan: Bool
+    let orphanReasonCode: String?
+    let orphanRecordedAtUnixMilliseconds: UInt64?
+}
+
+struct RadrootsOperationSettlement: Sendable, Equatable, Hashable {
+    let artifacts: UInt16
+    let signed: UInt16
+    let admitted: UInt16
+    let pending: UInt16
+    let retryable: UInt16
+    let indeterminate: UInt16
+    let failedTerminal: UInt16
+    let cancelled: UInt16
+    let deliveryPlans: UInt16
+    let deliverySatisfied: UInt16
+    let deliveryPending: UInt16
+    let deliveryRetryable: UInt16
+    let deliveryExhausted: UInt16
+    let deliveryFailedTerminal: UInt16
+    let deliveryCancelled: UInt16
+
+    var summary: String {
+        if deliverySatisfied > 0 {
+            return "Delivered"
+        }
+        if deliveryRetryable > 0 || retryable > 0 {
+            return "Saved; delivery can be retried"
+        }
+        if indeterminate > 0 {
+            return "Delivery outcome is not yet known"
+        }
+        if failedTerminal > 0 || deliveryFailedTerminal > 0 {
+            return "Delivery failed"
+        }
+        if admitted > 0 {
+            return "Published locally; relay delivery is pending"
+        }
+        if signed > 0 {
+            return "Signed; local publication is pending"
+        }
+        return "Waiting"
+    }
+}
+
+struct RadrootsDraftStatus: Sendable, Equatable, Hashable, Identifiable {
+    let id: String
+    let revision: UInt64
+    let authorPublicKey: String
+    let kind: RadrootsDraftKind
+    let commandType: RadrootsAddCommandType
+    let form: RadrootsAddForm?
+    let state: RadrootsOutboxState
+    let cardID: String
+    let operationID: String?
+    let createdAtUnixMilliseconds: UInt64
+    let updatedAtUnixMilliseconds: UInt64
+    let media: [RadrootsDraftMediaStatus]
+    let settlement: RadrootsOperationSettlement?
+
+    var honestSummary: String {
+        settlement?.summary ?? state.label
+    }
+}
+
+enum RadrootsRelaySatisfaction: Sendable, Equatable, Hashable {
+    case anyAccepted
+    case allAccepted
+    case anyDelivered
+    case allDelivered
+}
+
+enum RadrootsCancellationPolicy: Sendable, Equatable, Hashable {
+    case preservePublishedRequest
+    case localCooperative
+}
+
+struct RadrootsQueuePolicy: Sendable, Equatable, Hashable {
+    let relayURLs: [String]
+    let satisfaction: RadrootsRelaySatisfaction
+    let deliveryDeadlineUnixMilliseconds: UInt64
+    let cancellation: RadrootsCancellationPolicy
+}
+
+struct RadrootsRetractionDraftInput: Sendable, Equatable, Hashable {
+    let commandType: RadrootsAddCommandType
+    let targetCardID: String
+    let targetEventID: String
+    let targetKind: UInt32
+    let targetAddress: String?
+    let reason: String
+}
+
+struct RadrootsBlossomUploadInput: Sendable, Equatable {
+    let draftID: String
+    let expectedRevision: UInt64
+    let media: RadrootsPreparedMediaHandle
+    let authorizationContent: String
+    let authorizationCreatedAtUnixSeconds: UInt64
+    let authorizationLifetimeSeconds: UInt64
+    let operationID: String
+    let artifactID: String
+    let signingDeadlineUnixMilliseconds: UInt64
+    let signingCancellation: RadrootsCancellationPolicy
+    let verifiedAtUnixMilliseconds: UInt64
+    let updatedAtUnixMilliseconds: UInt64
 }
 
 enum RadrootsRuntimeLifecycle: Sendable, Equatable {

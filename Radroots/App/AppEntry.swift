@@ -6,7 +6,11 @@ struct AppEntry: View {
     var body: some View {
         Group {
             if case let .running(snapshot) = appModel.phase {
-                RadrootsRootShell(snapshot: snapshot, todayStore: appModel.todayStore)
+                RadrootsRootShell(
+                    snapshot: snapshot,
+                    todayStore: appModel.todayStore,
+                    addStore: appModel.addStore
+                )
             } else {
                 RuntimeStatusView(
                     phase: appModel.phase,

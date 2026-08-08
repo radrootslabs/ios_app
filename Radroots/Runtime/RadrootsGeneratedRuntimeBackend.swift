@@ -192,6 +192,131 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
         }
     }
 
+    func addSchemas() async throws -> [RadrootsAddSchema] {
+        runtime.phase1AddSchemas().map(\.appValue)
+    }
+
+    func saveDraft(
+        id: String,
+        input: RadrootsAddRuntimeInput,
+        authoredAtUnixSeconds: UInt64,
+        expectedRevision: UInt64?,
+        persistedAtUnixMilliseconds: UInt64
+    ) async throws -> RadrootsDraftStatus {
+        do {
+            return try await runtime.phase1SaveDraft(
+                draftId: id,
+                input: input.generatedValue,
+                authoredAtUnixS: authoredAtUnixSeconds,
+                expectedRevision: expectedRevision,
+                persistedAtUnixMs: persistedAtUnixMilliseconds
+            ).appValue
+        } catch {
+            throw Self.failure(from: error)
+        }
+    }
+
+    func saveRetractionDraft(
+        id: String,
+        input: RadrootsRetractionDraftInput,
+        authoredAtUnixSeconds: UInt64,
+        persistedAtUnixMilliseconds: UInt64
+    ) async throws -> RadrootsDraftStatus {
+        do {
+            return try await runtime.phase1SaveRetractionDraft(
+                draftId: id,
+                input: input.generatedValue,
+                authoredAtUnixS: authoredAtUnixSeconds,
+                persistedAtUnixMs: persistedAtUnixMilliseconds
+            ).appValue
+        } catch {
+            throw Self.failure(from: error)
+        }
+    }
+
+    func draftStatus(id: String) async throws -> RadrootsDraftStatus {
+        do {
+            return try await runtime.phase1DraftStatus(draftId: id).appValue
+        } catch {
+            throw Self.failure(from: error)
+        }
+    }
+
+    func draftHeads(limit: UInt16) async throws -> [RadrootsDraftStatus] {
+        do {
+            return try await runtime.phase1DraftHeads(limit: limit).map(\.appValue)
+        } catch {
+            throw Self.failure(from: error)
+        }
+    }
+
+    func queueDraft(
+        id: String,
+        expectedRevision: UInt64,
+        policy: RadrootsQueuePolicy,
+        queuedAtUnixMilliseconds: UInt64
+    ) async throws -> RadrootsDraftStatus {
+        do {
+            return try await runtime.phase1QueueDraft(
+                draftId: id,
+                expectedRevision: expectedRevision,
+                policy: policy.generatedValue,
+                queuedAtUnixMs: queuedAtUnixMilliseconds
+            ).appValue
+        } catch {
+            throw Self.failure(from: error)
+        }
+    }
+
+    func recoverDraftQueue(
+        id: String,
+        recoveredAtUnixMilliseconds: UInt64
+    ) async throws -> RadrootsDraftStatus {
+        do {
+            return try await runtime.phase1RecoverDraftQueue(
+                draftId: id,
+                recoveredAtUnixMs: recoveredAtUnixMilliseconds
+            ).appValue
+        } catch {
+            throw Self.failure(from: error)
+        }
+    }
+
+    func uploadDraftMedia(input: RadrootsBlossomUploadInput) async throws -> RadrootsDraftStatus {
+        do {
+            return try await runtime.phase1UploadDraftMedia(input: input.generatedValue).appValue
+        } catch {
+            throw Self.failure(from: error)
+        }
+    }
+
+    func advanceDraft(id: String, expectedRevision: UInt64) async throws -> RadrootsDraftStatus {
+        do {
+            return try await runtime.phase1AdvanceDraft(
+                draftId: id,
+                expectedRevision: expectedRevision
+            ).appValue
+        } catch {
+            throw Self.failure(from: error)
+        }
+    }
+
+    func cancelDraft(
+        id: String,
+        expectedRevision: UInt64,
+        cancelledAtUnixMilliseconds: UInt64
+    ) async throws -> RadrootsDraftStatus {
+        do {
+            return try await runtime.phase1CancelDraft(
+                draftId: id,
+                expectedRevision: expectedRevision,
+                cancelledAtUnixMs: cancelledAtUnixMilliseconds
+            ).appValue
+        } catch {
+            throw Self.failure(from: error)
+        }
+    }
+
     func subscribe(
         bufferCapacity: Int,
         receive: @escaping @Sendable (RadrootsRuntimeChange) async -> Void
@@ -558,5 +683,336 @@ private extension FfiCardLifecycleState {
         case .sold: .sold
         case .past: .past
         }
+    }
+}
+
+private extension FfiAddSchemaRecord {
+    var appValue: RadrootsAddSchema {
+        RadrootsAddSchema(
+            schemaVersion: schemaVersion,
+            commandType: commandType.appValue,
+            label: label,
+            fields: fields.map(\.appValue)
+        )
+    }
+}
+
+private extension FfiAddFieldRecord {
+    var appValue: RadrootsAddField {
+        RadrootsAddField(
+            schemaVersion: schemaVersion,
+            id: id,
+            label: label,
+            kind: kind.appValue,
+            required: required,
+            choices: choices,
+            maxBytes: maxBytes
+        )
+    }
+}
+
+private extension FfiAddFieldKind {
+    var appValue: RadrootsAddFieldKind {
+        switch self {
+        case .text: .text
+        case .multilineText: .multilineText
+        case .date: .date
+        case .dateTime: .dateTime
+        case .decimal: .decimal
+        case .choice: .choice
+        case .location: .location
+        case .media: .media
+        }
+    }
+}
+
+private extension FfiAddCommandType {
+    var appValue: RadrootsAddCommandType {
+        switch self {
+        case .createUpdate: .createUpdate
+        case .createPhotoUpdate: .createPhotoUpdate
+        case .createAsk: .createAsk
+        case .createEvent: .createEvent
+        case .createFoodAvailability: .createFoodAvailability
+        }
+    }
+}
+
+private extension RadrootsAddCommandType {
+    var generatedValue: FfiAddCommandType {
+        switch self {
+        case .createUpdate: .createUpdate
+        case .createPhotoUpdate: .createPhotoUpdate
+        case .createAsk: .createAsk
+        case .createEvent: .createEvent
+        case .createFoodAvailability: .createFoodAvailability
+        }
+    }
+}
+
+private extension FfiEventTimingKind {
+    var appValue: RadrootsEventTiming {
+        switch self {
+        case .allDay: .allDay
+        case .timed: .timed
+        }
+    }
+}
+
+private extension RadrootsEventTiming {
+    var generatedValue: FfiEventTimingKind {
+        switch self {
+        case .allDay: .allDay
+        case .timed: .timed
+        }
+    }
+}
+
+private extension RadrootsAddRuntimeInput {
+    var generatedValue: FfiAddDraftInput {
+        FfiAddDraftInput(
+            schemaVersion: 1,
+            commandType: form.commandType.generatedValue,
+            content: form.content,
+            identifier: form.identifier,
+            title: form.title,
+            summary: form.summary,
+            location: form.location,
+            eventTiming: form.eventTiming?.generatedValue,
+            eventStartDate: form.eventStartDate,
+            eventEndDate: form.eventEndDate,
+            eventStartUnixS: form.eventStartUnixSeconds,
+            eventEndUnixS: form.eventEndUnixSeconds,
+            eventTimezone: form.eventTimezone,
+            priceAmount: form.priceAmount,
+            currency: form.currency,
+            unit: form.unit,
+            quantity: form.quantity,
+            foodStatus: form.foodStatus,
+            media: media.map(\.generatedValue)
+        )
+    }
+}
+
+private extension RadrootsPreparedMediaHandle {
+    var generatedValue: FfiPreparedMediaInput {
+        FfiPreparedMediaInput(
+            schemaVersion: 1,
+            opaqueReference: media.opaqueReference,
+            fileDescriptor: fileDescriptor,
+            url: media.url,
+            sha256: media.sha256,
+            mediaType: media.mediaType,
+            byteSize: media.byteSize,
+            width: media.width,
+            height: media.height,
+            alt: media.alt,
+            preparedAtUnixS: media.preparedAtUnixSeconds
+        )
+    }
+}
+
+private extension FfiDraftFormMediaRecord {
+    var appValue: RadrootsPreparedMedia {
+        RadrootsPreparedMedia(
+            opaqueReference: opaqueReference,
+            url: url,
+            sha256: sha256,
+            mediaType: mediaType,
+            byteSize: byteSize,
+            width: width,
+            height: height,
+            alt: alt,
+            preparedAtUnixSeconds: preparedAtUnixS
+        )
+    }
+}
+
+private extension FfiDraftFormRecord {
+    var appValue: RadrootsAddForm {
+        RadrootsAddForm(
+            commandType: commandType.appValue,
+            content: content,
+            identifier: identifier,
+            title: title,
+            summary: summary,
+            location: location,
+            eventTiming: eventTiming?.appValue,
+            eventStartDate: eventStartDate,
+            eventEndDate: eventEndDate,
+            eventStartUnixSeconds: eventStartUnixS,
+            eventEndUnixSeconds: eventEndUnixS,
+            eventTimezone: eventTimezone,
+            priceAmount: priceAmount,
+            currency: currency,
+            unit: unit,
+            quantity: quantity,
+            foodStatus: foodStatus,
+            media: media.map(\.appValue)
+        )
+    }
+}
+
+private extension FfiDraftStatusRecord {
+    var appValue: RadrootsDraftStatus {
+        RadrootsDraftStatus(
+            id: draftId,
+            revision: revision,
+            authorPublicKey: authorPublicKey,
+            kind: kind.appValue,
+            commandType: commandType.appValue,
+            form: form?.appValue,
+            state: state.appValue,
+            cardID: cardId,
+            operationID: operationId,
+            createdAtUnixMilliseconds: createdAtUnixMs,
+            updatedAtUnixMilliseconds: updatedAtUnixMs,
+            media: media.map(\.appValue),
+            settlement: settlement?.appValue
+        )
+    }
+}
+
+private extension FfiDraftKind {
+    var appValue: RadrootsDraftKind {
+        switch self {
+        case .add: .add
+        case .retraction: .retraction
+        }
+    }
+}
+
+private extension FfiOutboxState {
+    var appValue: RadrootsOutboxState {
+        switch self {
+        case .draft: .draft
+        case .mediaPreparing: .mediaPreparing
+        case .mediaUploading: .mediaUploading
+        case .readyToSign: .readyToSign
+        case .signing: .signing
+        case .signed: .signed
+        case .queued: .queued
+        case .delivering: .delivering
+        case .partiallyDelivered: .partiallyDelivered
+        case .retryable: .retryable
+        case .terminal: .terminal
+        case .cancelled: .cancelled
+        case .complete: .complete
+        }
+    }
+}
+
+private extension FfiDraftMediaRecord {
+    var appValue: RadrootsDraftMediaStatus {
+        RadrootsDraftMediaStatus(
+            url: url,
+            stage: stage.appValue,
+            uploadAttempts: uploadAttempts,
+            verifiedAtUnixMilliseconds: verifiedAtUnixMs,
+            possibleOrphan: possibleOrphan,
+            orphanReasonCode: orphanReasonCode,
+            orphanRecordedAtUnixMilliseconds: orphanRecordedAtUnixMs
+        )
+    }
+}
+
+private extension FfiMediaStage {
+    var appValue: RadrootsDraftMediaStage {
+        switch self {
+        case .pending: .pending
+        case .preparing: .preparing
+        case .uploading: .uploading
+        case .verified: .verified
+        case .failed: .failed
+        case .orphaned: .orphaned
+        }
+    }
+}
+
+private extension FfiOperationSettlementRecord {
+    var appValue: RadrootsOperationSettlement {
+        RadrootsOperationSettlement(
+            artifacts: artifacts,
+            signed: signed,
+            admitted: admitted,
+            pending: pending,
+            retryable: retryable,
+            indeterminate: indeterminate,
+            failedTerminal: failedTerminal,
+            cancelled: cancelled,
+            deliveryPlans: deliveryPlans,
+            deliverySatisfied: deliverySatisfied,
+            deliveryPending: deliveryPending,
+            deliveryRetryable: deliveryRetryable,
+            deliveryExhausted: deliveryExhausted,
+            deliveryFailedTerminal: deliveryFailedTerminal,
+            deliveryCancelled: deliveryCancelled
+        )
+    }
+}
+
+private extension RadrootsQueuePolicy {
+    var generatedValue: FfiQueuePolicyRecord {
+        FfiQueuePolicyRecord(
+            schemaVersion: 1,
+            relayUrls: relayURLs,
+            satisfaction: satisfaction.generatedValue,
+            deliveryDeadlineUnixMs: deliveryDeadlineUnixMilliseconds,
+            cancellation: cancellation.generatedValue
+        )
+    }
+}
+
+private extension RadrootsRelaySatisfaction {
+    var generatedValue: FfiRelaySatisfaction {
+        switch self {
+        case .anyAccepted: .anyAccepted
+        case .allAccepted: .allAccepted
+        case .anyDelivered: .anyDelivered
+        case .allDelivered: .allDelivered
+        }
+    }
+}
+
+private extension RadrootsCancellationPolicy {
+    var generatedValue: FfiCancellationPolicy {
+        switch self {
+        case .preservePublishedRequest: .preservePublishedRequest
+        case .localCooperative: .localCooperative
+        }
+    }
+}
+
+private extension RadrootsRetractionDraftInput {
+    var generatedValue: FfiRetractionDraftInput {
+        FfiRetractionDraftInput(
+            schemaVersion: 1,
+            commandType: commandType.generatedValue,
+            targetCardId: targetCardID,
+            targetEventId: targetEventID,
+            targetKind: targetKind,
+            targetAddress: targetAddress,
+            reason: reason
+        )
+    }
+}
+
+private extension RadrootsBlossomUploadInput {
+    var generatedValue: FfiBlossomUploadInput {
+        FfiBlossomUploadInput(
+            schemaVersion: 1,
+            draftId: draftID,
+            expectedRevision: expectedRevision,
+            media: media.generatedValue,
+            authorizationContent: authorizationContent,
+            authorizationCreatedAtUnixS: authorizationCreatedAtUnixSeconds,
+            authorizationLifetimeSeconds: authorizationLifetimeSeconds,
+            operationId: operationID,
+            artifactId: artifactID,
+            signingDeadlineUnixMs: signingDeadlineUnixMilliseconds,
+            signingCancellation: signingCancellation.generatedValue,
+            verifiedAtUnixMs: verifiedAtUnixMilliseconds,
+            updatedAtUnixMs: updatedAtUnixMilliseconds
+        )
     }
 }

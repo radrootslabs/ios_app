@@ -12,11 +12,114 @@ protocol RadrootsRuntimeBackend: Sendable {
         nowUnixSeconds: UInt64,
         update: RadrootsTodayProjectionUpdate
     ) async throws -> RadrootsTodayRefreshReceipt
+    func addSchemas() async throws -> [RadrootsAddSchema]
+    func saveDraft(
+        id: String,
+        input: RadrootsAddRuntimeInput,
+        authoredAtUnixSeconds: UInt64,
+        expectedRevision: UInt64?,
+        persistedAtUnixMilliseconds: UInt64
+    ) async throws -> RadrootsDraftStatus
+    func saveRetractionDraft(
+        id: String,
+        input: RadrootsRetractionDraftInput,
+        authoredAtUnixSeconds: UInt64,
+        persistedAtUnixMilliseconds: UInt64
+    ) async throws -> RadrootsDraftStatus
+    func draftStatus(id: String) async throws -> RadrootsDraftStatus
+    func draftHeads(limit: UInt16) async throws -> [RadrootsDraftStatus]
+    func queueDraft(
+        id: String,
+        expectedRevision: UInt64,
+        policy: RadrootsQueuePolicy,
+        queuedAtUnixMilliseconds: UInt64
+    ) async throws -> RadrootsDraftStatus
+    func recoverDraftQueue(id: String, recoveredAtUnixMilliseconds: UInt64) async throws -> RadrootsDraftStatus
+    func uploadDraftMedia(input: RadrootsBlossomUploadInput) async throws -> RadrootsDraftStatus
+    func advanceDraft(id: String, expectedRevision: UInt64) async throws -> RadrootsDraftStatus
+    func cancelDraft(
+        id: String,
+        expectedRevision: UInt64,
+        cancelledAtUnixMilliseconds: UInt64
+    ) async throws -> RadrootsDraftStatus
     func subscribe(
         bufferCapacity: Int,
         receive: @escaping @Sendable (RadrootsRuntimeChange) async -> Void
     ) async throws -> any RadrootsRuntimeSubscriptionToken
     func shutdown() async throws -> RadrootsRuntimeShutdownReceipt
+}
+
+extension RadrootsRuntimeBackend {
+    private func addUnsupported() -> RadrootsRuntimeFailure {
+        .local(
+            operation: "runtime.add",
+            code: "ios.add.unsupported",
+            safeMessage: "Add is unavailable in this runtime."
+        )
+    }
+
+    func addSchemas() async throws -> [RadrootsAddSchema] {
+        throw addUnsupported()
+    }
+
+    func saveDraft(
+        id _: String,
+        input _: RadrootsAddRuntimeInput,
+        authoredAtUnixSeconds _: UInt64,
+        expectedRevision _: UInt64?,
+        persistedAtUnixMilliseconds _: UInt64
+    ) async throws -> RadrootsDraftStatus {
+        throw addUnsupported()
+    }
+
+    func saveRetractionDraft(
+        id _: String,
+        input _: RadrootsRetractionDraftInput,
+        authoredAtUnixSeconds _: UInt64,
+        persistedAtUnixMilliseconds _: UInt64
+    ) async throws -> RadrootsDraftStatus {
+        throw addUnsupported()
+    }
+
+    func draftStatus(id _: String) async throws -> RadrootsDraftStatus {
+        throw addUnsupported()
+    }
+
+    func draftHeads(limit _: UInt16) async throws -> [RadrootsDraftStatus] {
+        throw addUnsupported()
+    }
+
+    func queueDraft(
+        id _: String,
+        expectedRevision _: UInt64,
+        policy _: RadrootsQueuePolicy,
+        queuedAtUnixMilliseconds _: UInt64
+    ) async throws -> RadrootsDraftStatus {
+        throw addUnsupported()
+    }
+
+    func recoverDraftQueue(
+        id _: String,
+        recoveredAtUnixMilliseconds _: UInt64
+    ) async throws -> RadrootsDraftStatus {
+        throw addUnsupported()
+    }
+
+    func uploadDraftMedia(input _: RadrootsBlossomUploadInput) async throws -> RadrootsDraftStatus {
+        throw addUnsupported()
+    }
+
+    func advanceDraft(id _: String, expectedRevision _: UInt64) async throws -> RadrootsDraftStatus {
+        throw addUnsupported()
+    }
+
+    func cancelDraft(
+        id _: String,
+        expectedRevision _: UInt64,
+        cancelledAtUnixMilliseconds _: UInt64
+    ) async throws -> RadrootsDraftStatus {
+        throw addUnsupported()
+    }
 }
 
 struct RadrootsRuntimeBackendStart: Sendable {
@@ -153,6 +256,109 @@ actor RadrootsRuntimeClient {
         } catch {
             throw RadrootsRuntimeClientError.today(
                 Self.failure(from: error, operation: "runtime.today.refresh")
+            )
+        }
+    }
+
+    func addSchemas() async throws -> [RadrootsAddSchema] {
+        try await addOperation("runtime.add.schemas") { backend in
+            try await backend.addSchemas()
+        }
+    }
+
+    func saveDraft(
+        id: String,
+        input: RadrootsAddRuntimeInput,
+        authoredAtUnixSeconds: UInt64,
+        expectedRevision: UInt64?,
+        persistedAtUnixMilliseconds: UInt64
+    ) async throws -> RadrootsDraftStatus {
+        try await addOperation("runtime.add.save") { backend in
+            try await backend.saveDraft(
+                id: id,
+                input: input,
+                authoredAtUnixSeconds: authoredAtUnixSeconds,
+                expectedRevision: expectedRevision,
+                persistedAtUnixMilliseconds: persistedAtUnixMilliseconds
+            )
+        }
+    }
+
+    func saveRetractionDraft(
+        id: String,
+        input: RadrootsRetractionDraftInput,
+        authoredAtUnixSeconds: UInt64,
+        persistedAtUnixMilliseconds: UInt64
+    ) async throws -> RadrootsDraftStatus {
+        try await addOperation("runtime.add.retract") { backend in
+            try await backend.saveRetractionDraft(
+                id: id,
+                input: input,
+                authoredAtUnixSeconds: authoredAtUnixSeconds,
+                persistedAtUnixMilliseconds: persistedAtUnixMilliseconds
+            )
+        }
+    }
+
+    func draftStatus(id: String) async throws -> RadrootsDraftStatus {
+        try await addOperation("runtime.add.status") { backend in
+            try await backend.draftStatus(id: id)
+        }
+    }
+
+    func draftHeads(limit: UInt16 = 100) async throws -> [RadrootsDraftStatus] {
+        try await addOperation("runtime.add.heads") { backend in
+            try await backend.draftHeads(limit: limit)
+        }
+    }
+
+    func queueDraft(
+        id: String,
+        expectedRevision: UInt64,
+        policy: RadrootsQueuePolicy,
+        queuedAtUnixMilliseconds: UInt64
+    ) async throws -> RadrootsDraftStatus {
+        try await addOperation("runtime.add.queue") { backend in
+            try await backend.queueDraft(
+                id: id,
+                expectedRevision: expectedRevision,
+                policy: policy,
+                queuedAtUnixMilliseconds: queuedAtUnixMilliseconds
+            )
+        }
+    }
+
+    func recoverDraftQueue(id: String, recoveredAtUnixMilliseconds: UInt64) async throws -> RadrootsDraftStatus {
+        try await addOperation("runtime.add.recover") { backend in
+            try await backend.recoverDraftQueue(
+                id: id,
+                recoveredAtUnixMilliseconds: recoveredAtUnixMilliseconds
+            )
+        }
+    }
+
+    func uploadDraftMedia(input: RadrootsBlossomUploadInput) async throws -> RadrootsDraftStatus {
+        try await addOperation("runtime.add.media") { backend in
+            try await backend.uploadDraftMedia(input: input)
+        }
+    }
+
+    func advanceDraft(id: String, expectedRevision: UInt64) async throws -> RadrootsDraftStatus {
+        try await addOperation("runtime.add.advance") { backend in
+            try await backend.advanceDraft(id: id, expectedRevision: expectedRevision)
+        }
+    }
+
+    func cancelDraft(
+        id: String,
+        expectedRevision: UInt64,
+        cancelledAtUnixMilliseconds: UInt64
+    ) async throws -> RadrootsDraftStatus {
+        try await addOperation("runtime.add.cancel") { backend in
+            try await backend.cancelDraft(
+                id: id,
+                expectedRevision: expectedRevision,
+                cancelledAtUnixMilliseconds: cancelledAtUnixMilliseconds
             )
         }
     }
@@ -336,6 +542,22 @@ actor RadrootsRuntimeClient {
         }
     }
 
+    private func addOperation<T: Sendable>(
+        _ operation: String,
+        _ body: @Sendable (any RadrootsRuntimeBackend) async throws -> T
+    ) async throws -> T {
+        guard let backend, case .running = lifecycleState else {
+            throw RadrootsRuntimeClientError.notRunning
+        }
+        do {
+            return try await body(backend)
+        } catch {
+            throw RadrootsRuntimeClientError.add(
+                Self.failure(from: error, operation: operation)
+            )
+        }
+    }
+
     private func receive(
         _ change: RadrootsRuntimeChange,
         subscriptionID: UUID,
@@ -375,6 +597,9 @@ actor RadrootsRuntimeClient {
             return failure
         }
         if case let RadrootsRuntimeClientError.today(failure) = error {
+            return failure
+        }
+        if case let RadrootsRuntimeClientError.add(failure) = error {
             return failure
         }
         if case let RadrootsRuntimeClientError.shutdown(failure) = error {

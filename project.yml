@@ -41,13 +41,16 @@ targets:
       - path: Radroots/App/RadrootsProvider.swift
       - path: Radroots/App/RadrootsRootShell.swift
       - path: Radroots/Runtime/RadrootsGeneratedRuntimeBackend.swift
+      - path: Radroots/Runtime/RadrootsAddMediaCoordinator.swift
       - path: Radroots/Runtime/RadrootsRuntimeClient.swift
       - path: Radroots/Runtime/RadrootsRuntimeModels.swift
       - path: Radroots/State/RadrootsConfigurationStore.swift
+      - path: Radroots/State/RadrootsAddStore.swift
       - path: Radroots/State/RadrootsIdentityStore.swift
       - path: Radroots/State/RadrootsSessionStore.swift
       - path: Radroots/State/RadrootsTodayStore.swift
       - path: Radroots/Views/RadrootsTodayView.swift
+      - path: Radroots/Views/RadrootsAddView.swift
       - path: Radroots/Views/RuntimeStatusView.swift
       - path: Radroots/Resources
     settings:
@@ -77,6 +80,7 @@ targets:
       - path: RadrootsTests/RadrootsRootShellTests.swift
       - path: RadrootsTests/RadrootsStateMigrationTests.swift
       - path: RadrootsTests/RadrootsTodayStoreTests.swift
+      - path: RadrootsTests/RadrootsAddStoreTests.swift
     settings:
       base:
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64

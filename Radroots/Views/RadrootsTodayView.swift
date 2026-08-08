@@ -3,6 +3,7 @@ import SwiftUI
 struct RadrootsTodayView: View {
     let snapshot: RadrootsRuntimeSnapshot
     @ObservedObject var store: RadrootsTodayStore
+    let revise: (RadrootsTodayCard) -> Void
     @State private var showsAccount = false
     @State private var showsContextPicker = false
     @State private var showsSearch = false
@@ -87,7 +88,11 @@ struct RadrootsTodayView: View {
         .listStyle(.plain)
         .refreshable { await store.reload() }
         .navigationDestination(for: RadrootsTodayCard.self) { card in
-            RadrootsTodayDetailView(card: card)
+            RadrootsTodayDetailView(
+                card: card,
+                canRevise: card.authorPublicKey == snapshot.identity.publicKeyHex,
+                revise: revise
+            )
         }
         .accessibilityIdentifier("radroots.today.feed")
     }
@@ -317,6 +322,8 @@ private struct RadrootsTrustedMediaView: View {
 
 private struct RadrootsTodayDetailView: View {
     let card: RadrootsTodayCard
+    let canRevise: Bool
+    let revise: (RadrootsTodayCard) -> Void
 
     var body: some View {
         List {
@@ -341,6 +348,14 @@ private struct RadrootsTodayDetailView: View {
         }
         .navigationTitle(card.type.label)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if canRevise {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Revise") { revise(card) }
+                        .accessibilityIdentifier("radroots.today.revise")
+                }
+            }
+        }
         .accessibilityIdentifier("radroots.today.detail.\(card.id)")
     }
 }
