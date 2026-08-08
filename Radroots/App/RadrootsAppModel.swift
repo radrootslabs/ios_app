@@ -5,16 +5,21 @@ final class RadrootsAppModel: ObservableObject {
     typealias Phase = RadrootsSessionPhase
 
     @Published private(set) var phase: Phase = .starting
+    private(set) var todayStore: RadrootsTodayStore?
 
     private let sessionStore: RadrootsSessionStore?
     private let bootstrapFailure: RadrootsRuntimeFailure?
     private var generation: UInt64 = 0
     private let isShellUITest: Bool
 
-    init(sessionStore: RadrootsSessionStore? = nil) {
+    init(
+        sessionStore: RadrootsSessionStore? = nil,
+        runtimeClient: RadrootsRuntimeClient? = nil
+    ) {
         #if DEBUG
             if ProcessInfo.processInfo.environment["RADROOTS_IOS_UI_TEST_SHELL"] == "1" {
                 self.sessionStore = nil
+                todayStore = nil
                 bootstrapFailure = nil
                 isShellUITest = true
                 phase = .running(.shellUITest)
@@ -24,13 +29,17 @@ final class RadrootsAppModel: ObservableObject {
         isShellUITest = false
         if let sessionStore {
             self.sessionStore = sessionStore
+            todayStore = runtimeClient.map { RadrootsTodayStore(runtimeClient: $0) }
             bootstrapFailure = nil
         } else {
             do {
-                self.sessionStore = try .production()
+                let runtimeClient = runtimeClient ?? .production()
+                self.sessionStore = try .production(runtimeClient: runtimeClient)
+                todayStore = RadrootsTodayStore(runtimeClient: runtimeClient)
                 bootstrapFailure = nil
             } catch let error as LocalizedError {
                 self.sessionStore = nil
+                todayStore = nil
                 bootstrapFailure = .local(
                     operation: "app.bootstrap",
                     code: "ios.app.configuration_invalid",
@@ -38,6 +47,7 @@ final class RadrootsAppModel: ObservableObject {
                 )
             } catch {
                 self.sessionStore = nil
+                todayStore = nil
                 bootstrapFailure = .local(
                     operation: "app.bootstrap",
                     code: "ios.app.configuration_invalid",
@@ -89,6 +99,9 @@ final class RadrootsAppModel: ObservableObject {
         }
         let result = await operation(sessionStore)
         guard generation == requestedGeneration else { return }
+        if case let .running(snapshot) = result {
+            todayStore?.configure(snapshot: snapshot)
+        }
         phase = result
     }
 }

@@ -136,6 +136,62 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
         }
     }
 
+    func todayPage(request: RadrootsTodayPageRequest) async throws -> RadrootsTodayPage {
+        do {
+            let page = try await runtime.phase1TodayPage(
+                context: request.context.generatedValue,
+                limit: request.limit,
+                asOfUnixS: request.asOfUnixSeconds,
+                cursor: request.cursor
+            )
+            return page.appValue
+        } catch {
+            throw Self.failure(from: error)
+        }
+    }
+
+    func refreshToday(
+        context: RadrootsLocalNetwork,
+        nowUnixSeconds: UInt64,
+        update: RadrootsTodayProjectionUpdate
+    ) async throws -> RadrootsTodayRefreshReceipt {
+        do {
+            let receipt = try await runtime.phase1SyncToday(
+                context: context.generatedValue,
+                nowUnixS: nowUnixSeconds,
+                update: update.generatedValue
+            )
+            switch receipt.relayState {
+            case .complete:
+                return receipt.projection.appValue
+            case .partial:
+                throw RadrootsRuntimeFailure(
+                    schemaVersion: 1,
+                    code: "today_relay_partial",
+                    category: "relay",
+                    retryable: true,
+                    recoveryActions: ["retry"],
+                    operationID: "runtime.today.refresh",
+                    capabilityID: "nostr_source",
+                    safeMessage: "Today refreshed from only part of the local network."
+                )
+            case .offline:
+                throw RadrootsRuntimeFailure(
+                    schemaVersion: 1,
+                    code: "today_relay_offline",
+                    category: "relay",
+                    retryable: true,
+                    recoveryActions: ["retry"],
+                    operationID: "runtime.today.refresh",
+                    capabilityID: "nostr_source",
+                    safeMessage: "Today is showing saved posts because the local network is offline."
+                )
+            }
+        } catch {
+            throw Self.failure(from: error)
+        }
+    }
+
     func subscribe(
         bufferCapacity: Int,
         receive: @escaping @Sendable (RadrootsRuntimeChange) async -> Void
@@ -322,6 +378,185 @@ private extension FfiRuntimeChangeKind {
         case .relay: .relay
         case .media: .media
         case .lifecycle: .lifecycle
+        }
+    }
+}
+
+private extension RadrootsLocalNetwork {
+    var generatedValue: FfiLocalNetworkRecord {
+        FfiLocalNetworkRecord(
+            schemaVersion: schemaVersion,
+            id: id,
+            label: label,
+            relayUrls: relayURLs,
+            locality: locality,
+            followedAuthors: followedAuthors,
+            generation: generation
+        )
+    }
+}
+
+private extension RadrootsTodayProjectionUpdate {
+    var generatedValue: FfiTodayProjectionUpdate {
+        switch self {
+        case .incremental: .incremental
+        case .rebuild: .rebuild
+        }
+    }
+}
+
+private extension FfiTodayRefreshRecord {
+    var appValue: RadrootsTodayRefreshReceipt {
+        RadrootsTodayRefreshReceipt(
+            update: update.appValue,
+            sourceEvents: sourceEvents,
+            visibleCards: visibleCards,
+            profiles: profiles,
+            threadEntries: threadEntries,
+            contentGeneration: contentGeneration,
+            changed: changed
+        )
+    }
+}
+
+private extension FfiTodayProjectionUpdate {
+    var appValue: RadrootsTodayProjectionUpdate {
+        switch self {
+        case .incremental: .incremental
+        case .rebuild: .rebuild
+        }
+    }
+}
+
+private extension FfiTodayPageRecord {
+    var appValue: RadrootsTodayPage {
+        RadrootsTodayPage(
+            asOfUnixSeconds: asOfUnixS,
+            items: items.map(\.appValue),
+            nextCursor: nextCursor
+        )
+    }
+}
+
+private extension FfiTodayCardRecord {
+    var appValue: RadrootsTodayCard {
+        RadrootsTodayCard(
+            id: cardId,
+            type: cardType.appValue,
+            sourceEventID: sourceEventId,
+            sourceAddress: sourceAddress,
+            authorPublicKey: authorPublicKey,
+            contractID: contractId,
+            title: title,
+            content: content,
+            authoredAtUnixSeconds: authoredAtUnixS,
+            effectiveAtUnixSeconds: effectiveAtUnixS,
+            eventStartUnixSeconds: eventStartUnixS,
+            eventEndUnixSeconds: eventEndUnixS,
+            location: location,
+            priceAmount: priceAmount,
+            priceCurrency: priceCurrency,
+            priceUnit: priceUnit,
+            quantity: quantity,
+            contextRank: contextRank,
+            inclusionReason: inclusionReason,
+            media: media.map(\.appValue),
+            lifecycle: lifecycle.appValue,
+            rankDigest: rankDigest,
+            authorProfile: authorProfile?.appValue,
+            thread: thread.map(\.appValue),
+            localOperationID: localOperationId,
+            localOperationState: localOperationState
+        )
+    }
+}
+
+private extension FfiTodayCardType {
+    var appValue: RadrootsTodayCardType {
+        switch self {
+        case .update: .update
+        case .photoUpdate: .photoUpdate
+        case .ask: .ask
+        case .event: .event
+        case .foodAvailability: .foodAvailability
+        }
+    }
+}
+
+private extension FfiMediaReferenceRecord {
+    var appValue: RadrootsMediaReference {
+        RadrootsMediaReference(
+            url: url,
+            sha256: sha256,
+            mediaType: mediaType,
+            width: width,
+            height: height,
+            byteSize: byteSize,
+            alt: alt,
+            verification: verification.appValue
+        )
+    }
+}
+
+private extension FfiMediaVerificationState {
+    var appValue: RadrootsMediaVerificationState {
+        switch self {
+        case .pending: .pending
+        case .verified: .verified
+        case .failed: .failed
+        case .unavailable: .unavailable
+        }
+    }
+}
+
+private extension FfiProfileRecord {
+    var appValue: RadrootsProfileSummary {
+        RadrootsProfileSummary(
+            authorPublicKey: authorPublicKey,
+            name: name,
+            displayName: displayName,
+            about: about,
+            picture: picture?.appValue,
+            banner: banner?.appValue,
+            nip05: nip05,
+            website: website,
+            lightningAddress: lightningAddress
+        )
+    }
+}
+
+private extension FfiThreadEntryRecord {
+    var appValue: RadrootsThreadEntry {
+        RadrootsThreadEntry(
+            id: eventId,
+            authorPublicKey: authorPublicKey,
+            content: content,
+            authoredAtUnixSeconds: authoredAtUnixS,
+            type: profile.appValue,
+            root: root,
+            parentEventID: parentEventId,
+            authorProfile: authorProfile?.appValue
+        )
+    }
+}
+
+private extension FfiThreadProfile {
+    var appValue: RadrootsThreadEntryType {
+        switch self {
+        case .profile: .profile
+        case .reply: .reply
+        case .comment: .comment
+        case .deletion: .deletion
+        }
+    }
+}
+
+private extension FfiCardLifecycleState {
+    var appValue: RadrootsCardLifecycleState {
+        switch self {
+        case .active: .active
+        case .sold: .sold
+        case .past: .past
         }
     }
 }

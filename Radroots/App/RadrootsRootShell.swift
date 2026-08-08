@@ -25,12 +25,22 @@ enum RadrootsRootTab: String, CaseIterable, Sendable {
 
 struct RadrootsRootShell: View {
     let snapshot: RadrootsRuntimeSnapshot
+    let todayStore: RadrootsTodayStore?
     @SceneStorage("radroots.selected_root_tab") private var storedSelection = RadrootsRootTab.today.rawValue
+
+    init(snapshot: RadrootsRuntimeSnapshot, todayStore: RadrootsTodayStore? = nil) {
+        self.snapshot = snapshot
+        self.todayStore = todayStore
+    }
 
     var body: some View {
         TabView(selection: selection) {
             NavigationStack {
-                RadrootsTodayLanding(snapshot: snapshot)
+                if let todayStore {
+                    RadrootsTodayView(snapshot: snapshot, store: todayStore)
+                } else {
+                    RadrootsTodayLanding(snapshot: snapshot)
+                }
             }
             .tabItem { Label("Today", systemImage: "sun.max.fill") }
             .tag(RadrootsRootTab.today)
@@ -98,7 +108,7 @@ private struct RadrootsTodayLanding: View {
     }
 }
 
-private struct RadrootsSearchSheet: View {
+struct RadrootsSearchSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -115,7 +125,7 @@ private struct RadrootsSearchSheet: View {
     }
 }
 
-private struct RadrootsAccountSheet: View {
+struct RadrootsAccountSheet: View {
     let snapshot: RadrootsRuntimeSnapshot
     @Environment(\.dismiss) private var dismiss
 

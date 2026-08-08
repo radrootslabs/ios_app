@@ -178,6 +178,7 @@ enum RadrootsRuntimeClientError: Error, Sendable, Equatable {
     case startup(RadrootsRuntimeFailure)
     case subscription(RadrootsRuntimeFailure)
     case status(RadrootsRuntimeFailure)
+    case today(RadrootsRuntimeFailure)
     case shutdown(RadrootsRuntimeFailure)
 }
 
@@ -193,10 +194,237 @@ extension RadrootsRuntimeClientError: LocalizedError {
         case let .startup(failure),
              let .subscription(failure),
              let .status(failure),
+             let .today(failure),
              let .shutdown(failure):
             failure.safeMessage
         }
     }
+}
+
+struct RadrootsLocalNetwork: Sendable, Equatable, Hashable, Identifiable {
+    let schemaVersion: UInt16
+    let id: String
+    let label: String
+    let relayURLs: [String]
+    let locality: String?
+    let followedAuthors: [String]
+    let generation: UInt64
+
+    static func defaultContext(snapshot: RadrootsRuntimeSnapshot) -> Self {
+        Self(
+            schemaVersion: 1,
+            id: "default",
+            label: "Local network",
+            relayURLs: snapshot.relay?.relays.map(\.url) ?? [],
+            locality: nil,
+            followedAuthors: [],
+            generation: 1
+        )
+    }
+}
+
+enum RadrootsTodayCardType: String, CaseIterable, Sendable, Equatable, Hashable {
+    case update
+    case photoUpdate
+    case ask
+    case event
+    case foodAvailability
+
+    var label: String {
+        switch self {
+        case .update: "Update"
+        case .photoUpdate: "Photo update"
+        case .ask: "Ask"
+        case .event: "Event"
+        case .foodAvailability: "Food availability"
+        }
+    }
+}
+
+enum RadrootsMediaVerificationState: String, Sendable, Equatable, Hashable {
+    case pending
+    case verified
+    case failed
+    case unavailable
+}
+
+struct RadrootsMediaReference: Sendable, Equatable, Hashable, Identifiable {
+    let url: String
+    let sha256: String?
+    let mediaType: String?
+    let width: UInt32?
+    let height: UInt32?
+    let byteSize: UInt64?
+    let alt: String?
+    let verification: RadrootsMediaVerificationState
+
+    var id: String {
+        sha256 ?? url
+    }
+
+    var trustedURL: URL? {
+        guard verification == .verified,
+              let candidate = URL(string: url),
+              candidate.scheme?.lowercased() == "https"
+        else {
+            return nil
+        }
+        return candidate
+    }
+}
+
+struct RadrootsProfileSummary: Sendable, Equatable, Hashable {
+    let authorPublicKey: String
+    let name: String?
+    let displayName: String?
+    let about: String?
+    let picture: RadrootsMediaReference?
+    let banner: RadrootsMediaReference?
+    let nip05: String?
+    let website: String?
+    let lightningAddress: String?
+
+    var preferredName: String {
+        for candidate in [displayName, name] {
+            if let candidate, !candidate.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return candidate
+            }
+        }
+        guard authorPublicKey.count > 16 else { return authorPublicKey }
+        return "\(authorPublicKey.prefix(8))…\(authorPublicKey.suffix(8))"
+    }
+}
+
+enum RadrootsThreadEntryType: String, Sendable, Equatable, Hashable {
+    case profile
+    case reply
+    case comment
+    case deletion
+}
+
+struct RadrootsThreadEntry: Sendable, Equatable, Hashable, Identifiable {
+    let id: String
+    let authorPublicKey: String
+    let content: String
+    let authoredAtUnixSeconds: UInt64
+    let type: RadrootsThreadEntryType
+    let root: String
+    let parentEventID: String
+    let authorProfile: RadrootsProfileSummary?
+}
+
+enum RadrootsCardLifecycleState: String, Sendable, Equatable, Hashable {
+    case active
+    case sold
+    case past
+}
+
+struct RadrootsTodayCard: Sendable, Equatable, Hashable, Identifiable {
+    let id: String
+    let type: RadrootsTodayCardType
+    let sourceEventID: String
+    let sourceAddress: String?
+    let authorPublicKey: String
+    let contractID: String
+    let title: String?
+    let content: String
+    let authoredAtUnixSeconds: UInt64
+    let effectiveAtUnixSeconds: UInt64
+    let eventStartUnixSeconds: UInt64?
+    let eventEndUnixSeconds: UInt64?
+    let location: String?
+    let priceAmount: String?
+    let priceCurrency: String?
+    let priceUnit: String?
+    let quantity: String?
+    let contextRank: UInt8
+    let inclusionReason: String
+    let media: [RadrootsMediaReference]
+    let lifecycle: RadrootsCardLifecycleState
+    let rankDigest: String?
+    let authorProfile: RadrootsProfileSummary?
+    let thread: [RadrootsThreadEntry]
+    let localOperationID: String?
+    let localOperationState: String?
+
+    var authorName: String {
+        authorProfile?.preferredName ?? RadrootsProfileSummary(
+            authorPublicKey: authorPublicKey,
+            name: nil,
+            displayName: nil,
+            about: nil,
+            picture: nil,
+            banner: nil,
+            nip05: nil,
+            website: nil,
+            lightningAddress: nil
+        ).preferredName
+    }
+
+    var priceSummary: String? {
+        guard let priceAmount, let priceCurrency, let priceUnit else { return nil }
+        return "\(priceAmount) \(priceCurrency)/\(priceUnit)"
+    }
+
+    var accessibilitySummary: String {
+        var parts = [type.label, "by \(authorName)"]
+        if let title {
+            parts.append(title)
+        }
+        if !content.isEmpty {
+            parts.append(content)
+        }
+        if let priceSummary {
+            parts.append(priceSummary)
+        }
+        if lifecycle != .active {
+            parts.append(lifecycle.rawValue)
+        }
+        if let localOperationState {
+            parts.append(localOperationState)
+        }
+        return parts.joined(separator: ", ")
+    }
+}
+
+struct RadrootsTodayPageRequest: Sendable, Equatable {
+    let context: RadrootsLocalNetwork
+    let limit: UInt16
+    let asOfUnixSeconds: UInt64?
+    let cursor: String?
+
+    static func first(
+        context: RadrootsLocalNetwork,
+        limit: UInt16,
+        asOfUnixSeconds: UInt64
+    ) -> Self {
+        Self(context: context, limit: limit, asOfUnixSeconds: asOfUnixSeconds, cursor: nil)
+    }
+
+    static func after(context: RadrootsLocalNetwork, limit: UInt16, cursor: String) -> Self {
+        Self(context: context, limit: limit, asOfUnixSeconds: nil, cursor: cursor)
+    }
+}
+
+struct RadrootsTodayPage: Sendable, Equatable {
+    let asOfUnixSeconds: UInt64
+    let items: [RadrootsTodayCard]
+    let nextCursor: String?
+}
+
+enum RadrootsTodayProjectionUpdate: Sendable, Equatable {
+    case incremental
+    case rebuild
+}
+
+struct RadrootsTodayRefreshReceipt: Sendable, Equatable {
+    let update: RadrootsTodayProjectionUpdate
+    let sourceEvents: UInt64
+    let visibleCards: UInt64
+    let profiles: UInt64
+    let threadEntries: UInt64
+    let contentGeneration: UInt64
+    let changed: Bool
 }
 
 enum RadrootsRuntimeLifecycle: Sendable, Equatable {

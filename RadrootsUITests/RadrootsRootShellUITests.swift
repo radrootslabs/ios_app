@@ -17,8 +17,12 @@ final class RadrootsRootShellUITests: XCTestCase {
         XCTAssertFalse(tabBar.buttons["Settings"].exists)
 
         tabBar.buttons["Add"].tap()
-        XCTAssertTrue(app.otherElements["radroots.add.root"].waitForExistence(timeout: 2))
+        XCTAssertTrue(
+            app.descendants(matching: .any)["radroots.add.root"].waitForExistence(timeout: 2)
+        )
         tabBar.buttons["Today"].tap()
-        XCTAssertTrue(app.otherElements["radroots.today.root"].waitForExistence(timeout: 2))
+        XCTAssertTrue(
+            app.descendants(matching: .any)["radroots.today.root"].waitForExistence(timeout: 2)
+        )
     }
 }

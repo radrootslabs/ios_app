@@ -291,6 +291,26 @@ private actor TestRuntimeBackend: RadrootsRuntimeBackend {
         return snapshotValueStored
     }
 
+    func todayPage(request _: RadrootsTodayPageRequest) throws -> RadrootsTodayPage {
+        throw RadrootsRuntimeFailure.local(
+            operation: "test.today.page",
+            code: "test.unsupported",
+            safeMessage: "Today is not configured for this lifecycle test."
+        )
+    }
+
+    func refreshToday(
+        context _: RadrootsLocalNetwork,
+        nowUnixSeconds _: UInt64,
+        update _: RadrootsTodayProjectionUpdate
+    ) throws -> RadrootsTodayRefreshReceipt {
+        throw RadrootsRuntimeFailure.local(
+            operation: "test.today.refresh",
+            code: "test.unsupported",
+            safeMessage: "Today is not configured for this lifecycle test."
+        )
+    }
+
     func subscribe(
         bufferCapacity _: Int,
         receive: @escaping @Sendable (RadrootsRuntimeChange) async -> Void

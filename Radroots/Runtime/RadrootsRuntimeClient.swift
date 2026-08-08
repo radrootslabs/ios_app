@@ -6,6 +6,12 @@ protocol RadrootsRuntimeSubscriptionToken: Sendable {
 
 protocol RadrootsRuntimeBackend: Sendable {
     func snapshot() async throws -> RadrootsRuntimeSnapshot
+    func todayPage(request: RadrootsTodayPageRequest) async throws -> RadrootsTodayPage
+    func refreshToday(
+        context: RadrootsLocalNetwork,
+        nowUnixSeconds: UInt64,
+        update: RadrootsTodayProjectionUpdate
+    ) async throws -> RadrootsTodayRefreshReceipt
     func subscribe(
         bufferCapacity: Int,
         receive: @escaping @Sendable (RadrootsRuntimeChange) async -> Void
@@ -115,6 +121,40 @@ actor RadrootsRuntimeClient {
             throw RadrootsRuntimeClientError.notRunning
         }
         return try await backendSnapshot(backend)
+    }
+
+    func todayPage(request: RadrootsTodayPageRequest) async throws -> RadrootsTodayPage {
+        guard let backend, case .running = lifecycleState else {
+            throw RadrootsRuntimeClientError.notRunning
+        }
+        do {
+            return try await backend.todayPage(request: request)
+        } catch {
+            throw RadrootsRuntimeClientError.today(
+                Self.failure(from: error, operation: "runtime.today.page")
+            )
+        }
+    }
+
+    func refreshToday(
+        context: RadrootsLocalNetwork,
+        nowUnixSeconds: UInt64,
+        update: RadrootsTodayProjectionUpdate = .incremental
+    ) async throws -> RadrootsTodayRefreshReceipt {
+        guard let backend, case .running = lifecycleState else {
+            throw RadrootsRuntimeClientError.notRunning
+        }
+        do {
+            return try await backend.refreshToday(
+                context: context,
+                nowUnixSeconds: nowUnixSeconds,
+                update: update
+            )
+        } catch {
+            throw RadrootsRuntimeClientError.today(
+                Self.failure(from: error, operation: "runtime.today.refresh")
+            )
+        }
     }
 
     func changes(bufferCapacity: Int = 16) async throws -> AsyncStream<RadrootsRuntimeChange> {
@@ -332,6 +372,9 @@ actor RadrootsRuntimeClient {
             return failure
         }
         if case let RadrootsRuntimeClientError.status(failure) = error {
+            return failure
+        }
+        if case let RadrootsRuntimeClientError.today(failure) = error {
             return failure
         }
         if case let RadrootsRuntimeClientError.shutdown(failure) = error {
