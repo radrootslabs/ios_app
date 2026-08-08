@@ -50,6 +50,17 @@
                ReferencedContainer = "container:Radroots.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D87D8771FD63904A45FAFB4D"
+               BuildableName = "RadrootsUITests.xctest"
+               BlueprintName = "RadrootsUITests"
+               ReferencedContainer = "container:Radroots.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <CommandLineArguments>
       </CommandLineArguments>

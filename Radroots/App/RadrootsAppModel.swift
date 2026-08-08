@@ -9,8 +9,19 @@ final class RadrootsAppModel: ObservableObject {
     private let sessionStore: RadrootsSessionStore?
     private let bootstrapFailure: RadrootsRuntimeFailure?
     private var generation: UInt64 = 0
+    private let isShellUITest: Bool
 
     init(sessionStore: RadrootsSessionStore? = nil) {
+        #if DEBUG
+            if ProcessInfo.processInfo.environment["RADROOTS_IOS_UI_TEST_SHELL"] == "1" {
+                self.sessionStore = nil
+                bootstrapFailure = nil
+                isShellUITest = true
+                phase = .running(.shellUITest)
+                return
+            }
+        #endif
+        isShellUITest = false
         if let sessionStore {
             self.sessionStore = sessionStore
             bootstrapFailure = nil
@@ -63,6 +74,7 @@ final class RadrootsAppModel: ObservableObject {
     private func run(
         _ operation: @escaping @Sendable (RadrootsSessionStore) async -> Phase
     ) async {
+        guard !isShellUITest else { return }
         generation &+= 1
         let requestedGeneration = generation
         guard let sessionStore else {
@@ -80,3 +92,24 @@ final class RadrootsAppModel: ObservableObject {
         phase = result
     }
 }
+
+#if DEBUG
+    private extension RadrootsRuntimeSnapshot {
+        static let shellUITest = RadrootsRuntimeSnapshot(
+            identity: RadrootsRuntimeIdentity(
+                publicKeyHex: String(repeating: "ab", count: 32),
+                hostSignerConfigured: true
+            ),
+            relay: RadrootsRelayStatus(
+                profile: "simulator",
+                state: "configured",
+                readAvailability: "unobserved",
+                writeAvailability: "unobserved",
+                relays: []
+            ),
+            crateName: "radroots_mobile_ffi",
+            crateVersion: "0.1.0-alpha",
+            isClosed: false
+        )
+    }
+#endif
