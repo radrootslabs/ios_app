@@ -63,102 +63,9 @@ final class RadrootsRemoteQualificationUITests: XCTestCase {
         let app = launchToRoot(configuration)
         let marker = "Radroots remote qualification \(configuration.runID)"
 
-        guard let type = openAdd(app) else {
-            return XCTFail("The Add bottom tab did not present the Add surface")
-        }
-        let newDraft = app.buttons["radroots.add.new"]
-        XCTAssertTrue(newDraft.waitForExistence(timeout: 10))
-        newDraft.tap()
-
-        for _ in 0 ..< 3 where !app.buttons["Photo update"].exists {
-            type.tap()
-            _ = app.buttons["Photo update"].waitForExistence(timeout: 10)
-        }
-        let photoUpdate = app.buttons["Photo update"]
-        guard photoUpdate.exists else {
-            return XCTFail("The Add type picker did not present Photo update")
-        }
-        guard waitUntilHittable(photoUpdate, timeout: 10) else {
-            return XCTFail("Photo update did not become hittable")
-        }
-
-        let content = app.descendants(matching: .any)["radroots.add.content"]
-        var selectedPhotoUpdate = false
-        for _ in 0 ..< 3 where !selectedPhotoUpdate {
-            app.buttons["Photo update"].tap()
-            selectedPhotoUpdate = waitForValue(type, value: "Photo update", timeout: 10)
-            if !selectedPhotoUpdate, !app.buttons["Photo update"].exists {
-                type.tap()
-                _ = app.buttons["Photo update"].waitForExistence(timeout: 10)
-            }
-        }
-        guard selectedPhotoUpdate else {
-            return XCTFail("Photo update selection did not update the Add composer type")
-        }
-        XCTAssertTrue(content.waitForExistence(timeout: 10))
-        guard waitUntilHittable(content, timeout: 10) else {
-            return XCTFail("Photo update content did not become hittable")
-        }
-        content.tap()
-        content.typeText(marker)
-        let keyboardDone = app.buttons["radroots.add.keyboard.done"]
-        XCTAssertTrue(keyboardDone.waitForExistence(timeout: 10))
-        keyboardDone.tap()
-        XCTAssertFalse(app.keyboards.firstMatch.waitForExistence(timeout: 5))
-
-        let library = app.descendants(matching: .any)["radroots.add.media.library"]
-        XCTAssertTrue(library.waitForExistence(timeout: 10))
-        XCTAssertTrue(library.isEnabled)
-        library.tap()
-        let prepared = app.descendants(matching: .any).matching(
-            NSPredicate(
-                format: "identifier MATCHES %@",
-                #"radroots\.add\.media\.[0-9a-f]{64}"#
-            )
-        ).firstMatch
-        XCTAssertTrue(prepared.waitForExistence(timeout: 30))
-
-        let submit = app.descendants(matching: .any)["radroots.add.submit"]
-        let addRoot = app.descendants(matching: .any)["radroots.add.root"]
-        for _ in 0 ..< 8 {
-            if isUnobscured(submit, above: app.tabBars.firstMatch) {
-                break
-            }
-            addRoot.swipeUp()
-        }
-        guard submit.waitForExistence(timeout: 10),
-              submit.isEnabled,
-              waitUntilHittable(submit, timeout: 10),
-              isUnobscured(submit, above: app.tabBars.firstMatch)
-        else {
-            return XCTFail(
-                "The Add submission control did not become unobscured; "
-                    + submissionDiagnostics(app, submit: submit)
-            )
-        }
-
-        let priorSubmitValue = submit.value as? String
-        guard tapSubmitUntilWorkStarts(
-            app,
-            submit: submit,
-            priorSubmitValue: priorSubmitValue
-        ) else {
-            return XCTFail(
-                "The Add submission tap did not start local work; "
-                    + submissionDiagnostics(app, submit: submit)
-            )
-        }
-        guard waitForWorkToFinish(
-            app,
-            submit: submit,
-            priorSubmitValue: priorSubmitValue
-        ) else {
-            return XCTFail(
-                "The Add submission did not reach a terminal local state; "
-                    + submissionDiagnostics(app, submit: submit)
-            )
-        }
-        let terminalSubmitValue = submit.value as? String ?? "missing"
+        guard let submit = preparePhotoUpdate(app, marker: marker),
+              let terminalSubmitValue = submitAndWait(app, submit: submit)
+        else { return }
         guard !terminalSubmitValue.contains("Error code") else {
             return XCTFail("The Add submission failed locally; submit.value=\(terminalSubmitValue)")
         }
@@ -211,6 +118,71 @@ final class RadrootsRemoteQualificationUITests: XCTestCase {
             ).firstMatch
             XCTAssertTrue(published.waitForExistence(timeout: 30))
         }
+    }
+
+    @MainActor
+    func testRemoteBlossomUnavailablePersistsDraft() throws {
+        let configuration = try QualificationConfiguration.environment()
+        let app = launchToRoot(configuration)
+        let marker = "Radroots unavailable qualification \(configuration.runID)"
+
+        guard let submit = preparePhotoUpdate(app, marker: marker),
+              let terminalSubmitValue = submitAndWait(app, submit: submit)
+        else { return }
+        XCTAssertTrue(
+            terminalSubmitValue.contains("Error code"),
+            "An unavailable Blossom endpoint did not produce a typed failure; "
+                + "submit.value=\(terminalSubmitValue)"
+        )
+        XCTAssertTrue(assertUnverifiedDraft(app))
+
+        app.terminate()
+        app.launch()
+        reachRoot(app)
+        guard openAdd(app) != nil else {
+            return XCTFail("The Add bottom tab did not recover after unavailable relaunch")
+        }
+        XCTAssertTrue(assertUnverifiedDraft(app))
+    }
+
+    @MainActor
+    func testRemoteBlossomRetriesPersistedDraft() throws {
+        let configuration = try QualificationConfiguration.environment()
+        let app = launchToRoot(configuration)
+        guard openAdd(app) != nil else {
+            return XCTFail("The Add bottom tab did not present the Add surface")
+        }
+        guard openDrafts(app) else {
+            return XCTFail("The Drafts sheet did not open for retry")
+        }
+        let unverified = app.descendants(matching: .any).matching(
+            NSPredicate(format: "label CONTAINS '0 of 1 photos verified'")
+        ).firstMatch
+        XCTAssertTrue(unverified.waitForExistence(timeout: 20))
+        let reopen = app.buttons["Reopen"].firstMatch
+        XCTAssertTrue(reopen.waitForExistence(timeout: 10))
+        reopen.tap()
+
+        guard let submit = readySubmit(app),
+              let terminalSubmitValue = submitAndWait(app, submit: submit)
+        else { return }
+        guard !terminalSubmitValue.contains("Error code") else {
+            return XCTFail("The persisted Blossom retry failed; submit.value=\(terminalSubmitValue)")
+        }
+        guard openDrafts(app) else {
+            return XCTFail("The Drafts sheet did not open after retry")
+        }
+        XCTAssertTrue(
+            app.descendants(matching: .any).matching(
+                NSPredicate(format: "label CONTAINS '1 of 1 photos verified'")
+            ).firstMatch.waitForExistence(timeout: 20)
+        )
+        app.buttons["Done"].tap()
+
+        app.terminate()
+        app.launch()
+        reachRoot(app)
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 20))
     }
 
     @MainActor
@@ -317,6 +289,140 @@ final class RadrootsRemoteQualificationUITests: XCTestCase {
             }
         }
         return nil
+    }
+
+    @MainActor
+    private func preparePhotoUpdate(_ app: XCUIApplication, marker: String) -> XCUIElement? {
+        guard let type = openAdd(app) else {
+            XCTFail("The Add bottom tab did not present the Add surface")
+            return nil
+        }
+        let newDraft = app.buttons["radroots.add.new"]
+        XCTAssertTrue(newDraft.waitForExistence(timeout: 10))
+        newDraft.tap()
+
+        for _ in 0 ..< 3 where !app.buttons["Photo update"].exists {
+            type.tap()
+            _ = app.buttons["Photo update"].waitForExistence(timeout: 10)
+        }
+        let photoUpdate = app.buttons["Photo update"]
+        guard photoUpdate.exists else {
+            XCTFail("The Add type picker did not present Photo update")
+            return nil
+        }
+        guard waitUntilHittable(photoUpdate, timeout: 10) else {
+            XCTFail("Photo update did not become hittable")
+            return nil
+        }
+
+        let content = app.descendants(matching: .any)["radroots.add.content"]
+        var selectedPhotoUpdate = false
+        for _ in 0 ..< 3 where !selectedPhotoUpdate {
+            photoUpdate.tap()
+            selectedPhotoUpdate = waitForValue(type, value: "Photo update", timeout: 10)
+            if !selectedPhotoUpdate, !photoUpdate.exists {
+                type.tap()
+                _ = photoUpdate.waitForExistence(timeout: 10)
+            }
+        }
+        guard selectedPhotoUpdate else {
+            XCTFail("Photo update selection did not update the Add composer type")
+            return nil
+        }
+        XCTAssertTrue(content.waitForExistence(timeout: 10))
+        guard waitUntilHittable(content, timeout: 10) else {
+            XCTFail("Photo update content did not become hittable")
+            return nil
+        }
+        content.tap()
+        content.typeText(marker)
+        let keyboardDone = app.buttons["radroots.add.keyboard.done"]
+        XCTAssertTrue(keyboardDone.waitForExistence(timeout: 10))
+        keyboardDone.tap()
+        XCTAssertFalse(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+
+        let library = app.descendants(matching: .any)["radroots.add.media.library"]
+        XCTAssertTrue(library.waitForExistence(timeout: 10))
+        XCTAssertTrue(library.isEnabled)
+        library.tap()
+        let prepared = app.descendants(matching: .any).matching(
+            NSPredicate(
+                format: "identifier MATCHES %@",
+                #"radroots\.add\.media\.[0-9a-f]{64}"#
+            )
+        ).firstMatch
+        XCTAssertTrue(prepared.waitForExistence(timeout: 30))
+        return readySubmit(app)
+    }
+
+    @MainActor
+    private func readySubmit(_ app: XCUIApplication) -> XCUIElement? {
+        let submit = app.descendants(matching: .any)["radroots.add.submit"]
+        let addRoot = app.descendants(matching: .any)["radroots.add.root"]
+        for _ in 0 ..< 8 {
+            if isUnobscured(submit, above: app.tabBars.firstMatch) {
+                break
+            }
+            addRoot.swipeUp()
+        }
+        guard submit.waitForExistence(timeout: 10),
+              submit.isEnabled,
+              waitUntilHittable(submit, timeout: 10),
+              isUnobscured(submit, above: app.tabBars.firstMatch)
+        else {
+            XCTFail(
+                "The Add submission control did not become unobscured; "
+                    + submissionDiagnostics(app, submit: submit)
+            )
+            return nil
+        }
+        return submit
+    }
+
+    @MainActor
+    private func submitAndWait(_ app: XCUIApplication, submit: XCUIElement) -> String? {
+        let priorSubmitValue = submit.value as? String
+        guard tapSubmitUntilWorkStarts(
+            app,
+            submit: submit,
+            priorSubmitValue: priorSubmitValue
+        ) else {
+            XCTFail(
+                "The Add submission tap did not start local work; "
+                    + submissionDiagnostics(app, submit: submit)
+            )
+            return nil
+        }
+        guard waitForWorkToFinish(
+            app,
+            submit: submit,
+            priorSubmitValue: priorSubmitValue
+        ) else {
+            XCTFail(
+                "The Add submission did not reach a terminal local state; "
+                    + submissionDiagnostics(app, submit: submit)
+            )
+            return nil
+        }
+        return submit.value as? String ?? "missing"
+    }
+
+    @MainActor
+    private func assertUnverifiedDraft(_ app: XCUIApplication) -> Bool {
+        guard openDrafts(app) else {
+            XCTFail("The Drafts sheet did not open after the unavailable attempt")
+            return false
+        }
+        let mediaStatus = app.descendants(matching: .any).matching(
+            NSPredicate(format: "label CONTAINS '0 of 1 photos verified'")
+        ).firstMatch
+        let exists = mediaStatus.waitForExistence(timeout: 20)
+        XCTAssertTrue(exists)
+        if exists {
+            XCTAssertFalse(mediaStatus.label.contains("possible orphan"))
+        }
+        app.buttons["Done"].tap()
+        return exists
     }
 
     @MainActor
