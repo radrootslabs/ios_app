@@ -144,6 +144,60 @@ final class RadrootsAddStoreTests: XCTestCase {
     }
 
     @MainActor
+    func testSubmitWithoutWritableRelayVerifiesMediaAndPreservesDraftForRetry() async throws {
+        let backend = AddBackend(includeWritableRelay: false)
+        let client = try await Self.startedClient(backend)
+        let store = RadrootsAddStore(
+            runtimeClient: client,
+            media: AddMediaHarness(),
+            now: { 1_800_000_000 }
+        )
+        await store.configure(snapshot: backend.snapshot())
+        await store.start()
+        store.selectType(.createPhotoUpdate)
+        store.updateForm(\.content, "Carrots from today")
+        await store.importPhotos()
+
+        await store.submit()
+
+        XCTAssertEqual(store.activeDraft?.state, .readyToSign)
+        XCTAssertEqual(store.activeDraft?.media.first?.stage, .verified)
+        XCTAssertEqual(
+            store.message,
+            "Photo verified and draft saved. Configure a writable relay to publish."
+        )
+        XCTAssertNil(store.lastFailureCode)
+        _ = try await client.stop()
+    }
+
+    @MainActor
+    func testSubmitRetainsRedactedFailureCodeForSupportAndAccessibility() async throws {
+        let failure = RadrootsRuntimeFailure(
+            schemaVersion: 1,
+            code: "media_handle_unavailable",
+            category: "validation",
+            retryable: false,
+            recoveryActions: [],
+            operationID: "add.save",
+            capabilityID: nil,
+            safeMessage: "The request is invalid."
+        )
+        let backend = AddBackend(saveFailure: failure)
+        let client = try await Self.startedClient(backend)
+        let store = RadrootsAddStore(runtimeClient: client, now: { 1_800_000_000 })
+        await store.configure(snapshot: backend.snapshot())
+        await store.start()
+        store.updateForm(\.content, "Prepared media failure")
+
+        await store.submit()
+
+        XCTAssertEqual(store.message, failure.safeMessage)
+        XCTAssertEqual(store.lastFailureCode, failure.code)
+        XCTAssertNil(store.activeDraft)
+        _ = try await client.stop()
+    }
+
+    @MainActor
     private func configure(_ store: RadrootsAddStore, type: RadrootsAddCommandType) {
         switch type {
         case .createUpdate:
@@ -283,13 +337,22 @@ private actor AddMediaHarness: RadrootsAddMediaHandling {
 private actor AddBackend: RadrootsRuntimeBackend {
     private let advanceOffline: Bool
     private let saveDelayNanoseconds: UInt64
+    private let saveFailure: RadrootsRuntimeFailure?
+    private let includeWritableRelay: Bool
     private var values: [String: RadrootsDraftStatus] = [:]
     private var uploadAuthorizationCreatedAt: UInt64?
     private var closed = false
 
-    init(advanceOffline: Bool = false, saveDelayNanoseconds: UInt64 = 0) {
+    init(
+        advanceOffline: Bool = false,
+        saveDelayNanoseconds: UInt64 = 0,
+        saveFailure: RadrootsRuntimeFailure? = nil,
+        includeWritableRelay: Bool = true
+    ) {
         self.advanceOffline = advanceOffline
         self.saveDelayNanoseconds = saveDelayNanoseconds
+        self.saveFailure = saveFailure
+        self.includeWritableRelay = includeWritableRelay
     }
 
     func snapshot() -> RadrootsRuntimeSnapshot {
@@ -303,7 +366,7 @@ private actor AddBackend: RadrootsRuntimeBackend {
                 state: "configured",
                 readAvailability: "unobserved",
                 writeAvailability: "unobserved",
-                relays: [
+                relays: includeWritableRelay ? [
                     RadrootsRelayEndpointStatus(
                         url: "ws://127.0.0.1:7447",
                         access: "read_write",
@@ -314,7 +377,7 @@ private actor AddBackend: RadrootsRuntimeBackend {
                         readNextAttemptUnixMilliseconds: nil,
                         writeNextAttemptUnixMilliseconds: nil
                     ),
-                ]
+                ] : []
             ),
             blossomConfiguration: RadrootsBlossomConfigurationStatus(
                 schemaVersion: 1,
@@ -356,6 +419,9 @@ private actor AddBackend: RadrootsRuntimeBackend {
         expectedRevision: UInt64?,
         persistedAtUnixMilliseconds: UInt64
     ) async throws -> RadrootsDraftStatus {
+        if let saveFailure {
+            throw saveFailure
+        }
         if saveDelayNanoseconds > 0 {
             try await Task.sleep(nanoseconds: saveDelayNanoseconds)
         }

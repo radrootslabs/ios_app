@@ -22,6 +22,7 @@ final class RadrootsAddStore: ObservableObject {
     @Published private(set) var isCheckingBlossom = false
     @Published private(set) var isWorking = false
     @Published private(set) var message: String?
+    @Published private(set) var lastFailureCode: String?
 
     private let runtimeClient: RadrootsRuntimeClient
     private let media: (any RadrootsAddMediaHandling)?
@@ -224,6 +225,14 @@ final class RadrootsAddStore: ObservableObject {
                status.media.contains(where: { $0.stage != .verified })
             {
                 status = try await self.uploadPendingMedia(status)
+            }
+
+            guard !self.writableRelays.isEmpty else {
+                self.accept(status)
+                self.message = status.media.isEmpty
+                    ? "Draft saved. Configure a writable relay to publish."
+                    : "Photo verified and draft saved. Configure a writable relay to publish."
+                return
             }
 
             if status.state.isEditable || status.state == .readyToSign {
@@ -469,6 +478,7 @@ final class RadrootsAddStore: ObservableObject {
         operationGeneration = requestedGeneration
         isWorking = true
         message = nil
+        lastFailureCode = nil
         do {
             try await operation()
         } catch is CancellationError {
@@ -479,6 +489,7 @@ final class RadrootsAddStore: ObservableObject {
             if requestedGeneration == generation {
                 await refreshBlossomSnapshot()
                 message = Self.message(for: error)
+                lastFailureCode = Self.failure(for: error)?.code
             }
         }
         if requestedGeneration == generation {
@@ -505,13 +516,17 @@ final class RadrootsAddStore: ObservableObject {
     }
 
     private static func message(for error: Error) -> String {
-        if case let RadrootsRuntimeClientError.add(failure) = error {
-            return failure.safeMessage
-        }
-        if let failure = error as? RadrootsRuntimeFailure {
+        if let failure = failure(for: error) {
             return failure.safeMessage
         }
         return (error as? LocalizedError)?.errorDescription ?? "The Add operation could not be completed."
+    }
+
+    private static func failure(for error: Error) -> RadrootsRuntimeFailure? {
+        if case let RadrootsRuntimeClientError.add(failure) = error {
+            return failure
+        }
+        return error as? RadrootsRuntimeFailure
     }
 
     private static func retractionInput(_ card: RadrootsTodayCard) -> RadrootsRetractionDraftInput {

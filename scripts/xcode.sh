@@ -125,10 +125,15 @@ case "$operation" in
         destination=${2:?physical UI qualification requires a device destination}
         test_selector=${3:?physical UI qualification requires a RadrootsUITests selector}
         result_name=${4:-}
+        physical_automation=${RADROOTS_IOS_UI_TEST_PHYSICAL_AUTOMATION:-}
         development_team=${RADROOTS_IOS_DEVELOPMENT_TEAM:?RADROOTS_IOS_DEVELOPMENT_TEAM is required}
         qualification_run_id=${RADROOTS_IOS_UI_TEST_RUN_ID:?RADROOTS_IOS_UI_TEST_RUN_ID is required}
         blossom_origins=${RADROOTS_IOS_UI_TEST_BLOSSOM_ORIGINS:?RADROOTS_IOS_UI_TEST_BLOSSOM_ORIGINS is required}
         relay_urls=${RADROOTS_IOS_UI_TEST_NOSTR_RELAY_URLS:-}
+        if [[ "$physical_automation" != "1" ]]; then
+            echo "error: physical UI qualification requires RADROOTS_IOS_UI_TEST_PHYSICAL_AUTOMATION=1" >&2
+            exit 64
+        fi
         if [[ ! "$destination" =~ ^id=[A-Fa-f0-9-]+$ ]]; then
             echo "error: physical-ui-test destination must be one exact device id" >&2
             exit 64
@@ -144,6 +149,26 @@ case "$operation" in
         if [[ ! "$qualification_run_id" =~ ^[a-z0-9][a-z0-9-]{6,62}[a-z0-9]$ ]]; then
             echo "error: physical-ui-test run id is invalid" >&2
             exit 64
+        fi
+        device_id=${destination#id=}
+        lock_state_file=$(mktemp "${TMPDIR:-/tmp}/radroots-ios-lock-state.XXXXXX")
+        trap 'unlink "$lock_state_file"' EXIT
+        if ! xcrun devicectl device info lockState \
+            --device "$device_id" \
+            --quiet \
+            --timeout 10 \
+            --json-output "$lock_state_file"
+        then
+            echo "error: physical UI qualification device lock state is unavailable" >&2
+            exit 1
+        fi
+        passcode_required=$(/usr/bin/plutil \
+            -extract result.passcodeRequired raw -o - "$lock_state_file")
+        unlocked_since_boot=$(/usr/bin/plutil \
+            -extract result.unlockedSinceBoot raw -o - "$lock_state_file")
+        if [[ "$passcode_required" != "false" || "$unlocked_since_boot" != "true" ]]; then
+            echo "error: physical UI qualification device is locked; refusing to invoke Xcode" >&2
+            exit 1
         fi
         physical_args=(
             -project Radroots.xcodeproj \

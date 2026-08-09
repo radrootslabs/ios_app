@@ -37,11 +37,6 @@ struct RadrootsAddView: View {
                     .disabled(!store.canSave)
                     .accessibilityIdentifier("radroots.add.save")
 
-                Button(submitLabel) { Task { await store.submit() } }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!store.canSubmit)
-                    .accessibilityIdentifier("radroots.add.submit")
-
                 if let active = store.activeDraft, active.state.canCancel {
                     Button("Cancel local work", role: .destructive) {
                         Task { await store.cancel(active) }
@@ -52,6 +47,19 @@ struct RadrootsAddView: View {
             } footer: {
                 Text("Submit saves an immutable local snapshot first. If signing, media, or a relay is unavailable, the saved operation remains available to retry.")
             }
+        }
+        .accessibilityIdentifier("radroots.add.root")
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Button(submitLabel) { Task { await store.submit() } }
+                .accessibilityIdentifier("radroots.add.submit")
+                .accessibilityValue(submitAccessibilityValue)
+                .buttonStyle(.borderedProminent)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .padding(.bottom, 72)
+                .background(.bar)
+                .disabled(!store.canSubmit)
         }
         .disabled(store.isWorking)
         .overlay {
@@ -86,7 +94,6 @@ struct RadrootsAddView: View {
             RadrootsDraftsSheet(store: store)
         }
         .task { await store.start() }
-        .accessibilityIdentifier("radroots.add.root")
     }
 
     @ViewBuilder
@@ -217,6 +224,22 @@ struct RadrootsAddView: View {
     private var availableTypes: [RadrootsAddCommandType] {
         let types = store.schemas.map(\.commandType)
         return types.isEmpty ? RadrootsAddCommandType.allCases : types
+    }
+
+    private var submitAccessibilityValue: String {
+        if store.isWorking {
+            return "Working"
+        }
+        if let message = store.message {
+            if let code = store.lastFailureCode {
+                return "\(message) Error code \(code)"
+            }
+            return message
+        }
+        if let activeDraft = store.activeDraft {
+            return activeDraft.honestSummary
+        }
+        return store.canSubmit ? "Ready" : "Unavailable"
     }
 
     private var typeBinding: Binding<RadrootsAddCommandType> {

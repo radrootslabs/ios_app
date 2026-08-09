@@ -74,30 +74,56 @@ final class RadrootsRemoteQualificationUITests: XCTestCase {
         XCTAssertTrue(library.isEnabled)
         library.tap()
         let prepared = app.descendants(matching: .any).matching(
-            NSPredicate(format: "identifier BEGINSWITH 'radroots.add.media.'")
+            NSPredicate(
+                format: "identifier MATCHES %@",
+                #"radroots\.add\.media\.[0-9a-f]{64}"#
+            )
         ).firstMatch
         XCTAssertTrue(prepared.waitForExistence(timeout: 30))
 
         let submit = app.descendants(matching: .any)["radroots.add.submit"]
-        for _ in 0 ..< 5 where !submit.exists {
-            app.swipeUp()
+        let addRoot = app.descendants(matching: .any)["radroots.add.root"]
+        for _ in 0 ..< 8 {
+            if isUnobscured(submit, above: app.tabBars.firstMatch) {
+                break
+            }
+            addRoot.swipeUp()
         }
         guard submit.waitForExistence(timeout: 10),
-              waitUntilHittable(submit, timeout: 10)
+              submit.isEnabled,
+              waitUntilHittable(submit, timeout: 10),
+              isUnobscured(submit, above: app.tabBars.firstMatch)
         else {
-            return XCTFail("The Add submission control did not become hittable")
+            return XCTFail(
+                "The Add submission control did not become unobscured; "
+                    + submissionDiagnostics(app, submit: submit)
+            )
         }
-        let status = app.staticTexts.matching(
-            identifier: "radroots.add.status"
-        ).firstMatch
-        let priorStatusLabel = status.exists ? status.label : nil
-        submit.tap()
+
+        let priorSubmitValue = submit.value as? String
+        guard tapSubmitUntilWorkStarts(
+            app,
+            submit: submit,
+            priorSubmitValue: priorSubmitValue
+        ) else {
+            return XCTFail(
+                "The Add submission tap did not start local work; "
+                    + submissionDiagnostics(app, submit: submit)
+            )
+        }
         guard waitForWorkToFinish(
             app,
             submit: submit,
-            priorStatusLabel: priorStatusLabel
+            priorSubmitValue: priorSubmitValue
         ) else {
-            return XCTFail("The Add submission did not reach a terminal local state")
+            return XCTFail(
+                "The Add submission did not reach a terminal local state; "
+                    + submissionDiagnostics(app, submit: submit)
+            )
+        }
+        let terminalSubmitValue = submit.value as? String ?? "missing"
+        guard !terminalSubmitValue.contains("Error code") else {
+            return XCTFail("The Add submission failed locally; submit.value=\(terminalSubmitValue)")
         }
 
         guard openDrafts(app) else {
@@ -260,21 +286,74 @@ final class RadrootsRemoteQualificationUITests: XCTestCase {
     private func waitForWorkToFinish(
         _ app: XCUIApplication,
         submit: XCUIElement,
-        priorStatusLabel: String?
+        priorSubmitValue: String?
     ) -> Bool {
         let progress = app.descendants(matching: .any)["radroots.add.progress"]
-        let status = app.staticTexts.matching(
-            identifier: "radroots.add.status"
-        ).firstMatch
         let finished = NSPredicate { _, _ in
-            submit.exists
+            let submitValue = submit.value as? String
+            return submit.exists
                 && submit.isEnabled
                 && !progress.exists
-                && status.exists
-                && status.label != priorStatusLabel
+                && submitValue != priorSubmitValue
+                && submitValue != "Working"
         }
         let expectation = XCTNSPredicateExpectation(predicate: finished, object: app)
         return XCTWaiter.wait(for: [expectation], timeout: 180) == .completed
+    }
+
+    @MainActor
+    private func tapSubmitUntilWorkStarts(
+        _ app: XCUIApplication,
+        submit: XCUIElement,
+        priorSubmitValue: String?
+    ) -> Bool {
+        let progress = app.descendants(matching: .any)["radroots.add.progress"]
+        let started = NSPredicate { _, _ in
+            let submitValue = submit.value as? String
+            return progress.exists
+                || submitValue != priorSubmitValue
+        }
+
+        for _ in 0 ..< 3 {
+            submit.tap()
+            let expectation = XCTNSPredicateExpectation(predicate: started, object: app)
+            if XCTWaiter.wait(for: [expectation], timeout: 5) == .completed {
+                return true
+            }
+            guard waitUntilHittable(submit, timeout: 5),
+                  isUnobscured(submit, above: app.tabBars.firstMatch)
+            else {
+                return false
+            }
+        }
+        return false
+    }
+
+    @MainActor
+    private func isUnobscured(_ element: XCUIElement, above obstruction: XCUIElement) -> Bool {
+        guard element.exists, element.isEnabled, element.isHittable, obstruction.exists else {
+            return false
+        }
+        let frame = element.frame
+        return frame.height > 0
+            && frame.minY >= 0
+            && frame.maxY <= obstruction.frame.minY
+    }
+
+    @MainActor
+    private func submissionDiagnostics(
+        _ app: XCUIApplication,
+        submit: XCUIElement
+    ) -> String {
+        let progress = app.descendants(matching: .any)["radroots.add.progress"]
+        let status = app.staticTexts.matching(identifier: "radroots.add.status").firstMatch
+        let statusLabel = status.exists ? status.label : "missing"
+        let tabBar = app.tabBars.firstMatch
+        return "submit.exists=\(submit.exists), submit.enabled=\(submit.isEnabled), "
+            + "submit.hittable=\(submit.isHittable), submit.value=\(String(describing: submit.value)), "
+            + "submit.frame=\(submit.frame), "
+            + "tab_bar_top=\(tabBar.exists ? tabBar.frame.minY : -1), "
+            + "progress.exists=\(progress.exists), status=\(statusLabel)"
     }
 
     @MainActor
