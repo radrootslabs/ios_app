@@ -79,7 +79,14 @@ final class RadrootsRemoteQualificationUITests: XCTestCase {
         XCTAssertTrue(prepared.waitForExistence(timeout: 30))
 
         let submit = app.descendants(matching: .any)["radroots.add.submit"]
-        XCTAssertTrue(submit.waitForExistence(timeout: 10))
+        for _ in 0 ..< 5 where !submit.exists {
+            app.swipeUp()
+        }
+        guard submit.waitForExistence(timeout: 10),
+              waitUntilHittable(submit, timeout: 10)
+        else {
+            return XCTFail("The Add submission control did not become hittable")
+        }
         let status = app.staticTexts.matching(
             identifier: "radroots.add.status"
         ).firstMatch
