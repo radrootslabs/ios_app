@@ -186,6 +186,42 @@ final class RadrootsRemoteQualificationUITests: XCTestCase {
     }
 
     @MainActor
+    func testLocalCancellationPersistsAfterVerifiedUpload() throws {
+        let configuration = try QualificationConfiguration.environment()
+        let app = launchToRoot(configuration)
+        guard openAdd(app) != nil else {
+            return XCTFail("The Add bottom tab did not present the Add surface")
+        }
+        guard openDrafts(app) else {
+            return XCTFail("The Drafts sheet did not open for cancellation")
+        }
+
+        let cancel = app.buttons["Cancel"].firstMatch
+        XCTAssertTrue(cancel.waitForExistence(timeout: 20))
+        cancel.tap()
+        let cancelled = app.staticTexts.matching(
+            NSPredicate(format: "label == 'Cancelled'")
+        ).firstMatch
+        XCTAssertTrue(cancelled.waitForExistence(timeout: 20))
+        app.buttons["Done"].tap()
+
+        app.terminate()
+        app.launch()
+        reachRoot(app)
+        guard openAdd(app) != nil else {
+            return XCTFail("The Add bottom tab did not recover after cancellation")
+        }
+        guard openDrafts(app) else {
+            return XCTFail("The Drafts sheet did not reopen after cancellation")
+        }
+        let persistedCancelled = app.staticTexts.matching(
+            NSPredicate(format: "label == 'Cancelled'")
+        ).firstMatch
+        XCTAssertTrue(persistedCancelled.waitForExistence(timeout: 20))
+        app.buttons["Done"].tap()
+    }
+
+    @MainActor
     private func launchToRoot(_ configuration: QualificationConfiguration) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment = configuration.launchEnvironment
