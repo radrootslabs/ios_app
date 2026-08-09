@@ -222,6 +222,24 @@ final class RadrootsRemoteQualificationUITests: XCTestCase {
     }
 
     @MainActor
+    func testManualDeviceLockAndProtectedDataRecovery() throws {
+        let configuration = try QualificationConfiguration.environment()
+        let app = launchToRoot(configuration)
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 20))
+
+        XCUIDevice.shared.press(.home)
+        Thread.sleep(forTimeInterval: 60)
+
+        for _ in 0 ..< 24 {
+            app.activate()
+            if app.tabBars.firstMatch.waitForExistence(timeout: 5) {
+                return
+            }
+        }
+        XCTFail("Radroots did not recover after the physical device was unlocked")
+    }
+
+    @MainActor
     private func launchToRoot(_ configuration: QualificationConfiguration) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment = configuration.launchEnvironment
