@@ -9,6 +9,8 @@ enum RadrootsAddLoadState: Sendable, Equatable {
 
 @MainActor
 final class RadrootsAddStore: ObservableObject {
+    private static let blossomAuthorizationBackdateSeconds: UInt64 = 5
+
     @Published private(set) var schemas: [RadrootsAddSchema] = []
     @Published private(set) var drafts: [RadrootsDraftStatus] = []
     @Published private(set) var activeDraft: RadrootsDraftStatus?
@@ -358,13 +360,17 @@ final class RadrootsAddStore: ObservableObject {
                 )
             }
             let currentSeconds = now()
+            let authorizationCreatedAt = currentSeconds
+                > Self.blossomAuthorizationBackdateSeconds
+                ? currentSeconds - Self.blossomAuthorizationBackdateSeconds
+                : 0
             status = try await runtimeClient.uploadDraftMedia(
                 input: RadrootsBlossomUploadInput(
                     draftID: status.id,
                     expectedRevision: status.revision,
                     media: handle,
                     authorizationContent: "Upload exact Radroots image",
-                    authorizationCreatedAtUnixSeconds: currentSeconds,
+                    authorizationCreatedAtUnixSeconds: authorizationCreatedAt,
                     authorizationLifetimeSeconds: 300,
                     operationID: Self.draftID(),
                     artifactID: Self.draftID(),
@@ -471,6 +477,7 @@ final class RadrootsAddStore: ObservableObject {
             }
         } catch {
             if requestedGeneration == generation {
+                await refreshBlossomSnapshot()
                 message = Self.message(for: error)
             }
         }

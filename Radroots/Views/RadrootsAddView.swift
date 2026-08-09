@@ -3,6 +3,7 @@ import SwiftUI
 struct RadrootsAddView: View {
     @ObservedObject var store: RadrootsAddStore
     @State private var showsDrafts = false
+    @FocusState private var isContentEditorFocused: Bool
 
     var body: some View {
         Form {
@@ -74,6 +75,11 @@ struct RadrootsAddView: View {
                     Label("New", systemImage: "square.and.pencil")
                 }
                 .accessibilityIdentifier("radroots.add.new")
+            }
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { isContentEditorFocused = false }
+                    .accessibilityIdentifier("radroots.add.keyboard.done")
             }
         }
         .sheet(isPresented: $showsDrafts) {
@@ -164,6 +170,10 @@ struct RadrootsAddView: View {
                     Button("Remove photo", role: .destructive) { store.removeMedia(id: media.id) }
                 }
                 .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("radroots.add.media.\(media.sha256)")
+                .accessibilityValue(
+                    "sha256 \(media.sha256), \(media.byteSize) bytes, \(media.width) by \(media.height)"
+                )
             }
 
             HStack {
@@ -192,6 +202,7 @@ struct RadrootsAddView: View {
         ZStack(alignment: .topLeading) {
             TextEditor(text: required(\.content))
                 .frame(minHeight: 110)
+                .focused($isContentEditorFocused)
                 .accessibilityIdentifier("radroots.add.content")
             if store.form.content.isEmpty {
                 Text(prompt)
@@ -318,6 +329,14 @@ struct RadrootsDraftsSheet: View {
                             Text(draft.state.label).font(.caption).foregroundStyle(.secondary)
                         }
                         Text(draft.honestSummary).font(.subheadline)
+                        if !draft.media.isEmpty {
+                            Text(mediaSummary(draft.media))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .accessibilityIdentifier(
+                                    "radroots.add.draft.media_status.\(draft.id)"
+                                )
+                        }
                         HStack {
                             if draft.form != nil {
                                 Button(draft.state.isEditable ? "Reopen" : "View") {
@@ -346,5 +365,14 @@ struct RadrootsDraftsSheet: View {
             }
         }
         .accessibilityIdentifier("radroots.add.drafts.sheet")
+    }
+
+    private func mediaSummary(_ values: [RadrootsDraftMediaStatus]) -> String {
+        let verified = values.count(where: { $0.stage == .verified })
+        let orphaned = values.count(where: { $0.possibleOrphan })
+        if orphaned > 0 {
+            return "\(verified) of \(values.count) photos verified; \(orphaned) possible orphan"
+        }
+        return "\(verified) of \(values.count) photos verified"
     }
 }

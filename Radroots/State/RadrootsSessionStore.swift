@@ -43,6 +43,7 @@ actor RadrootsSessionStore {
     private let runtimeClient: RadrootsRuntimeClient
     private let roots: RadrootsAppleFileRoots
     private let protectedData: RadrootsProtectedDataMonitor
+    private let automatesQualificationIdentity: Bool
     private var generation: UInt64 = 0
     private var phase: RadrootsSessionPhase = .starting
 
@@ -51,13 +52,15 @@ actor RadrootsSessionStore {
         identityStore: RadrootsIdentityStore,
         runtimeClient: RadrootsRuntimeClient,
         roots: RadrootsAppleFileRoots,
-        protectedData: RadrootsProtectedDataMonitor
+        protectedData: RadrootsProtectedDataMonitor,
+        automatesQualificationIdentity: Bool = false
     ) {
         self.configurationStore = configurationStore
         self.identityStore = identityStore
         self.runtimeClient = runtimeClient
         self.roots = roots
         self.protectedData = protectedData
+        self.automatesQualificationIdentity = automatesQualificationIdentity
     }
 
     @MainActor
@@ -68,14 +71,18 @@ actor RadrootsSessionStore {
         guard let bundleIdentifier = bundle.bundleIdentifier else {
             throw RadrootsConfigurationError.missing("bundle_identifier")
         }
-        let servicePrefix = try requiredString(
-            "RADROOTS_FIELD_IOS_KEYCHAIN_SERVICE_PREFIX",
-            bundle: bundle
+        let qualification = try RadrootsRemoteQualificationEnvironment.current()
+        let servicePrefix = try qualification?.keychainServicePrefix ?? requiredString(
+            "RADROOTS_FIELD_IOS_KEYCHAIN_SERVICE_PREFIX", bundle: bundle
         )
         let bootstrap = try RadrootsConfigurationBootstrap(
-            runtimeMode: requiredString("RADROOTS_FIELD_IOS_RUNTIME_MODE", bundle: bundle),
-            relayURLs: array("RADROOTS_FIELD_IOS_NOSTR_RELAY_URLS", bundle: bundle),
-            blossomOrigins: array("RADROOTS_FIELD_IOS_BLOSSOM_ORIGINS", bundle: bundle),
+            runtimeMode: qualification == nil
+                ? requiredString("RADROOTS_FIELD_IOS_RUNTIME_MODE", bundle: bundle)
+                : "production",
+            relayURLs: qualification?.relayURLs
+                ?? array("RADROOTS_FIELD_IOS_NOSTR_RELAY_URLS", bundle: bundle),
+            blossomOrigins: qualification?.blossomOrigins
+                ?? array("RADROOTS_FIELD_IOS_BLOSSOM_ORIGINS", bundle: bundle),
             keychainServicePrefix: servicePrefix,
             bundleIdentifier: bundleIdentifier,
             appMetadata: RadrootsRuntimeAppMetadata(
@@ -95,11 +102,13 @@ actor RadrootsSessionStore {
             configurationStore: RadrootsConfigurationStore(bootstrap: bootstrap, roots: roots),
             identityStore: .production(
                 servicePrefix: servicePrefix,
-                protectedDataAvailable: { protectedData.isAvailable() }
+                protectedDataAvailable: { protectedData.isAvailable() },
+                qualification: qualification
             ),
             runtimeClient: runtimeClient,
             roots: roots,
-            protectedData: protectedData
+            protectedData: protectedData,
+            automatesQualificationIdentity: qualification != nil
         )
     }
 
@@ -132,6 +141,11 @@ actor RadrootsSessionStore {
             case .absent:
                 phase = .identityRequired
             case .locked:
+                #if DEBUG
+                    if automatesQualificationIdentity {
+                        return await unlockIdentity()
+                    }
+                #endif
                 phase = .identityLocked(identity)
             case .protectedDataUnavailable:
                 phase = .protectedDataUnavailable(identity)

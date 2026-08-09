@@ -1,0 +1,407 @@
+import XCTest
+
+final class RadrootsRemoteQualificationUITests: XCTestCase {
+    private static let receiptName = "radroots-remote-qualification-bootstrap.json"
+
+    @MainActor
+    func testBootstrapIdentityWithoutInteractiveAuthentication() throws {
+        let configuration = try QualificationConfiguration.environment()
+        let app = launchToRoot(configuration)
+        let publicKey = try readPublicKey(app)
+        try writeBootstrapReceipt(configuration: configuration, publicKey: publicKey)
+
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
+
+        app.terminate()
+        app.launch()
+        reachRoot(app)
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 20))
+    }
+
+    @MainActor
+    func testRemoteBlossomUploadAndRecovery() throws {
+        let configuration = try QualificationConfiguration.environment()
+        let app = launchToRoot(configuration)
+        let marker = "Radroots remote qualification \(configuration.runID)"
+
+        guard let type = openAdd(app) else {
+            return XCTFail("The Add bottom tab did not present the Add surface")
+        }
+        let newDraft = app.buttons["radroots.add.new"]
+        XCTAssertTrue(newDraft.waitForExistence(timeout: 10))
+        newDraft.tap()
+
+        for _ in 0 ..< 3 where !app.buttons["Photo update"].exists {
+            type.tap()
+            _ = app.buttons["Photo update"].waitForExistence(timeout: 10)
+        }
+        let photoUpdate = app.buttons["Photo update"]
+        guard photoUpdate.exists else {
+            return XCTFail("The Add type picker did not present Photo update")
+        }
+        guard waitUntilHittable(photoUpdate, timeout: 10) else {
+            return XCTFail("Photo update did not become hittable")
+        }
+
+        let content = app.descendants(matching: .any)["radroots.add.content"]
+        var selectedPhotoUpdate = false
+        for _ in 0 ..< 3 where !selectedPhotoUpdate {
+            app.buttons["Photo update"].tap()
+            selectedPhotoUpdate = waitForValue(type, value: "Photo update", timeout: 10)
+            if !selectedPhotoUpdate, !app.buttons["Photo update"].exists {
+                type.tap()
+                _ = app.buttons["Photo update"].waitForExistence(timeout: 10)
+            }
+        }
+        guard selectedPhotoUpdate else {
+            return XCTFail("Photo update selection did not update the Add composer type")
+        }
+        XCTAssertTrue(content.waitForExistence(timeout: 10))
+        guard waitUntilHittable(content, timeout: 10) else {
+            return XCTFail("Photo update content did not become hittable")
+        }
+        content.tap()
+        content.typeText(marker)
+        let keyboardDone = app.buttons["radroots.add.keyboard.done"]
+        XCTAssertTrue(keyboardDone.waitForExistence(timeout: 10))
+        keyboardDone.tap()
+        XCTAssertFalse(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+
+        let library = app.descendants(matching: .any)["radroots.add.media.library"]
+        XCTAssertTrue(library.waitForExistence(timeout: 10))
+        XCTAssertTrue(library.isEnabled)
+        library.tap()
+        let prepared = app.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier BEGINSWITH 'radroots.add.media.'")
+        ).firstMatch
+        XCTAssertTrue(prepared.waitForExistence(timeout: 30))
+
+        let submit = app.descendants(matching: .any)["radroots.add.submit"]
+        XCTAssertTrue(submit.waitForExistence(timeout: 10))
+        let status = app.staticTexts.matching(
+            identifier: "radroots.add.status"
+        ).firstMatch
+        let priorStatusLabel = status.exists ? status.label : nil
+        submit.tap()
+        guard waitForWorkToFinish(
+            app,
+            submit: submit,
+            priorStatusLabel: priorStatusLabel
+        ) else {
+            return XCTFail("The Add submission did not reach a terminal local state")
+        }
+
+        guard openDrafts(app) else {
+            return XCTFail("The Drafts sheet did not open after the upload attempt")
+        }
+        let mediaStatus = app.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier BEGINSWITH 'radroots.add.draft.media_status.'")
+        ).firstMatch
+        guard mediaStatus.waitForExistence(timeout: 20) else {
+            app.buttons["Done"].tap()
+            let evidence = readBlossomFailureEvidence(app)
+            XCTFail("Draft media status was unavailable after upload; \(evidence)")
+            return
+        }
+        let mediaStatusLabel = mediaStatus.label
+        guard mediaStatusLabel.contains("1 of 1 photos verified") else {
+            app.buttons["Done"].tap()
+            let evidence = readBlossomFailureEvidence(app)
+            XCTFail(
+                "Remote Blossom upload was not verified; media=\(mediaStatusLabel); \(evidence)"
+            )
+            return
+        }
+        app.buttons["Done"].tap()
+
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
+
+        app.terminate()
+        app.launch()
+        reachRoot(app)
+        guard openAdd(app) != nil else {
+            return XCTFail("The Add bottom tab did not recover after relaunch")
+        }
+        app.buttons["radroots.add.drafts"].tap()
+        XCTAssertTrue(
+            app.descendants(matching: .any).matching(
+                NSPredicate(format: "label CONTAINS '1 of 1 photos verified'")
+            ).firstMatch.waitForExistence(timeout: 20)
+        )
+        app.buttons["Done"].tap()
+
+        if !configuration.relayURLs.isEmpty {
+            app.tabBars.buttons["Today"].tap()
+            let published = app.descendants(matching: .any).matching(
+                NSPredicate(format: "label CONTAINS %@", marker)
+            ).firstMatch
+            XCTAssertTrue(published.waitForExistence(timeout: 30))
+        }
+    }
+
+    @MainActor
+    private func launchToRoot(_ configuration: QualificationConfiguration) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment = configuration.launchEnvironment
+        app.launch()
+        reachRoot(app)
+        return app
+    }
+
+    @MainActor
+    private func reachRoot(_ app: XCUIApplication) {
+        for _ in 0 ..< 6 {
+            if app.tabBars.firstMatch.waitForExistence(timeout: 3) {
+                return
+            }
+            for identifier in [
+                "radroots.identity.create",
+                "radroots.identity.unlock",
+                "radroots.configuration.reconfigure",
+                "radroots.identity.recover",
+                "radroots.runtime.retry",
+            ] {
+                let action = app.descendants(matching: .any)[identifier]
+                if action.exists, action.isHittable {
+                    action.tap()
+                    break
+                }
+            }
+        }
+        XCTFail("Radroots did not reach the two-tab root without interactive authentication")
+    }
+
+    @MainActor
+    private func readPublicKey(_ app: XCUIApplication) throws -> String {
+        app.tabBars.buttons["Today"].tap()
+        let account = app.descendants(matching: .any)["radroots.support.account"]
+        XCTAssertTrue(account.waitForExistence(timeout: 10))
+        account.tap()
+
+        let settings = app.descendants(matching: .any)["radroots.support.settings"]
+        for _ in 0 ..< 5 where !settings.exists {
+            app.swipeUp()
+        }
+        XCTAssertTrue(settings.waitForExistence(timeout: 20))
+        settings.tap()
+
+        let publicKey = app.descendants(matching: .any)[
+            "radroots.settings.identity.public_key"
+        ]
+        XCTAssertTrue(publicKey.waitForExistence(timeout: 10))
+        guard let value = publicKey.value as? String,
+              value.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil
+        else {
+            throw QualificationError.invalidPublicKey
+        }
+        return value
+    }
+
+    @MainActor
+    private func readBlossomFailureEvidence(_ app: XCUIApplication) -> String {
+        app.tabBars.buttons["Today"].tap()
+        let account = app.descendants(matching: .any)["radroots.support.account"]
+        guard account.waitForExistence(timeout: 10) else { return "settings=unavailable" }
+        account.tap()
+
+        let settings = app.descendants(matching: .any)["radroots.support.settings"]
+        for _ in 0 ..< 5 where !settings.exists {
+            app.swipeUp()
+        }
+        guard settings.waitForExistence(timeout: 20) else { return "settings=unavailable" }
+        settings.tap()
+
+        let httpStatus = app.descendants(matching: .any)[
+            "radroots.settings.blossom.http_status"
+        ]
+        let errorCode = app.descendants(matching: .any)[
+            "radroots.settings.blossom.error_code"
+        ]
+        let serverErrorCode = app.descendants(matching: .any)[
+            "radroots.settings.blossom.server_error_code"
+        ]
+        for _ in 0 ..< 6 where !httpStatus.exists || !errorCode.exists || !serverErrorCode.exists {
+            app.swipeUp()
+        }
+        _ = httpStatus.waitForExistence(timeout: 10)
+        _ = errorCode.waitForExistence(timeout: 10)
+        _ = serverErrorCode.waitForExistence(timeout: 10)
+        return "http=\(httpStatus.exists ? httpStatus.label : "missing"), "
+            + "error=\(errorCode.exists ? errorCode.label : "missing"), "
+            + "server=\(serverErrorCode.exists ? serverErrorCode.label : "missing")"
+    }
+
+    @MainActor
+    private func openAdd(_ app: XCUIApplication) -> XCUIElement? {
+        let add = app.tabBars.buttons["Add"]
+        guard add.waitForExistence(timeout: 10) else { return nil }
+        let type = app.descendants(matching: .any)["radroots.add.type"]
+        for _ in 0 ..< 3 {
+            add.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            if type.waitForExistence(timeout: 10) {
+                return type
+            }
+        }
+        return nil
+    }
+
+    @MainActor
+    private func waitForWorkToFinish(
+        _ app: XCUIApplication,
+        submit: XCUIElement,
+        priorStatusLabel: String?
+    ) -> Bool {
+        let progress = app.descendants(matching: .any)["radroots.add.progress"]
+        let status = app.staticTexts.matching(
+            identifier: "radroots.add.status"
+        ).firstMatch
+        let finished = NSPredicate { _, _ in
+            submit.exists
+                && submit.isEnabled
+                && !progress.exists
+                && status.exists
+                && status.label != priorStatusLabel
+        }
+        let expectation = XCTNSPredicateExpectation(predicate: finished, object: app)
+        return XCTWaiter.wait(for: [expectation], timeout: 180) == .completed
+    }
+
+    @MainActor
+    private func openDrafts(_ app: XCUIApplication) -> Bool {
+        let drafts = app.buttons["radroots.add.drafts"]
+        guard drafts.waitForExistence(timeout: 10) else { return false }
+        let sheet = app.descendants(matching: .any)["radroots.add.drafts.sheet"]
+        for _ in 0 ..< 3 {
+            drafts.tap()
+            if sheet.waitForExistence(timeout: 10) {
+                return true
+            }
+        }
+        return false
+    }
+
+    @MainActor
+    private func waitUntilHittable(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
+        let predicate = NSPredicate(format: "exists == true AND hittable == true")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
+    }
+
+    @MainActor
+    private func waitForValue(
+        _ element: XCUIElement,
+        value: String,
+        timeout: TimeInterval
+    ) -> Bool {
+        let predicate = NSPredicate { object, _ in
+            guard let object = object as? XCUIElement else { return false }
+            return object.exists && object.value as? String == value
+        }
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
+    }
+
+    private func writeBootstrapReceipt(
+        configuration: QualificationConfiguration,
+        publicKey: String
+    ) throws {
+        let receipt = BootstrapReceipt(
+            schema: "radroots-ios-remote-qualification-bootstrap-v1",
+            schemaVersion: 1,
+            runID: configuration.runID,
+            publicKey: publicKey,
+            relayURLs: configuration.relayURLs,
+            blossomOrigins: configuration.blossomOrigins,
+            privateKeyPresent: false,
+            interactiveAuthenticationRequired: false
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let data = try encoder.encode(receipt)
+        let documents = try XCTUnwrap(
+            FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        )
+        try data.write(
+            to: documents.appendingPathComponent(Self.receiptName),
+            options: .atomic
+        )
+        let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+        attachment.name = Self.receiptName
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+}
+
+private struct QualificationConfiguration {
+    static let enabledKey = "RADROOTS_IOS_UI_TEST_REMOTE"
+    static let runIDKey = "RADROOTS_IOS_UI_TEST_RUN_ID"
+    static let relayURLsKey = "RADROOTS_IOS_UI_TEST_NOSTR_RELAY_URLS"
+    static let blossomOriginsKey = "RADROOTS_IOS_UI_TEST_BLOSSOM_ORIGINS"
+    static let mediaRelativePathKey = "RADROOTS_IOS_UI_TEST_MEDIA_RELATIVE_PATH"
+
+    let runID: String
+    let relayURLs: [String]
+    let blossomOrigins: [String]
+
+    var launchEnvironment: [String: String] {
+        [
+            Self.enabledKey: "1",
+            Self.runIDKey: runID,
+            Self.relayURLsKey: relayURLs.joined(separator: ","),
+            Self.blossomOriginsKey: blossomOrigins.joined(separator: ","),
+            Self.mediaRelativePathKey: "qualification/input.png",
+            "RUST_BACKTRACE": "1",
+        ]
+    }
+
+    static func environment(
+        _ values: [String: String] = ProcessInfo.processInfo.environment
+    ) throws -> Self {
+        let bundle = Bundle(for: RadrootsRemoteQualificationUITests.self)
+        let runIDValue = values[runIDKey]
+            ?? bundle.object(forInfoDictionaryKey: runIDKey) as? String
+        let relayValue = values[relayURLsKey]
+            ?? bundle.object(forInfoDictionaryKey: relayURLsKey) as? String
+        let blossomValue = values[blossomOriginsKey]
+            ?? bundle.object(forInfoDictionaryKey: blossomOriginsKey) as? String
+        if runIDValue?.isEmpty != false, blossomValue?.isEmpty != false {
+            throw XCTSkip("remote qualification inputs were not selected")
+        }
+        guard let runID = runIDValue,
+              runID.range(of: "^[a-z0-9][a-z0-9-]{6,62}[a-z0-9]$", options: .regularExpression) != nil,
+              let blossom = blossomValue,
+              !blossom.isEmpty
+        else {
+            throw QualificationError.missingEnvironment
+        }
+        return Self(
+            runID: runID,
+            relayURLs: separated(relayValue),
+            blossomOrigins: separated(blossom)
+        )
+    }
+
+    private static func separated(_ value: String?) -> [String] {
+        (value ?? "").split(separator: ",").map(String.init).filter { !$0.isEmpty }
+    }
+}
+
+private struct BootstrapReceipt: Codable {
+    let schema: String
+    let schemaVersion: UInt16
+    let runID: String
+    let publicKey: String
+    let relayURLs: [String]
+    let blossomOrigins: [String]
+    let privateKeyPresent: Bool
+    let interactiveAuthenticationRequired: Bool
+}
+
+private enum QualificationError: Error {
+    case missingEnvironment
+    case invalidPublicKey
+}

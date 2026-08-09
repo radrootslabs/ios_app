@@ -138,18 +138,20 @@ generate: build
 	cp $(GENERATED_DIR)/$(FFI_OUTPUT_NAME).modulemap $(HEADERS_DIR)/module.modulemap
 
 package: generate
-	mkdir -p $(ARTIFACTS_DIR)
-	rm -rf $(ARTIFACTS_DIR)/$(FFI_OUTPUT_NAME).xcframework
+	mkdir -p $(ARTIFACTS_DIR) $(OUT_DIR)
+	@staging_root=$$(mktemp -d "$(OUT_DIR)/xcframework.XXXXXX"); \
+	trap 'rm -rf "$$staging_root"' EXIT; \
+	staging="$$staging_root/$(FFI_OUTPUT_NAME).xcframework"; \
 	xcodebuild -create-xcframework \
 		-library $(LIB_DEVICE) -headers $(HEADERS_DIR) \
 		-library $(LIB_SIMULATOR) -headers $(HEADERS_DIR) \
-		-output $(ARTIFACTS_DIR)/$(FFI_OUTPUT_NAME).xcframework
-	plutil -convert json -o $(OUT_DIR)/xcframework-info.json \
-		$(ARTIFACTS_DIR)/$(FFI_OUTPUT_NAME).xcframework/Info.plist
+		-output "$$staging"; \
+	plutil -convert json -o "$$staging_root/info.json" "$$staging/Info.plist"; \
 	jq -S '.AvailableLibraries |= sort_by(.LibraryIdentifier)' \
-		$(OUT_DIR)/xcframework-info.json > $(OUT_DIR)/xcframework-info.sorted.json
-	plutil -convert xml1 -o $(ARTIFACTS_DIR)/$(FFI_OUTPUT_NAME).xcframework/Info.plist \
-		$(OUT_DIR)/xcframework-info.sorted.json
+		"$$staging_root/info.json" > "$$staging_root/info.sorted.json"; \
+	plutil -convert xml1 -o "$$staging/Info.plist" "$$staging_root/info.sorted.json"; \
+	rm -rf $(ARTIFACTS_DIR)/$(FFI_OUTPUT_NAME).xcframework; \
+	mv "$$staging" $(ARTIFACTS_DIR)/$(FFI_OUTPUT_NAME).xcframework
 
 install: package
 	mkdir -p $(GENERATED_SWIFT_DIR)

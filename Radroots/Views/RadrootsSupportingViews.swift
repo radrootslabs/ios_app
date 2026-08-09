@@ -316,6 +316,8 @@ struct RadrootsSettingsView: View {
             Section("Identity") {
                 LabeledContent("Local signer", value: snapshot.identity.hostSignerConfigured ? "Ready" : "Needs attention")
                 LabeledContent("Public key", value: abbreviatedPublicKey)
+                    .accessibilityIdentifier("radroots.settings.identity.public_key")
+                    .accessibilityValue(snapshot.identity.publicKeyHex)
             }
             Section("Nostr relays") {
                 if snapshot.relay?.relays.isEmpty != false {
@@ -352,9 +354,15 @@ struct RadrootsSettingsView: View {
                     }
                     if let status = evidence.httpStatus {
                         LabeledContent("HTTP status", value: String(status))
+                            .accessibilityIdentifier("radroots.settings.blossom.http_status")
                     }
                     if let errorCode = evidence.errorCode {
                         LabeledContent("Last error", value: display(errorCode))
+                            .accessibilityIdentifier("radroots.settings.blossom.error_code")
+                    }
+                    if let serverErrorCode = evidence.serverErrorCode {
+                        LabeledContent("Server error", value: display(serverErrorCode))
+                            .accessibilityIdentifier("radroots.settings.blossom.server_error_code")
                     }
                     if evidence.attempts > 0 {
                         LabeledContent("Attempts", value: String(evidence.attempts))

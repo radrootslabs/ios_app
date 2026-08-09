@@ -27,6 +27,16 @@ private final class RadrootsGeneratedHostSigner: RadrootsHostSigner, @unchecked 
                 digest: request.eventIdDigest
             )
         )
+        #if DEBUG
+            if request.purpose == .blossomUpload,
+               let signatureHex = outcome.signatureHex
+            {
+                try? RadrootsRemoteQualificationEvidence.recordBlossomAuthorization(
+                    request: request,
+                    signatureHex: signatureHex
+                )
+            }
+        #endif
         return HostSigningResult(
             schemaVersion: 1,
             outcome: outcome.generatedOutcome,
@@ -581,6 +591,7 @@ private extension FfiBlossomEvidenceRecord {
             observedAtUnixMilliseconds: observedAtUnixMs,
             httpStatus: httpStatus,
             errorCode: errorCode,
+            serverErrorCode: serverErrorCode,
             errorPhase: errorPhase,
             retryable: retryable,
             possibleOrphan: possibleOrphan,

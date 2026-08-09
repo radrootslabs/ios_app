@@ -79,18 +79,38 @@ actor RadrootsIdentityStore {
     @MainActor
     static func production(
         servicePrefix: String,
-        protectedDataAvailable: @escaping @Sendable () -> Bool
+        protectedDataAvailable: @escaping @Sendable () -> Bool,
+        qualification: RadrootsRemoteQualificationEnvironment? = nil
     ) throws -> RadrootsIdentityStore {
         let namespace = "radroots_identity_v1"
         let secureStore = RadrootsAppleKeychainSecureStore(servicePrefix: servicePrefix)
+        let configuration: RadrootsIdentityCustodyConfiguration
+        let userPresence: any RadrootsUserPresence
+        #if DEBUG
+            if qualification != nil {
+                configuration = try RadrootsIdentityCustodyConfiguration(
+                    namespace: namespace,
+                    secretPolicy: .secureLocalSecret
+                )
+                userPresence = RadrootsRemoteQualificationUserPresence()
+            } else {
+                configuration = try RadrootsIdentityCustodyConfiguration(namespace: namespace)
+                userPresence = RadrootsAppleUserPresence()
+            }
+        #else
+            _ = qualification
+            configuration = try RadrootsIdentityCustodyConfiguration(namespace: namespace)
+            userPresence = RadrootsAppleUserPresence()
+        #endif
         let custody = try RadrootsIdentityCustody(
-            configuration: RadrootsIdentityCustodyConfiguration(namespace: namespace),
+            configuration: configuration,
             secureStore: secureStore,
             metadataStore: RadrootsAppleIdentityMetadataStore(
                 namespace: namespace,
-                keyPrefix: "org.radroots.ios.identity"
+                keyPrefix: qualification?.identityMetadataKeyPrefix
+                    ?? "org.radroots.ios.identity"
             ),
-            userPresence: RadrootsAppleUserPresence(),
+            userPresence: userPresence,
             protectedData: RadrootsProtectedDataProvider {
                 protectedDataAvailable() ? .available : .unavailable
             }
@@ -269,7 +289,7 @@ private final class RadrootsAppleCustodySigner: RadrootsRuntimeSigner, @unchecke
         do {
             let result = try await custody.sign(
                 RadrootsOpaqueSignRequest(
-                    operationID: request.signerRequestID,
+                    operationID: request.operationID,
                     signerHandle: signerHandle,
                     publicKeyHex: request.publicKeyHex,
                     digest: request.digest,

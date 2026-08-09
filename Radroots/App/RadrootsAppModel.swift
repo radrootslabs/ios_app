@@ -17,6 +17,7 @@ final class RadrootsAppModel: ObservableObject {
     private let lifecycleCoordinator: RadrootsLifecycleCoordinator
     private var generation: UInt64 = 0
     private var lifecycleRegistered = false
+    private var sessionOperationsInFlight = 0
     private let isShellUITest: Bool
 
     init(
@@ -135,6 +136,10 @@ final class RadrootsAppModel: ObservableObject {
 
     func resume() async {
         await ensureLifecycleRegistration()
+        guard sessionOperationsInFlight == 0 else {
+            await lifecycleCoordinator.record("ios.lifecycle.resume_coalesced")
+            return
+        }
         if case .running = phase {
             await todayStore?.start()
             await addStore?.start()
@@ -179,6 +184,8 @@ final class RadrootsAppModel: ObservableObject {
         _ operation: @escaping @Sendable (RadrootsSessionStore) async -> Phase
     ) async {
         guard !isShellUITest else { return }
+        sessionOperationsInFlight += 1
+        defer { sessionOperationsInFlight -= 1 }
         generation &+= 1
         let requestedGeneration = generation
         if showsStarting {

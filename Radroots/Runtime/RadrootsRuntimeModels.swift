@@ -21,6 +21,15 @@ enum RadrootsBlossomEndpointAuthority: String, Codable, Sendable, Equatable {
     case publicWebPKI = "public_web_pki"
     case loopbackDevelopment = "loopback_development"
     case privateNetworkDevelopment = "private_network_development"
+
+    init?(runtimeValue: String) {
+        switch runtimeValue {
+        case "public_webpki": self = .publicWebPKI
+        case "loopback_development": self = .loopbackDevelopment
+        case "private_network_development": self = .privateNetworkDevelopment
+        default: return nil
+        }
+    }
 }
 
 struct RadrootsBlossomEndpointConfiguration: Codable, Sendable, Equatable {
@@ -49,6 +58,7 @@ struct RadrootsBlossomEvidence: Sendable, Equatable {
     let observedAtUnixMilliseconds: UInt64?
     let httpStatus: UInt16?
     let errorCode: String?
+    let serverErrorCode: String?
     let errorPhase: String?
     let retryable: Bool
     let possibleOrphan: Bool

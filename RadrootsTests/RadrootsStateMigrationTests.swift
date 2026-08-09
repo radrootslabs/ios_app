@@ -251,6 +251,39 @@ final class RadrootsStateMigrationTests: XCTestCase {
         )
     }
 
+    func testCanonicalPublicWebPkiRuntimeLabelPreservesStoredFormat() async throws {
+        let fixture = try StateFixture()
+        defer { fixture.remove() }
+        let bootstrap = RadrootsConfigurationBootstrap(
+            runtimeMode: "production",
+            relayURLs: [],
+            blossomOrigins: ["https://media.example"],
+            keychainServicePrefix: fixture.bootstrap.keychainServicePrefix,
+            bundleIdentifier: fixture.bootstrap.bundleIdentifier,
+            appMetadata: fixture.bootstrap.appMetadata
+        )
+        let store = RadrootsConfigurationStore(bootstrap: bootstrap, roots: fixture.roots)
+        let selected = try await store.load()
+
+        try await store.confirmCanonicalBlossomConfiguration(
+            RadrootsBlossomConfigurationStatus(
+                schemaVersion: 1,
+                hostKind: "physical_device",
+                endpointAuthority: "public_webpki",
+                primaryOrigin: "https://media.example",
+                fallbackOrigins: [],
+                configFingerprint: String(repeating: "e", count: 64)
+            ),
+            expectedGeneration: selected.generation
+        )
+
+        let persisted = try configurationObject(
+            RadrootsAppleFileAccess(roots: fixture.roots)
+        )
+        let blossom = try XCTUnwrap(persisted["blossom"] as? [String: Any])
+        XCTAssertEqual(blossom["endpointAuthority"] as? String, "public_web_pki")
+    }
+
     func testStoredBlossomAuthorityDriftRecoversWithinProfile() async throws {
         let fixture = try StateFixture()
         defer { fixture.remove() }
@@ -416,6 +449,44 @@ final class RadrootsStateMigrationTests: XCTestCase {
         } catch {
             XCTAssertEqual(error as? RadrootsIdentityStoreError, .corruptLegacyMetadata)
         }
+    }
+
+    func testRuntimeSignerUsesCanonicalOperationIDInsteadOfSignerRequestDigest() async throws {
+        let secureStore = InMemorySecureStore()
+        let custody = try RadrootsIdentityCustody(
+            configuration: RadrootsIdentityCustodyConfiguration(
+                namespace: "radroots_identity_v1",
+                secretPolicy: .secureLocalSecret
+            ),
+            secureStore: secureStore,
+            metadataStore: InMemoryIdentityMetadataStore(),
+            userPresence: AllowingUserPresence()
+        )
+        let servicePrefix = "org.radroots.tests.signer.\(UUID().uuidString.lowercased())"
+        let store = RadrootsIdentityStore(
+            custody: custody,
+            secureStore: secureStore,
+            servicePrefix: servicePrefix
+        )
+        let identity = try await store.create()
+        let signer = try await store.signer(for: identity)
+        let operationID = UUID().uuidString.lowercased()
+
+        let outcome = await signer.sign(
+            RadrootsRuntimeSigningRequest(
+                operationID: operationID,
+                signerRequestID: String(repeating: "ab", count: 32),
+                publicKeyHex: try XCTUnwrap(identity.publicKeyHex),
+                purpose: .blossomUpload,
+                deadlineUnixMilliseconds: UInt64(Date().timeIntervalSince1970 * 1000) + 60_000,
+                digest: Data(repeating: 0xcd, count: 32)
+            )
+        )
+
+        guard case let .signed(signatureHex) = outcome else {
+            return XCTFail("The custody signer rejected the canonical runtime operation ID")
+        }
+        XCTAssertEqual(signatureHex.count, 128)
     }
 }
 

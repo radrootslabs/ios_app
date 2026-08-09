@@ -270,7 +270,7 @@ actor RadrootsConfigurationStore {
         case let (.some(selected), .some(canonical)):
             guard let hostKind = RadrootsBlossomHostKind(rawValue: canonical.hostKind),
                   let endpointAuthority = RadrootsBlossomEndpointAuthority(
-                      rawValue: canonical.endpointAuthority
+                      runtimeValue: canonical.endpointAuthority
                   ),
                   hostKind == selected.hostKind,
                   endpointAuthority == selected.endpointAuthority,

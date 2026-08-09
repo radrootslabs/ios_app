@@ -31,6 +31,8 @@ final class RadrootsAddStoreTests: XCTestCase {
                     store.form.media.first?.remoteURL,
                     "http://127.0.0.1:3000/\(String(repeating: "0", count: 64)).png"
                 )
+                let authorizationCreatedAt = await backend.lastUploadAuthorizationCreatedAt()
+                XCTAssertEqual(authorizationCreatedAt, 1_799_999_995)
             }
         }
 
@@ -282,6 +284,7 @@ private actor AddBackend: RadrootsRuntimeBackend {
     private let advanceOffline: Bool
     private let saveDelayNanoseconds: UInt64
     private var values: [String: RadrootsDraftStatus] = [:]
+    private var uploadAuthorizationCreatedAt: UInt64?
     private var closed = false
 
     init(advanceOffline: Bool = false, saveDelayNanoseconds: UInt64 = 0) {
@@ -397,7 +400,7 @@ private actor AddBackend: RadrootsRuntimeBackend {
 
     func probeBlossom() -> RadrootsBlossomEvidence {
         RadrootsBlossomEvidence(
-            schemaVersion: 1,
+            schemaVersion: 2,
             origin: "http://127.0.0.1:3000",
             configFingerprint: String(repeating: "f", count: 64),
             state: "reachable",
@@ -406,6 +409,7 @@ private actor AddBackend: RadrootsRuntimeBackend {
             observedAtUnixMilliseconds: 1_800_000_000_000,
             httpStatus: 404,
             errorCode: nil,
+            serverErrorCode: nil,
             errorPhase: nil,
             retryable: false,
             possibleOrphan: false,
@@ -463,6 +467,7 @@ private actor AddBackend: RadrootsRuntimeBackend {
     }
 
     func uploadDraftMedia(input: RadrootsBlossomUploadInput) throws -> RadrootsDraftStatus {
+        uploadAuthorizationCreatedAt = input.authorizationCreatedAtUnixSeconds
         let current = try draftStatus(id: input.draftID)
         let verified = current.media.map {
             RadrootsDraftMediaStatus(
@@ -484,6 +489,10 @@ private actor AddBackend: RadrootsRuntimeBackend {
         )
         values[current.id] = value
         return value
+    }
+
+    func lastUploadAuthorizationCreatedAt() -> UInt64? {
+        uploadAuthorizationCreatedAt
     }
 
     func advanceDraft(id: String, expectedRevision: UInt64) throws -> RadrootsDraftStatus {

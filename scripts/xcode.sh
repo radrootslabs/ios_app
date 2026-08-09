@@ -78,8 +78,108 @@ case "$operation" in
             "-only-testing:$test_target" \
             test
         ;;
+    remote-ui-test)
+        destination=${2:?remote-ui-test requires a simulator destination}
+        test_selector=${3:?remote-ui-test requires a RadrootsUITests selector}
+        result_name=${4:?remote-ui-test requires a result name}
+        qualification_run_id=${RADROOTS_IOS_UI_TEST_RUN_ID:?RADROOTS_IOS_UI_TEST_RUN_ID is required}
+        blossom_origins=${RADROOTS_IOS_UI_TEST_BLOSSOM_ORIGINS:?RADROOTS_IOS_UI_TEST_BLOSSOM_ORIGINS is required}
+        relay_urls=${RADROOTS_IOS_UI_TEST_NOSTR_RELAY_URLS:-}
+        if [[ ! "$destination" =~ ^platform=iOS\ Simulator,id=[A-Fa-f0-9-]+$ ]]; then
+            echo "error: remote-ui-test destination must be one exact simulator id" >&2
+            exit 64
+        fi
+        if [[ ! "$test_selector" =~ ^RadrootsUITests(/[-A-Za-z0-9_]+){0,2}$ ]]; then
+            echo "error: remote-ui-test selector is invalid" >&2
+            exit 64
+        fi
+        if [[ ! "$result_name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]]; then
+            echo "error: remote-ui-test result name is invalid" >&2
+            exit 64
+        fi
+        if [[ ! "$qualification_run_id" =~ ^[a-z0-9][a-z0-9-]{6,62}[a-z0-9]$ ]]; then
+            echo "error: remote-ui-test run id is invalid" >&2
+            exit 64
+        fi
+        result_bundle="$XCODE_RESULTS/$result_name.xcresult"
+        if [[ -e "$result_bundle" ]]; then
+            echo "error: remote-ui-test result already exists: $result_bundle" >&2
+            exit 1
+        fi
+        mkdir -p "$XCODE_RESULTS"
+        exec xcodebuild \
+            -project Radroots.xcodeproj \
+            -scheme Radroots \
+            -configuration Debug \
+            -destination "$destination" \
+            "${output_args[@]}" \
+            "${offline_args[@]}" \
+            -resultBundlePath "$result_bundle" \
+            "-only-testing:$test_selector" \
+            "RADROOTS_IOS_UI_TEST_RUN_ID=$qualification_run_id" \
+            "RADROOTS_IOS_UI_TEST_NOSTR_RELAY_URLS=$relay_urls" \
+            "RADROOTS_IOS_UI_TEST_BLOSSOM_ORIGINS=$blossom_origins" \
+            test
+        ;;
+    physical-ui-build|physical-ui-test)
+        destination=${2:?physical UI qualification requires a device destination}
+        test_selector=${3:?physical UI qualification requires a RadrootsUITests selector}
+        result_name=${4:-}
+        development_team=${RADROOTS_IOS_DEVELOPMENT_TEAM:?RADROOTS_IOS_DEVELOPMENT_TEAM is required}
+        qualification_run_id=${RADROOTS_IOS_UI_TEST_RUN_ID:?RADROOTS_IOS_UI_TEST_RUN_ID is required}
+        blossom_origins=${RADROOTS_IOS_UI_TEST_BLOSSOM_ORIGINS:?RADROOTS_IOS_UI_TEST_BLOSSOM_ORIGINS is required}
+        relay_urls=${RADROOTS_IOS_UI_TEST_NOSTR_RELAY_URLS:-}
+        if [[ ! "$destination" =~ ^id=[A-Fa-f0-9-]+$ ]]; then
+            echo "error: physical-ui-test destination must be one exact device id" >&2
+            exit 64
+        fi
+        if [[ ! "$test_selector" =~ ^RadrootsUITests(/[-A-Za-z0-9_]+){0,2}$ ]]; then
+            echo "error: physical-ui-test selector is invalid" >&2
+            exit 64
+        fi
+        if [[ ! "$development_team" =~ ^[A-Z0-9]{10}$ ]]; then
+            echo "error: physical-ui-test development team is invalid" >&2
+            exit 64
+        fi
+        if [[ ! "$qualification_run_id" =~ ^[a-z0-9][a-z0-9-]{6,62}[a-z0-9]$ ]]; then
+            echo "error: physical-ui-test run id is invalid" >&2
+            exit 64
+        fi
+        physical_args=(
+            -project Radroots.xcodeproj \
+            -scheme Radroots \
+            -configuration Debug \
+            -destination "$destination" \
+            "${output_args[@]}" \
+            "${offline_args[@]}" \
+            "-only-testing:$test_selector" \
+            "DEVELOPMENT_TEAM=$development_team" \
+            CODE_SIGN_STYLE=Automatic \
+            "CODE_SIGN_IDENTITY=Apple Development" \
+            "RADROOTS_IOS_UI_TEST_RUN_ID=$qualification_run_id" \
+            "RADROOTS_IOS_UI_TEST_NOSTR_RELAY_URLS=$relay_urls" \
+            "RADROOTS_IOS_UI_TEST_BLOSSOM_ORIGINS=$blossom_origins"
+        )
+        if [[ "$operation" == "physical-ui-build" ]]; then
+            exec xcodebuild "${physical_args[@]}" build-for-testing
+        fi
+        if [[ ! "$result_name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]]; then
+            echo "error: physical-ui-test result name is invalid" >&2
+            exit 64
+        fi
+        result_bundle="$XCODE_RESULTS/$result_name.xcresult"
+        if [[ -e "$result_bundle" ]]; then
+            echo "error: physical-ui-test result already exists: $result_bundle" >&2
+            exit 1
+        fi
+        mkdir -p "$XCODE_RESULTS"
+        exec xcodebuild \
+            "${physical_args[@]}" \
+            -resultBundlePath "$result_bundle" \
+            test-without-building
+        ;;
     *)
-        echo "usage: $0 {resolve|package-build|package-test|project-build|project-test}" >&2
+        echo "usage: $0 {resolve|package-build|package-test|project-build|project-test|remote-ui-test|physical-ui-build|physical-ui-test}" >&2
         exit 64
         ;;
 esac

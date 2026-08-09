@@ -49,6 +49,7 @@ let package = Package(
                 "App/RadrootsAppDelegate.swift",
                 "App/RadrootsAppModel.swift",
                 "App/RadrootsProvider.swift",
+                "App/RadrootsRemoteQualification.swift",
                 "App/RadrootsRootShell.swift",
                 "Runtime/RadrootsAddMediaCoordinator.swift",
                 "Runtime/RadrootsGeneratedRuntimeBackend.swift",

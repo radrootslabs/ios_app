@@ -6,6 +6,18 @@ public final class RadrootsAppDelegate: NSObject, UIApplicationDelegate {
     }
 
     public func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        #if DEBUG
+            if (try? RadrootsRemoteQualificationEnvironment.current()) != nil {
+                application.isIdleTimerDisabled = true
+            }
+        #endif
+        return true
+    }
+
+    public func application(
         _: UIApplication,
         handleEventsForBackgroundURLSession identifier: String,
         completionHandler: @escaping () -> Void

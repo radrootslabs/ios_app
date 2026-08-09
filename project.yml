@@ -51,11 +51,13 @@ targets:
       - path: RadrootsTests/RadrootsAddStoreTests.swift
       - path: RadrootsTests/RadrootsSupportingStoreTests.swift
       - path: RadrootsTests/RadrootsLifecycleTests.swift
+      - path: RadrootsTests/RadrootsRemoteQualificationTests.swift
     settings:
       base:
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
         SWIFT_VERSION: 6.0
         GENERATE_INFOPLIST_FILE: true
+        PRODUCT_BUNDLE_IDENTIFIER: org.radroots.field-ios.tests
     dependencies:
       - target: Radroots
       - package: RadrootsApp
@@ -66,11 +68,14 @@ targets:
     deploymentTarget: "18.0"
     sources:
       - path: RadrootsUITests/RadrootsRootShellUITests.swift
+      - path: RadrootsUITests/RadrootsRemoteQualificationUITests.swift
     settings:
       base:
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
         SWIFT_VERSION: 6.0
-        GENERATE_INFOPLIST_FILE: true
+        GENERATE_INFOPLIST_FILE: false
+        INFOPLIST_FILE: RadrootsUITests/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: org.radroots.field-ios.uitests
     dependencies:
       - target: Radroots
 schemes:

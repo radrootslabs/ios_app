@@ -55,9 +55,22 @@ actor RadrootsAddMediaCoordinator: RadrootsAddMediaHandling {
     static func production(bundleIdentifier: String) throws -> Self {
         let roots = try RadrootsAppleFileRoots.appContainer(appIdentifier: bundleIdentifier)
         let fileAccess = RadrootsAppleFileAccess(roots: roots)
+        let picker: any RadrootsMediaPicker
+        #if DEBUG
+            if let mediaFile = try RadrootsRemoteQualificationEnvironment.current()?.mediaFile {
+                picker = RadrootsRemoteQualificationMediaPicker(
+                    roots: roots,
+                    file: mediaFile
+                )
+            } else {
+                picker = RadrootsAppleMediaPicker(fileAccess: fileAccess)
+            }
+        #else
+            picker = RadrootsAppleMediaPicker(fileAccess: fileAccess)
+        #endif
         return Self(
             roots: roots,
-            picker: RadrootsAppleMediaPicker(fileAccess: fileAccess),
+            picker: picker,
             preparer: RadrootsAppleMediaPreparer(roots: roots)
         )
     }
@@ -148,3 +161,66 @@ actor RadrootsAddMediaCoordinator: RadrootsAddMediaHandling {
         )
     }
 }
+
+#if DEBUG
+    private actor RadrootsRemoteQualificationMediaPicker: RadrootsMediaPicker {
+        private let roots: RadrootsAppleFileRoots
+        private let file: RadrootsFileReference
+
+        init(roots: RadrootsAppleFileRoots, file: RadrootsFileReference) {
+            self.roots = roots
+            self.file = file
+        }
+
+        func currentSupport() async throws -> RadrootsMediaPickerSupport {
+            try RadrootsMediaPickerSupport(
+                importAvailable: true,
+                cameraCaptureAvailable: false,
+                supportedImportKinds: [.image],
+                supportedCaptureKinds: [],
+                multipleSelectionSupported: false
+            )
+        }
+
+        func importMedia(
+            _ request: RadrootsMediaImportRequest
+        ) async throws -> RadrootsMediaImportResult {
+            guard request.allowedMediaKinds == [.image], request.selectionLimit >= 1 else {
+                throw RadrootsCaptureIntakeError.invalidRequest(
+                    "remote qualification accepts one image"
+                )
+            }
+            let url = try roots.resolvedURL(for: file)
+            let values = try url.resourceValues(
+                forKeys: [.fileSizeKey, .isRegularFileKey, .isSymbolicLinkKey]
+            )
+            guard values.isRegularFile == true,
+                  values.isSymbolicLink != true,
+                  let size = values.fileSize,
+                  (1 ... 40 * 1024 * 1024).contains(size)
+            else {
+                throw RadrootsCaptureIntakeError.unavailable(
+                    "remote qualification image is unavailable"
+                )
+            }
+            let asset = try RadrootsMediaAsset(
+                source: .libraryImport,
+                kind: .image,
+                file: file,
+                mediaType: "image/png",
+                suggestedFilename: "input.png",
+                sizeBytes: UInt64(size),
+                capturedAt: Date()
+            )
+            return try RadrootsMediaImportResult(items: [asset])
+        }
+
+        func captureMedia(
+            _: RadrootsMediaCaptureRequest
+        ) async throws -> RadrootsMediaCaptureResult {
+            throw RadrootsCaptureIntakeError.unavailable(
+                "camera capture is outside remote qualification"
+            )
+        }
+    }
+#endif
