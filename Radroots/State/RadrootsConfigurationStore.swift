@@ -528,7 +528,7 @@ actor RadrootsConfigurationStore {
 }
 
 enum RadrootsNetworkValidator {
-    static let publicReadOnlyRelay = "wss://radroots.org"
+    static let canonicalRelay = "wss://radroots.org"
 
     static func relays(
         _ values: [String],
@@ -538,7 +538,7 @@ enum RadrootsNetworkValidator {
         var seen = Set<String>()
         for raw in values {
             let canonical = try relay(raw, profile: profile)
-            if profile != .simulator, canonical == publicReadOnlyRelay {
+            if profile != .simulator, canonical == canonicalRelay {
                 continue
             }
             guard seen.insert(canonical).inserted else {
