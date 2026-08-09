@@ -22,6 +22,12 @@ struct RuntimeStatusView: View {
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+                if case let .failed(failure) = phase {
+                    Text("Error code \(failure.code)")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("radroots.runtime.failure_code")
+                }
                 if case .identityRequired = phase {
                     Button("Create identity", action: createIdentity)
                         .buttonStyle(.borderedProminent)
@@ -118,4 +124,5 @@ struct RuntimeStatusView: View {
             "Your durable local work is safe."
         }
     }
+
 }

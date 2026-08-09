@@ -21,6 +21,43 @@ final class RadrootsRemoteQualificationUITests: XCTestCase {
     }
 
     @MainActor
+    func testStrictPublicEndpointRejectsPrivateAddress() throws {
+        let environment = try QualificationConfiguration.environment()
+        let configuration = QualificationConfiguration(
+            runID: environment.runID,
+            relayURLs: [],
+            blossomOrigins: ["https://127.0.0.1"]
+        )
+        let app = XCUIApplication()
+        app.launchEnvironment = configuration.launchEnvironment
+        app.launch()
+
+        let failureCode = app.descendants(matching: .any)["radroots.runtime.failure_code"]
+        for _ in 0 ..< 8 where !failureCode.exists {
+            for identifier in [
+                "radroots.identity.create",
+                "radroots.identity.unlock",
+                "radroots.configuration.reconfigure",
+                "radroots.identity.recover",
+            ] {
+                let action = app.descendants(matching: .any)[identifier]
+                if action.exists, action.isHittable {
+                    action.tap()
+                    break
+                }
+            }
+            _ = failureCode.waitForExistence(timeout: 4)
+        }
+        XCTAssertEqual(
+            failureCode.label,
+            "Error code runtime_failed",
+            "A private Blossom endpoint did not expose the typed fail-closed result; "
+                + "failure_code.label=\(failureCode.exists ? failureCode.label : "missing")"
+        )
+        XCTAssertFalse(app.tabBars.firstMatch.exists)
+    }
+
+    @MainActor
     func testRemoteBlossomUploadAndRecovery() throws {
         let configuration = try QualificationConfiguration.environment()
         let app = launchToRoot(configuration)
