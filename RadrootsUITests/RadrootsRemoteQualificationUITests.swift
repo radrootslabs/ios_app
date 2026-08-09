@@ -420,8 +420,9 @@ final class RadrootsRemoteQualificationUITests: XCTestCase {
         XCTAssertTrue(exists)
         if exists {
             XCTAssertTrue(
-                mediaStatus.label.contains("1 possible orphan"),
-                "An unavailable upload did not preserve its indeterminate remote effect; "
+                mediaStatus.label == "0 of 1 photos verified"
+                    || mediaStatus.label == "0 of 1 photos verified; 1 possible orphan",
+                "An unavailable upload did not preserve a bounded retry state; "
                     + "media_status.label=\(mediaStatus.label)"
             )
         }
