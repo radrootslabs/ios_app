@@ -419,7 +419,11 @@ final class RadrootsRemoteQualificationUITests: XCTestCase {
         let exists = mediaStatus.waitForExistence(timeout: 20)
         XCTAssertTrue(exists)
         if exists {
-            XCTAssertFalse(mediaStatus.label.contains("possible orphan"))
+            XCTAssertTrue(
+                mediaStatus.label.contains("1 possible orphan"),
+                "An unavailable upload did not preserve its indeterminate remote effect; "
+                    + "media_status.label=\(mediaStatus.label)"
+            )
         }
         app.buttons["Done"].tap()
         return exists
