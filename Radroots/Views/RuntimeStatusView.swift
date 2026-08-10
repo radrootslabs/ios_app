@@ -1,12 +1,16 @@
+import RadrootsKit
 import SwiftUI
+import UIKit
 
 struct RuntimeStatusView: View {
     let phase: RadrootsAppModel.Phase
     let retry: () -> Void
     let createIdentity: () -> Void
+    let importIdentity: (RadrootsIdentitySecretMaterial) -> Void
     let unlockIdentity: () -> Void
     let recoverIdentity: () -> Void
     let applyConfigurationReconfiguration: () -> Void
+    @State private var showsIdentityImport = false
 
     var body: some View {
         NavigationStack {
@@ -32,6 +36,9 @@ struct RuntimeStatusView: View {
                     Button("Create identity", action: createIdentity)
                         .buttonStyle(.borderedProminent)
                         .accessibilityIdentifier("radroots.identity.create")
+                    Button("Import identity") { showsIdentityImport = true }
+                        .buttonStyle(.bordered)
+                        .accessibilityIdentifier("radroots.identity.import")
                 } else if case .identityLocked = phase {
                     Button("Unlock identity", action: unlockIdentity)
                         .buttonStyle(.borderedProminent)
@@ -53,6 +60,29 @@ struct RuntimeStatusView: View {
             }
             .padding(24)
             .navigationTitle("Radroots")
+        }
+        .sheet(isPresented: $showsIdentityImport) {
+            NavigationStack {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Enter an nsec or 64-character secret key. It is transferred directly to Apple custody and is never stored in view state.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    RadrootsSecureIdentityImportField { material in
+                        showsIdentityImport = false
+                        importIdentity(material)
+                    }
+                    Spacer()
+                }
+                .padding()
+                .navigationTitle("Import identity")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { showsIdentityImport = false }
+                    }
+                }
+            }
+            .presentationDetents([.medium])
+            .interactiveDismissDisabled()
         }
         .accessibilityIdentifier("radroots.runtime.status")
     }
@@ -124,5 +154,86 @@ struct RuntimeStatusView: View {
             "Your durable local work is safe."
         }
     }
+}
 
+private struct RadrootsSecureIdentityImportField: UIViewRepresentable {
+    let submit: @MainActor (RadrootsIdentitySecretMaterial) -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(submit: submit)
+    }
+
+    func makeUIView(context: Context) -> UIView {
+        let field = UITextField()
+        field.borderStyle = .roundedRect
+        field.isSecureTextEntry = true
+        field.textContentType = .password
+        field.autocapitalizationType = .none
+        field.autocorrectionType = .no
+        field.spellCheckingType = .no
+        field.returnKeyType = .done
+        field.placeholder = "nsec1… or secret hex"
+        field.accessibilityIdentifier = "radroots.identity.import.secret"
+        field.delegate = context.coordinator
+
+        let button = UIButton(type: .system)
+        var configuration = UIButton.Configuration.filled()
+        configuration.title = "Import securely"
+        button.configuration = configuration
+        button.accessibilityIdentifier = "radroots.identity.import.submit"
+        button.addTarget(context.coordinator, action: #selector(Coordinator.submitIdentity), for: .touchUpInside)
+
+        let error = UILabel()
+        error.font = .preferredFont(forTextStyle: .footnote)
+        error.textColor = .secondaryLabel
+        error.numberOfLines = 0
+        error.accessibilityIdentifier = "radroots.identity.import.error"
+
+        let stack = UIStackView(arrangedSubviews: [field, button, error])
+        stack.axis = .vertical
+        stack.spacing = 12
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        let container = UIView()
+        container.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            stack.topAnchor.constraint(equalTo: container.topAnchor),
+        ])
+        context.coordinator.field = field
+        context.coordinator.errorLabel = error
+        return container
+    }
+
+    func updateUIView(_: UIView, context _: Context) {}
+
+    @MainActor
+    final class Coordinator: NSObject, UITextFieldDelegate {
+        weak var field: UITextField?
+        weak var errorLabel: UILabel?
+        private let submit: @MainActor (RadrootsIdentitySecretMaterial) -> Void
+
+        init(submit: @escaping @MainActor (RadrootsIdentitySecretMaterial) -> Void) {
+            self.submit = submit
+        }
+
+        func textFieldShouldReturn(_: UITextField) -> Bool {
+            submitIdentity()
+            return false
+        }
+
+        @objc func submitIdentity() {
+            guard let field else { return }
+            let input = field.text ?? ""
+            field.text = nil
+            do {
+                let material = try RadrootsIdentitySecretMaterial(importText: input)
+                errorLabel?.text = nil
+                submit(material)
+            } catch {
+                errorLabel?.text = "Enter a valid Nostr secret key."
+                field.becomeFirstResponder()
+            }
+        }
+    }
 }

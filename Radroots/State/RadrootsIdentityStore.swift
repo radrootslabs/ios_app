@@ -186,9 +186,15 @@ actor RadrootsIdentityStore {
         try await custody.createIdentity(label: label).appValue
     }
 
-    func importIdentity(_ text: String, label: String? = nil) async throws -> RadrootsAppIdentity {
-        let material = try RadrootsIdentitySecretMaterial(importText: text)
-        return try await custody.importIdentity(material, label: label).appValue
+    func importIdentity(
+        _ material: RadrootsIdentitySecretMaterial,
+        label: String? = nil
+    ) async throws -> RadrootsAppIdentity {
+        try await custody.importIdentity(material, label: label).appValue
+    }
+
+    func snapshot() async -> RadrootsAppIdentity {
+        await custody.snapshot().appValue
     }
 
     func unlock() async throws -> RadrootsAppIdentity {

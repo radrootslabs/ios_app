@@ -303,6 +303,29 @@ actor RadrootsConfigurationStore {
         )
     }
 
+    func confirmBootstrapActivation(expectedGeneration: UInt64) throws {
+        guard let stored = try readStoredConfiguration(),
+              stored.format == StoredConfigurationV3.format,
+              stored.generation == expectedGeneration,
+              let bootstrapFingerprint = stored.bootstrapFingerprint
+        else {
+            throw RadrootsConfigurationError.persistenceFailed
+        }
+        try persist(
+            StoredConfigurationV3(
+                format: stored.format,
+                profile: stored.profile,
+                writableRelays: stored.writableRelays,
+                blossom: stored.blossom,
+                generation: expectedGeneration,
+                activationState: .current,
+                bootstrapFingerprint: bootstrapFingerprint,
+                canonicalBlossomConfigFingerprint: nil,
+                previousBlossomConfigFingerprint: nil
+            )
+        )
+    }
+
     func sourceGeneration() throws -> RadrootsSourceGeneration {
         if let data = try read(Self.sourceGenerationFile) {
             guard let value = try? JSONDecoder().decode(RadrootsSourceGeneration.self, from: data),

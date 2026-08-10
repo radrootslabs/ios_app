@@ -56,6 +56,20 @@ protocol RadrootsRuntimeBackend: Sendable {
     input: RadrootsNativeUploadCompletion
   ) async throws -> RadrootsDraftStatus
   func probeBlossom() async throws -> RadrootsBlossomEvidence
+  func mobileSettings() async throws -> RadrootsMobileSettings
+  func replaceMobileSettings(
+    input: RadrootsReplaceSettings
+  ) async throws -> RadrootsSettingsTransition
+  func applyIdentityCommand(
+    expectedRevision: UInt64,
+    command: RadrootsIdentityCommand
+  ) async throws -> RadrootsSettingsTransition
+  func saveProfileMetadata(input: RadrootsProfileMetadataInput) async throws
+    -> RadrootsProfileStatus
+  func profileStatus(operationID: String) async throws -> RadrootsProfileStatus
+  func advanceProfile(operationID: String) async throws -> RadrootsProfileStatus
+  func cancelProfile(operationID: String, expectedRevision: UInt64) async throws
+    -> RadrootsProfileStatus
   func advanceDraft(id: String, expectedRevision: UInt64) async throws -> RadrootsDraftStatus
   func cancelAddIntent(
     id: String,
@@ -163,6 +177,43 @@ extension RadrootsRuntimeBackend {
   }
 
   func probeBlossom() async throws -> RadrootsBlossomEvidence {
+    throw supportUnsupported()
+  }
+
+  func mobileSettings() async throws -> RadrootsMobileSettings {
+    throw supportUnsupported()
+  }
+
+  func replaceMobileSettings(
+    input _: RadrootsReplaceSettings
+  ) async throws -> RadrootsSettingsTransition {
+    throw supportUnsupported()
+  }
+
+  func applyIdentityCommand(
+    expectedRevision _: UInt64,
+    command _: RadrootsIdentityCommand
+  ) async throws -> RadrootsSettingsTransition {
+    throw supportUnsupported()
+  }
+
+  func saveProfileMetadata(input _: RadrootsProfileMetadataInput) async throws
+    -> RadrootsProfileStatus
+  {
+    throw supportUnsupported()
+  }
+
+  func profileStatus(operationID _: String) async throws -> RadrootsProfileStatus {
+    throw supportUnsupported()
+  }
+
+  func advanceProfile(operationID _: String) async throws -> RadrootsProfileStatus {
+    throw supportUnsupported()
+  }
+
+  func cancelProfile(operationID _: String, expectedRevision _: UInt64) async throws
+    -> RadrootsProfileStatus
+  {
     throw supportUnsupported()
   }
 
@@ -663,8 +714,7 @@ actor RadrootsRuntimeClient {
     }
   }
 
-  func uploadAddMediaIntent(input: RadrootsBlossomUploadIntent) async throws -> RadrootsDraftStatus
-  {
+  func uploadAddMediaIntent(input: RadrootsBlossomUploadIntent) async throws -> RadrootsDraftStatus {
     try await addOperation("runtime.add.media") { backend in
       try await backend.uploadAddMediaIntent(input: input)
     }
@@ -692,6 +742,64 @@ actor RadrootsRuntimeClient {
     }
   }
 
+  func mobileSettings() async throws -> RadrootsMobileSettings {
+    try await supportOperation("runtime.settings.read") { backend in
+      try await backend.mobileSettings()
+    }
+  }
+
+  func replaceMobileSettings(
+    input: RadrootsReplaceSettings
+  ) async throws -> RadrootsSettingsTransition {
+    try await supportOperation("runtime.settings.replace") { backend in
+      try await backend.replaceMobileSettings(input: input)
+    }
+  }
+
+  func applyIdentityCommand(
+    expectedRevision: UInt64,
+    command: RadrootsIdentityCommand
+  ) async throws -> RadrootsSettingsTransition {
+    try await supportOperation("runtime.settings.identity") { backend in
+      try await backend.applyIdentityCommand(
+        expectedRevision: expectedRevision,
+        command: command
+      )
+    }
+  }
+
+  func saveProfileMetadata(input: RadrootsProfileMetadataInput) async throws
+    -> RadrootsProfileStatus
+  {
+    try await supportOperation("runtime.profile.save") { backend in
+      try await backend.saveProfileMetadata(input: input)
+    }
+  }
+
+  func profileStatus(operationID: String) async throws -> RadrootsProfileStatus {
+    try await supportOperation("runtime.profile.status") { backend in
+      try await backend.profileStatus(operationID: operationID)
+    }
+  }
+
+  func advanceProfile(operationID: String) async throws -> RadrootsProfileStatus {
+    try await supportOperation("runtime.profile.advance") { backend in
+      try await backend.advanceProfile(operationID: operationID)
+    }
+  }
+
+  func cancelProfile(
+    operationID: String,
+    expectedRevision: UInt64
+  ) async throws -> RadrootsProfileStatus {
+    try await supportOperation("runtime.profile.cancel") { backend in
+      try await backend.cancelProfile(
+        operationID: operationID,
+        expectedRevision: expectedRevision
+      )
+    }
+  }
+
   func advanceDraft(id: String, expectedRevision: UInt64) async throws -> RadrootsDraftStatus {
     try await addOperation("runtime.add.advance") { backend in
       try await backend.advanceDraft(id: id, expectedRevision: expectedRevision)
@@ -711,7 +819,7 @@ actor RadrootsRuntimeClient {
   }
 
   func changes(bufferCapacity: Int = 16) async throws -> AsyncStream<RadrootsRuntimeChange> {
-    guard (1...64).contains(bufferCapacity) else {
+    guard (1 ... 64).contains(bufferCapacity) else {
       throw RadrootsRuntimeClientError.invalidBufferCapacity
     }
     guard let backend, case .running = lifecycleState else {

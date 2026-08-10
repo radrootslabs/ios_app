@@ -362,7 +362,8 @@ final class RadrootsRuntimeClientTests: XCTestCase {
                 buildSHA: nil
             ),
             signerGeneration: generation,
-            signer: TestRuntimeSigner()
+            signer: TestRuntimeSigner(),
+            adoptBootstrapSettings: false
         )
     }
 

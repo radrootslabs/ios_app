@@ -25,13 +25,17 @@ struct AppEntry: View {
                     todayStore: appModel.todayStore,
                     addStore: appModel.addStore,
                     searchStore: appModel.searchStore,
-                    meStore: appModel.meStore
+                    meStore: appModel.meStore,
+                    settingsStore: appModel.settingsStore
                 )
             } else {
                 RuntimeStatusView(
                     phase: appModel.phase,
                     retry: { Task { await appModel.retry() } },
                     createIdentity: { Task { await appModel.createIdentity() } },
+                    importIdentity: { material in
+                        Task { await appModel.importIdentity(material) }
+                    },
                     unlockIdentity: { Task { await appModel.unlockIdentity() } },
                     recoverIdentity: { Task { await appModel.recoverIdentity() } },
                     applyConfigurationReconfiguration: {

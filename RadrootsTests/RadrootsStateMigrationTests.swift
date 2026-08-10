@@ -251,6 +251,47 @@ final class RadrootsStateMigrationTests: XCTestCase {
         )
     }
 
+    func testBootstrapActivationRetainsSelectedNetworkAndClearsPendingRollbackState() async throws {
+        let fixture = try StateFixture()
+        defer { fixture.remove() }
+        let original = RadrootsConfigurationStore(
+            bootstrap: fixture.bootstrap,
+            roots: fixture.roots
+        )
+        let first = try await original.load()
+        try await original.confirmCanonicalBlossomConfiguration(
+            canonicalBlossomConfiguration(fingerprint: String(repeating: "f", count: 64)),
+            expectedGeneration: first.generation
+        )
+        let changedBootstrap = RadrootsConfigurationBootstrap(
+            runtimeMode: fixture.bootstrap.runtimeMode,
+            relayURLs: ["ws://127.0.0.1:7448"],
+            blossomOrigins: ["http://127.0.0.1:3001"],
+            keychainServicePrefix: fixture.bootstrap.keychainServicePrefix,
+            bundleIdentifier: fixture.bootstrap.bundleIdentifier,
+            appMetadata: fixture.bootstrap.appMetadata
+        )
+        let changed = RadrootsConfigurationStore(
+            bootstrap: changedBootstrap,
+            roots: fixture.roots
+        )
+        let pending = try await changed.load()
+
+        try await changed.confirmBootstrapActivation(expectedGeneration: pending.generation)
+
+        let active = try await changed.load()
+        XCTAssertEqual(active.activationState, .current)
+        XCTAssertEqual(active.generation, pending.generation)
+        XCTAssertEqual(active.writableRelays, ["ws://127.0.0.1:7448"])
+        XCTAssertEqual(active.blossom?.primaryOrigin, "http://127.0.0.1:3001")
+        XCTAssertNil(active.previousBlossomConfigFingerprint)
+        let persisted = try configurationObject(
+            RadrootsAppleFileAccess(roots: fixture.roots)
+        )
+        XCTAssertNil(persisted["canonicalBlossomConfigFingerprint"])
+        XCTAssertNil(persisted["previousBlossomConfigFingerprint"])
+    }
+
     func testCanonicalPublicWebPkiRuntimeLabelPreservesStoredFormat() async throws {
         let fixture = try StateFixture()
         defer { fixture.remove() }

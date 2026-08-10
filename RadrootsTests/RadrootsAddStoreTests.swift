@@ -322,7 +322,8 @@ final class RadrootsAddStoreTests: XCTestCase {
         buildSHA: nil
       ),
       signerGeneration: "add-tests",
-      signer: AddSigner()
+      signer: AddSigner(),
+      adoptBootstrapSettings: false
     )
   }
 

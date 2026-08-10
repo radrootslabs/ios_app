@@ -131,6 +131,36 @@ actor RadrootsSessionStore {
         await start(acceptingReconfiguration: true)
     }
 
+    func applySettingsReconfiguration() async -> RadrootsSessionPhase {
+        generation &+= 1
+        let requestedGeneration = generation
+        phase = .starting
+        do {
+            let identity = try await identityStore.loadAndMigrate()
+            guard identity.state == .unlocked else {
+                return await start()
+            }
+            let configuration = try await configurationStore.load()
+            phase = try await startRuntime(
+                configuration: configuration,
+                identity: identity,
+                generation: requestedGeneration,
+                forceReconfiguration: true,
+                adoptBootstrapSettings: false
+            )
+        } catch {
+            guard generation == requestedGeneration else { return phase }
+            phase = .failed(
+                .local(
+                    operation: "session.settings_reconfiguration",
+                    code: "ios.session.settings_reconfiguration_failed",
+                    safeMessage: "Radroots could not apply the saved settings."
+                )
+            )
+        }
+        return phase
+    }
+
     func suspend() async {
         generation &+= 1
         await runtimeClient.suspend()
@@ -181,7 +211,11 @@ actor RadrootsSessionStore {
                 phase = try await startRuntime(
                     configuration: configuration,
                     identity: identity,
-                    generation: requestedGeneration
+                    generation: requestedGeneration,
+                    forceReconfiguration: configuration.activationState
+                        == .reconfigurationRequired,
+                    adoptBootstrapSettings: configuration.activationState
+                        == .reconfigurationRequired
                 )
             }
         } catch RadrootsRuntimeClientError.superseded {
@@ -220,13 +254,38 @@ actor RadrootsSessionStore {
         return await start()
     }
 
-    func importIdentity(_ text: String, label: String? = nil) async -> RadrootsSessionPhase {
+    func importIdentity(
+        _ material: RadrootsIdentitySecretMaterial,
+        label: String? = nil
+    ) async -> RadrootsSessionPhase {
         do {
-            _ = try await identityStore.importIdentity(text, label: label)
+            _ = try await identityStore.importIdentity(material, label: label)
         } catch {
             return failIdentityOperation(error)
         }
         return await start()
+    }
+
+    func lockIdentity() async -> RadrootsSessionPhase {
+        generation &+= 1
+        if case .running = phase,
+           let settings = try? await runtimeClient.mobileSettings()
+        {
+            _ = try? await runtimeClient.applyIdentityCommand(
+                expectedRevision: settings.revision,
+                command: RadrootsIdentityCommand(
+                    kind: .lock,
+                    operationID: nil,
+                    identityID: nil,
+                    publicKeyHex: nil
+                )
+            )
+        }
+        _ = try? await runtimeClient.stop()
+        await identityStore.lock()
+        let identity = await identityStore.snapshot()
+        phase = .identityLocked(identity)
+        return phase
     }
 
     func unlockIdentity() async -> RadrootsSessionPhase {
@@ -270,7 +329,9 @@ actor RadrootsSessionStore {
     private func startRuntime(
         configuration: RadrootsAppConfiguration,
         identity: RadrootsAppIdentity,
-        generation requestedGeneration: UInt64
+        generation requestedGeneration: UInt64,
+        forceReconfiguration: Bool,
+        adoptBootstrapSettings: Bool
     ) async throws -> RadrootsSessionPhase {
         guard let publicKeyHex = identity.publicKeyHex,
               let signerGeneration = identity.signerGeneration
@@ -295,10 +356,11 @@ actor RadrootsSessionStore {
             blossom: configuration.blossom,
             app: configuration.appMetadata,
             signerGeneration: signerGeneration,
-            signer: signer
+            signer: signer,
+            adoptBootstrapSettings: adoptBootstrapSettings
         )
         let snapshot =
-            if configuration.activationState == .reconfigurationRequired {
+            if forceReconfiguration {
                 try await runtimeClient.reconfigure(configuration: launchConfiguration)
             } else {
                 try await runtimeClient.start(configuration: launchConfiguration)
@@ -307,20 +369,83 @@ actor RadrootsSessionStore {
             _ = try? await runtimeClient.stop()
             throw RadrootsRuntimeClientError.superseded
         }
-        do {
-            try await configurationStore.confirmCanonicalBlossomConfiguration(
-                snapshot.blossomConfiguration,
+        try await reconcileIdentity(identity)
+        if configuration.activationState == .reconfigurationRequired,
+           adoptBootstrapSettings
+        {
+            try await configurationStore.confirmBootstrapActivation(
                 expectedGeneration: configuration.generation
             )
-        } catch {
-            _ = try? await runtimeClient.stop()
-            throw error
         }
         guard generation == requestedGeneration else {
             _ = try? await runtimeClient.stop()
             throw RadrootsRuntimeClientError.superseded
         }
         return .running(snapshot)
+    }
+
+    private func reconcileIdentity(_ identity: RadrootsAppIdentity) async throws {
+        guard let identityID = identity.identityHandle,
+              let publicKeyHex = identity.publicKeyHex
+        else {
+            throw RadrootsIdentityStoreError.unavailable
+        }
+        var settings = try await runtimeClient.mobileSettings()
+        if let pending = settings.identity.pendingImportOperationID {
+            settings = try await runtimeClient.applyIdentityCommand(
+                expectedRevision: settings.revision,
+                command: RadrootsIdentityCommand(
+                    kind: .cancelImport,
+                    operationID: pending,
+                    identityID: nil,
+                    publicKeyHex: nil
+                )
+            ).settings
+        }
+        if let existing = settings.identity.identities.first(where: {
+            $0.publicKeyHex == publicKeyHex
+        }) {
+            if settings.identity.activeIdentityID != existing.id {
+                settings = try await runtimeClient.applyIdentityCommand(
+                    expectedRevision: settings.revision,
+                    command: RadrootsIdentityCommand(
+                        kind: .select,
+                        operationID: nil,
+                        identityID: existing.id,
+                        publicKeyHex: nil
+                    )
+                ).settings
+            }
+        } else {
+            let operationID = UUID().uuidString.lowercased()
+            settings = try await runtimeClient.applyIdentityCommand(
+                expectedRevision: settings.revision,
+                command: RadrootsIdentityCommand(
+                    kind: .beginImport,
+                    operationID: operationID,
+                    identityID: nil,
+                    publicKeyHex: nil
+                )
+            ).settings
+            settings = try await runtimeClient.applyIdentityCommand(
+                expectedRevision: settings.revision,
+                command: RadrootsIdentityCommand(
+                    kind: .completeImport,
+                    operationID: operationID,
+                    identityID: identityID,
+                    publicKeyHex: publicKeyHex
+                )
+            ).settings
+        }
+        _ = try await runtimeClient.applyIdentityCommand(
+            expectedRevision: settings.revision,
+            command: RadrootsIdentityCommand(
+                kind: .unlock,
+                operationID: nil,
+                identityID: nil,
+                publicKeyHex: nil
+            )
+        )
     }
 
     private func failIdentityOperation(_ error: Error) -> RadrootsSessionPhase {

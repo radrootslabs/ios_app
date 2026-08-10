@@ -10,6 +10,7 @@ final class RadrootsAppModel: ObservableObject {
   private(set) var addStore: RadrootsAddStore?
   private(set) var searchStore: RadrootsSearchStore?
   private(set) var meStore: RadrootsMeStore?
+  private(set) var settingsStore: RadrootsSettingsStore?
   let diagnosticsStore: RadrootsDiagnosticsStore
 
   private let sessionStore: RadrootsSessionStore?
@@ -45,6 +46,7 @@ final class RadrootsAppModel: ObservableObject {
         addStore = nil
         searchStore = nil
         meStore = nil
+        settingsStore = nil
         bootstrapFailure = nil
         isShellUITest = true
         phase = .running(.shellUITest)
@@ -58,6 +60,7 @@ final class RadrootsAppModel: ObservableObject {
       addStore = runtimeClient.map { RadrootsAddStore(runtimeClient: $0) }
       searchStore = runtimeClient.map { RadrootsSearchStore(runtimeClient: $0) }
       meStore = runtimeClient.map { RadrootsMeStore(runtimeClient: $0) }
+      settingsStore = runtimeClient.map { RadrootsSettingsStore(runtimeClient: $0) }
       bootstrapFailure = nil
     } else {
       do {
@@ -76,6 +79,7 @@ final class RadrootsAppModel: ObservableObject {
         )
         searchStore = RadrootsSearchStore(runtimeClient: runtimeClient)
         meStore = RadrootsMeStore(runtimeClient: runtimeClient)
+        settingsStore = RadrootsSettingsStore(runtimeClient: runtimeClient)
         bootstrapFailure = nil
       } catch let error as LocalizedError {
         self.sessionStore = nil
@@ -83,6 +87,7 @@ final class RadrootsAppModel: ObservableObject {
         addStore = nil
         searchStore = nil
         meStore = nil
+        settingsStore = nil
         bootstrapFailure = .local(
           operation: "app.bootstrap",
           code: "ios.app.configuration_invalid",
@@ -94,6 +99,7 @@ final class RadrootsAppModel: ObservableObject {
         addStore = nil
         searchStore = nil
         meStore = nil
+        settingsStore = nil
         bootstrapFailure = .local(
           operation: "app.bootstrap",
           code: "ios.app.configuration_invalid",
@@ -119,6 +125,17 @@ final class RadrootsAppModel: ObservableObject {
     }
   }
 
+  func importIdentity(_ material: RadrootsIdentitySecretMaterial) async {
+    await run(name: "identity_import", showsStarting: true) { store in
+      await store.importIdentity(material)
+    }
+  }
+
+  func lockIdentity() async {
+    stopPresentationWork()
+    await run(name: "identity_lock") { store in await store.lockIdentity() }
+  }
+
   func unlockIdentity() async {
     await run(name: "identity_unlock", showsStarting: true) { store in
       await store.unlockIdentity()
@@ -134,6 +151,13 @@ final class RadrootsAppModel: ObservableObject {
   func applyConfigurationReconfiguration() async {
     await run(name: "configuration_reconfigure", showsStarting: true) { store in
       await store.applyConfigurationReconfiguration()
+    }
+  }
+
+  func applySettingsReconfiguration() async {
+    stopPresentationWork()
+    await run(name: "settings_reconfigure", showsStarting: true) { store in
+      await store.applySettingsReconfiguration()
     }
   }
 
@@ -166,6 +190,7 @@ final class RadrootsAppModel: ObservableObject {
     addStore?.suspend()
     searchStore?.stop()
     meStore?.stop()
+    settingsStore?.stop()
     await sessionStore?.suspend()
     await lifecycleCoordinator.record("ios.lifecycle.background")
   }

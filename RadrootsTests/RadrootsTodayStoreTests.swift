@@ -210,7 +210,8 @@ final class RadrootsTodayStoreTests: XCTestCase {
                 buildSHA: nil
             ),
             signerGeneration: "today-tests",
-            signer: TodayTestSigner()
+            signer: TodayTestSigner(),
+            adoptBootstrapSettings: false
         )
     }
 }

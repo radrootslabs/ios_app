@@ -121,6 +121,7 @@ struct RadrootsRuntimeLaunchConfiguration: Sendable {
   let app: RadrootsRuntimeAppMetadata
   let signerGeneration: String
   let signer: any RadrootsRuntimeSigner
+  let adoptBootstrapSettings: Bool
 }
 
 extension RadrootsRuntimeLaunchConfiguration: Equatable {
@@ -136,6 +137,7 @@ extension RadrootsRuntimeLaunchConfiguration: Equatable {
       && lhs.blossom == rhs.blossom
       && lhs.app == rhs.app
       && lhs.signerGeneration == rhs.signerGeneration
+      && lhs.adoptBootstrapSettings == rhs.adoptBootstrapSettings
   }
 }
 
@@ -170,6 +172,146 @@ struct RadrootsRelayStatus: Sendable, Equatable {
   let readAvailability: String
   let writeAvailability: String
   let relays: [RadrootsRelayEndpointStatus]
+}
+
+enum RadrootsSettingsIdentityLockState: Sendable, Equatable {
+  case locked
+  case unlocked
+}
+
+struct RadrootsSettingsIdentity: Sendable, Equatable, Identifiable {
+  let id: String
+  let publicKeyHex: String
+}
+
+struct RadrootsSettingsIdentityState: Sendable, Equatable {
+  let identities: [RadrootsSettingsIdentity]
+  let activeIdentityID: String?
+  let lockState: RadrootsSettingsIdentityLockState
+  let pendingImportOperationID: String?
+}
+
+enum RadrootsSettingsNetworkEnvironment: String, Sendable, Equatable, CaseIterable, Identifiable {
+  case publicNetwork
+  case simulator
+  case physicalDevice
+
+  var id: String {
+    rawValue
+  }
+}
+
+enum RadrootsRelayAccessPreference: String, Sendable, Equatable, CaseIterable, Identifiable {
+  case readOnly
+  case readWrite
+
+  var id: String {
+    rawValue
+  }
+
+  var label: String {
+    self == .readWrite ? "Read and write" : "Read only"
+  }
+}
+
+struct RadrootsRelayPreference: Sendable, Equatable, Identifiable {
+  let id: UUID
+  var url: String
+  var access: RadrootsRelayAccessPreference
+
+  init(id: UUID = UUID(), url: String, access: RadrootsRelayAccessPreference) {
+    self.id = id
+    self.url = url
+    self.access = access
+  }
+}
+
+enum RadrootsBlossomAuthorityPreference: String, Sendable, Equatable, CaseIterable, Identifiable {
+  case publicWebPKI
+  case loopbackDevelopment
+  case privateNetworkDevelopment
+
+  var id: String {
+    rawValue
+  }
+}
+
+struct RadrootsMobileSettings: Sendable, Equatable {
+  let revision: UInt64
+  let identity: RadrootsSettingsIdentityState
+  var networkEnvironment: RadrootsSettingsNetworkEnvironment
+  var relays: [RadrootsRelayPreference]
+  var blossomAuthority: RadrootsBlossomAuthorityPreference
+  var blossomPrimaryOrigin: String
+  var blossomFallbackOrigins: [String]
+  var allowCellularDownloads: Bool
+  var allowCellularUploads: Bool
+  var allowBackgroundTransfers: Bool
+  var mediaCacheBytes: UInt64
+  var mediaCacheArtifacts: UInt32
+}
+
+struct RadrootsReplaceSettings: Sendable, Equatable {
+  let expectedRevision: UInt64
+  let networkEnvironment: RadrootsSettingsNetworkEnvironment
+  let relays: [RadrootsRelayPreference]
+  let blossomAuthority: RadrootsBlossomAuthorityPreference
+  let blossomPrimaryOrigin: String
+  let blossomFallbackOrigins: [String]
+  let allowCellularDownloads: Bool
+  let allowCellularUploads: Bool
+  let allowBackgroundTransfers: Bool
+  let mediaCacheBytes: UInt64
+  let mediaCacheArtifacts: UInt32
+}
+
+struct RadrootsSettingsTransition: Sendable, Equatable {
+  let settings: RadrootsMobileSettings
+  let runtimeRestartRequired: Bool
+  let outboxRequeueRequired: Bool
+  let mediaCacheInvalidationRequired: Bool
+}
+
+enum RadrootsIdentityCommandKind: Sendable, Equatable {
+  case beginImport
+  case completeImport
+  case cancelImport
+  case select
+  case lock
+  case unlock
+  case recover
+}
+
+struct RadrootsIdentityCommand: Sendable, Equatable {
+  let kind: RadrootsIdentityCommandKind
+  let operationID: String?
+  let identityID: String?
+  let publicKeyHex: String?
+}
+
+struct RadrootsProfileMetadataInput: Sendable, Equatable {
+  var name: String
+  var displayName: String?
+  var about: String?
+  var picture: RadrootsPreparedMediaHandle?
+  var banner: RadrootsPreparedMediaHandle?
+  var nip05: String?
+  var bot: Bool?
+}
+
+struct RadrootsProfileStatus: Sendable, Equatable, Identifiable {
+  let id: String
+  let revision: UInt64
+  let authorPublicKey: String
+  let state: RadrootsOutboxState
+  let deliveryID: String?
+  let createdAtUnixMilliseconds: UInt64
+  let updatedAtUnixMilliseconds: UInt64
+  let settlement: RadrootsOperationSettlement?
+
+  var honestSummary: String {
+    settlement?.summary ?? state.label
+  }
 }
 
 struct RadrootsRuntimeSnapshot: Sendable, Equatable {
@@ -615,7 +757,6 @@ enum RadrootsAddCommandType: String, CaseIterable, Sendable, Equatable, Hashable
     case .createFoodAvailability: .foodAvailability
     }
   }
-
 }
 
 enum RadrootsAddFieldKind: Sendable, Equatable, Hashable {

@@ -6,6 +6,7 @@ struct RadrootsTodayView: View {
   @ObservedObject var searchStore: RadrootsSearchStore
   @ObservedObject var meStore: RadrootsMeStore
   @ObservedObject var addStore: RadrootsAddStore
+  @ObservedObject var settingsStore: RadrootsSettingsStore
   let revise: (RadrootsTodayCard) -> Void
   @State private var showsAccount = false
   @State private var showsContextPicker = false
@@ -57,6 +58,7 @@ struct RadrootsTodayView: View {
         store: meStore,
         todayStore: store,
         addStore: addStore,
+        settingsStore: settingsStore,
         revise: revise
       )
     }

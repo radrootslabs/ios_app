@@ -358,8 +358,7 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
     }
   }
 
-  func uploadAddMediaIntent(input: RadrootsBlossomUploadIntent) async throws -> RadrootsDraftStatus
-  {
+  func uploadAddMediaIntent(input: RadrootsBlossomUploadIntent) async throws -> RadrootsDraftStatus {
     do {
       return try await runtime.phase1UploadAddMediaIntent(input: input.generatedValue).appValue
     } catch {
@@ -394,6 +393,78 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
   func probeBlossom() async throws -> RadrootsBlossomEvidence {
     do {
       return try await runtime.probeBlossom().appValue
+    } catch {
+      throw Self.failure(from: error)
+    }
+  }
+
+  func mobileSettings() async throws -> RadrootsMobileSettings {
+    do {
+      return try await runtime.phase1Settings().appValue
+    } catch {
+      throw Self.failure(from: error)
+    }
+  }
+
+  func replaceMobileSettings(
+    input: RadrootsReplaceSettings
+  ) async throws -> RadrootsSettingsTransition {
+    do {
+      return try await runtime.phase1ReplaceSettings(input: input.generatedValue).appValue
+    } catch {
+      throw Self.failure(from: error)
+    }
+  }
+
+  func applyIdentityCommand(
+    expectedRevision: UInt64,
+    command: RadrootsIdentityCommand
+  ) async throws -> RadrootsSettingsTransition {
+    do {
+      return try await runtime.phase1ApplyIdentityCommand(
+        expectedRevision: expectedRevision,
+        command: command.generatedValue
+      ).appValue
+    } catch {
+      throw Self.failure(from: error)
+    }
+  }
+
+  func saveProfileMetadata(input: RadrootsProfileMetadataInput) async throws
+    -> RadrootsProfileStatus
+  {
+    do {
+      return try await runtime.phase1SaveProfileMetadata(input: input.generatedValue).appValue
+    } catch {
+      throw Self.failure(from: error)
+    }
+  }
+
+  func profileStatus(operationID: String) async throws -> RadrootsProfileStatus {
+    do {
+      return try await runtime.phase1ProfileStatus(operationId: operationID).appValue
+    } catch {
+      throw Self.failure(from: error)
+    }
+  }
+
+  func advanceProfile(operationID: String) async throws -> RadrootsProfileStatus {
+    do {
+      return try await runtime.phase1AdvanceProfile(operationId: operationID).appValue
+    } catch {
+      throw Self.failure(from: error)
+    }
+  }
+
+  func cancelProfile(
+    operationID: String,
+    expectedRevision: UInt64
+  ) async throws -> RadrootsProfileStatus {
+    do {
+      return try await runtime.phase1CancelProfile(
+        operationId: operationID,
+        expectedRevision: expectedRevision
+      ).appValue
     } catch {
       throw Self.failure(from: error)
     }
@@ -486,24 +557,16 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
         buildSha: configuration.app.buildSHA
       )
 
-      switch configuration.networkProfile {
-      case .publicNetwork:
-        try runtime.configurePublicRelays(writableRelays: configuration.writableRelays)
-      case .simulator:
-        try runtime.configureSimulatorRelays(loopbackRelays: configuration.writableRelays)
-      case .device:
-        try runtime.configureDeviceRelays(writableRelays: configuration.writableRelays)
-      }
-      if let blossom = configuration.blossom {
-        try runtime.configureBlossom(
-          hostKind: blossom.hostKind.generatedValue,
-          endpointAuthority: blossom.endpointAuthority.generatedValue,
-          primaryOrigin: blossom.primaryOrigin,
-          fallbackOrigins: blossom.fallbackOrigins
+      let backend = RadrootsGeneratedRuntimeBackend(runtime: runtime)
+      let currentSettings = try await backend.mobileSettings()
+      if configuration.adoptBootstrapSettings
+        || currentSettings.revision == 1 && currentSettings.identity.identities.isEmpty
+      {
+        _ = try await backend.replaceMobileSettings(
+          input: configuration.bootstrapSettingsReplacement(current: currentSettings)
         )
       }
-
-      let backend = RadrootsGeneratedRuntimeBackend(runtime: runtime)
+      _ = try await runtime.phase1ApplySettingsToRuntime()
       return try await RadrootsRuntimeBackendStart(
         backend: backend,
         snapshot: backend.snapshot()
@@ -537,6 +600,65 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
       code: "ios.generated_runtime.unexpected",
       safeMessage: "The Radroots runtime could not complete the operation."
     )
+  }
+}
+
+private extension RadrootsRuntimeLaunchConfiguration {
+  func bootstrapSettingsReplacement(
+    current: RadrootsMobileSettings
+  ) -> RadrootsReplaceSettings {
+    let environment = networkProfile.settingsValue
+    var relays = writableRelays.map {
+      RadrootsRelayPreference(url: $0, access: .readWrite)
+    }
+    if networkProfile != .simulator,
+      !relays.contains(where: { $0.url == RadrootsNetworkValidator.canonicalRelay })
+    {
+      relays.insert(
+        RadrootsRelayPreference(
+          url: RadrootsNetworkValidator.canonicalRelay,
+          access: .readWrite
+        ),
+        at: 0
+      )
+    }
+    let authority = blossom?.endpointAuthority.settingsValue
+      ?? current.blossomAuthority
+    let primaryOrigin = blossom?.primaryOrigin ?? current.blossomPrimaryOrigin
+    let fallbackOrigins = blossom?.fallbackOrigins ?? current.blossomFallbackOrigins
+    return RadrootsReplaceSettings(
+      expectedRevision: current.revision,
+      networkEnvironment: environment,
+      relays: relays,
+      blossomAuthority: authority,
+      blossomPrimaryOrigin: primaryOrigin,
+      blossomFallbackOrigins: fallbackOrigins,
+      allowCellularDownloads: current.allowCellularDownloads,
+      allowCellularUploads: current.allowCellularUploads,
+      allowBackgroundTransfers: current.allowBackgroundTransfers,
+      mediaCacheBytes: current.mediaCacheBytes,
+      mediaCacheArtifacts: current.mediaCacheArtifacts
+    )
+  }
+}
+
+private extension RadrootsRuntimeNetworkProfile {
+  var settingsValue: RadrootsSettingsNetworkEnvironment {
+    switch self {
+    case .publicNetwork: .publicNetwork
+    case .simulator: .simulator
+    case .device: .physicalDevice
+    }
+  }
+}
+
+private extension RadrootsBlossomEndpointAuthority {
+  var settingsValue: RadrootsBlossomAuthorityPreference {
+    switch self {
+    case .publicWebPKI: .publicWebPKI
+    case .loopbackDevelopment: .loopbackDevelopment
+    case .privateNetworkDevelopment: .privateNetworkDevelopment
+    }
   }
 }
 
@@ -1004,6 +1126,217 @@ extension RadrootsPreparedMediaHandle {
       height: media.height,
       alt: media.alt,
       preparedAtUnixS: media.preparedAtUnixSeconds
+    )
+  }
+}
+
+extension FfiIdentityLockState {
+  fileprivate var appValue: RadrootsSettingsIdentityLockState {
+    switch self {
+    case .locked: .locked
+    case .unlocked: .unlocked
+    }
+  }
+}
+
+extension FfiSettingsIdentityRecord {
+  fileprivate var appValue: RadrootsSettingsIdentity {
+    RadrootsSettingsIdentity(id: id, publicKeyHex: publicKey)
+  }
+}
+
+extension FfiIdentityStateRecord {
+  fileprivate var appValue: RadrootsSettingsIdentityState {
+    RadrootsSettingsIdentityState(
+      identities: identities.map(\.appValue),
+      activeIdentityID: activeIdentityId,
+      lockState: lockState.appValue,
+      pendingImportOperationID: pendingImportOperationId
+    )
+  }
+}
+
+extension FfiMobileNetworkEnvironment {
+  fileprivate var appValue: RadrootsSettingsNetworkEnvironment {
+    switch self {
+    case .public: .publicNetwork
+    case .simulator: .simulator
+    case .physicalDevice: .physicalDevice
+    }
+  }
+}
+
+extension RadrootsSettingsNetworkEnvironment {
+  fileprivate var generatedValue: FfiMobileNetworkEnvironment {
+    switch self {
+    case .publicNetwork: .public
+    case .simulator: .simulator
+    case .physicalDevice: .physicalDevice
+    }
+  }
+}
+
+extension FfiRelayAccessPreference {
+  fileprivate var appValue: RadrootsRelayAccessPreference {
+    switch self {
+    case .readOnly: .readOnly
+    case .readWrite: .readWrite
+    }
+  }
+}
+
+extension RadrootsRelayAccessPreference {
+  fileprivate var generatedValue: FfiRelayAccessPreference {
+    switch self {
+    case .readOnly: .readOnly
+    case .readWrite: .readWrite
+    }
+  }
+}
+
+extension FfiBlossomAuthorityPreference {
+  fileprivate var appValue: RadrootsBlossomAuthorityPreference {
+    switch self {
+    case .publicWebPki: .publicWebPKI
+    case .loopbackDevelopment: .loopbackDevelopment
+    case .privateNetworkDevelopment: .privateNetworkDevelopment
+    }
+  }
+}
+
+extension RadrootsBlossomAuthorityPreference {
+  fileprivate var generatedValue: FfiBlossomAuthorityPreference {
+    switch self {
+    case .publicWebPKI: .publicWebPki
+    case .loopbackDevelopment: .loopbackDevelopment
+    case .privateNetworkDevelopment: .privateNetworkDevelopment
+    }
+  }
+}
+
+extension FfiMobileSettingsRecord {
+  fileprivate var appValue: RadrootsMobileSettings {
+    RadrootsMobileSettings(
+      revision: revision,
+      identity: identity.appValue,
+      networkEnvironment: relays.environment.appValue,
+      relays: relays.endpoints.map {
+        RadrootsRelayPreference(url: $0.url, access: $0.access.appValue)
+      },
+      blossomAuthority: blossom.authority.appValue,
+      blossomPrimaryOrigin: blossom.primaryOrigin,
+      blossomFallbackOrigins: blossom.fallbackOrigins,
+      allowCellularDownloads: mediaNetwork.allowCellularDownloads,
+      allowCellularUploads: mediaNetwork.allowCellularUploads,
+      allowBackgroundTransfers: mediaNetwork.allowBackgroundTransfers,
+      mediaCacheBytes: localStorage.mediaCacheBytes,
+      mediaCacheArtifacts: localStorage.mediaCacheArtifacts
+    )
+  }
+}
+
+extension RadrootsReplaceSettings {
+  fileprivate var generatedValue: FfiReplaceSettingsRecord {
+    let environment = networkEnvironment.generatedValue
+    return FfiReplaceSettingsRecord(
+      schemaVersion: 1,
+      expectedRevision: expectedRevision,
+      relays: FfiRelayPreferencesRecord(
+        schemaVersion: 1,
+        environment: environment,
+        endpoints: relays.map {
+          FfiRelayPreferenceRecord(
+            schemaVersion: 1,
+            url: $0.url,
+            access: $0.access.generatedValue
+          )
+        }
+      ),
+      blossom: FfiBlossomPreferencesRecord(
+        schemaVersion: 1,
+        environment: environment,
+        authority: blossomAuthority.generatedValue,
+        primaryOrigin: blossomPrimaryOrigin,
+        fallbackOrigins: blossomFallbackOrigins
+      ),
+      mediaNetwork: FfiMediaNetworkPolicyRecord(
+        schemaVersion: 1,
+        allowCellularDownloads: allowCellularDownloads,
+        allowCellularUploads: allowCellularUploads,
+        allowBackgroundTransfers: allowBackgroundTransfers
+      ),
+      localStorage: FfiLocalStoragePolicyRecord(
+        schemaVersion: 1,
+        mediaCacheBytes: mediaCacheBytes,
+        mediaCacheArtifacts: mediaCacheArtifacts
+      )
+    )
+  }
+}
+
+extension FfiSettingsTransitionRecord {
+  fileprivate var appValue: RadrootsSettingsTransition {
+    RadrootsSettingsTransition(
+      settings: settings.appValue,
+      runtimeRestartRequired: runtimeRestartRequired,
+      outboxRequeueRequired: outboxRequeueRequired,
+      mediaCacheInvalidationRequired: mediaCacheInvalidationRequired
+    )
+  }
+}
+
+extension RadrootsIdentityCommandKind {
+  fileprivate var generatedValue: FfiIdentityCommandKind {
+    switch self {
+    case .beginImport: .beginImport
+    case .completeImport: .completeImport
+    case .cancelImport: .cancelImport
+    case .select: .select
+    case .lock: .lock
+    case .unlock: .unlock
+    case .recover: .recover
+    }
+  }
+}
+
+extension RadrootsIdentityCommand {
+  fileprivate var generatedValue: FfiIdentityCommandRecord {
+    FfiIdentityCommandRecord(
+      schemaVersion: 1,
+      kind: kind.generatedValue,
+      operationId: operationID,
+      identityId: identityID,
+      publicKey: publicKeyHex
+    )
+  }
+}
+
+extension RadrootsProfileMetadataInput {
+  fileprivate var generatedValue: FfiProfileMetadataInputRecord {
+    FfiProfileMetadataInputRecord(
+      schemaVersion: 1,
+      name: name,
+      displayName: displayName,
+      about: about,
+      picture: picture?.generatedValue,
+      banner: banner?.generatedValue,
+      nip05: nip05,
+      bot: bot
+    )
+  }
+}
+
+extension FfiProfileStatusRecord {
+  fileprivate var appValue: RadrootsProfileStatus {
+    RadrootsProfileStatus(
+      id: operationId,
+      revision: revision,
+      authorPublicKey: authorPublicKey,
+      state: state.appValue,
+      deliveryID: deliveryId,
+      createdAtUnixMilliseconds: createdAtUnixMs,
+      updatedAtUnixMilliseconds: updatedAtUnixMs,
+      settlement: settlement?.appValue
     )
   }
 }

@@ -91,6 +91,7 @@ struct RadrootsMeSheet: View {
   @ObservedObject var store: RadrootsMeStore
   @ObservedObject var todayStore: RadrootsTodayStore
   @ObservedObject var addStore: RadrootsAddStore
+  @ObservedObject var settingsStore: RadrootsSettingsStore
   let revise: (RadrootsTodayCard) -> Void
   @Environment(\.dismiss) private var dismiss
   @State private var showsDrafts = false
@@ -190,7 +191,9 @@ struct RadrootsMeSheet: View {
           RadrootsSettingsView(
             snapshot: runtimeSnapshot,
             todayStore: todayStore,
-            addStore: addStore
+            addStore: addStore,
+            meStore: store,
+            settingsStore: settingsStore
           )
         }
         .accessibilityIdentifier("radroots.support.settings")
@@ -314,19 +317,98 @@ struct RadrootsSettingsView: View {
   let snapshot: RadrootsRuntimeSnapshot
   @ObservedObject var todayStore: RadrootsTodayStore
   @ObservedObject var addStore: RadrootsAddStore
+  @ObservedObject var meStore: RadrootsMeStore
+  @ObservedObject var settingsStore: RadrootsSettingsStore
   @EnvironmentObject private var diagnosticsStore: RadrootsDiagnosticsStore
+  @EnvironmentObject private var appModel: RadrootsAppModel
 
   var body: some View {
     List {
       Section("Identity") {
         LabeledContent(
           "Local signer",
-          value: snapshot.identity.hostSignerConfigured ? "Ready" : "Needs attention")
+          value: snapshot.identity.hostSignerConfigured ? "Ready" : "Needs attention"
+        )
         LabeledContent("Public key", value: abbreviatedPublicKey)
           .accessibilityIdentifier("radroots.settings.identity.public_key")
           .accessibilityValue(snapshot.identity.publicKeyHex)
+        if let identity = settingsStore.settings?.identity {
+          LabeledContent(
+            "Custody state",
+            value: identity.lockState == .unlocked ? "Unlocked" : "Locked"
+          )
+          ForEach(identity.identities) { record in
+            HStack {
+              Text(abbreviated(record.publicKeyHex)).font(.caption.monospaced())
+              Spacer()
+              if record.id == identity.activeIdentityID {
+                Text("Selected").foregroundStyle(.secondary)
+              }
+            }
+          }
+        }
+        Button("Lock identity", role: .destructive) {
+          Task { await appModel.lockIdentity() }
+        }
+        .accessibilityIdentifier("radroots.settings.identity.lock")
       }
-      Section("Nostr relays") {
+      Section("Profile") {
+        TextField("Name", text: $settingsStore.profileName)
+          .textInputAutocapitalization(.never)
+          .accessibilityIdentifier("radroots.settings.profile.name")
+        TextField("Display name", text: $settingsStore.profileDisplayName)
+          .accessibilityIdentifier("radroots.settings.profile.display_name")
+        TextField("About", text: $settingsStore.profileAbout, axis: .vertical)
+          .lineLimit(3 ... 8)
+          .accessibilityIdentifier("radroots.settings.profile.about")
+        TextField("NIP-05 identifier", text: $settingsStore.profileNip05)
+          .textInputAutocapitalization(.never)
+          .keyboardType(.emailAddress)
+          .accessibilityIdentifier("radroots.settings.profile.nip05")
+        Toggle("Automated account", isOn: $settingsStore.profileBot)
+        Button("Save profile update") { Task { await settingsStore.saveProfile() } }
+          .disabled(settingsStore.isWorking)
+          .accessibilityIdentifier("radroots.settings.profile.save")
+        if let status = settingsStore.profileStatus {
+          LabeledContent("Publication", value: status.honestSummary)
+          if status.state.canAdvance {
+            Button("Retry profile publication") {
+              Task { await settingsStore.advanceProfile() }
+            }
+          }
+          if status.state.canCancel {
+            Button("Cancel profile publication", role: .destructive) {
+              Task { await settingsStore.cancelProfile() }
+            }
+          }
+        }
+      }
+      Section("Network environment") {
+        Picker("Environment", selection: $settingsStore.networkEnvironment) {
+          ForEach(RadrootsSettingsNetworkEnvironment.allCases) { environment in
+            Text(display(environment.rawValue)).tag(environment)
+          }
+        }
+        .accessibilityIdentifier("radroots.settings.network.environment")
+      }
+      Section("Nostr relay preferences") {
+        ForEach($settingsStore.relays) { $relay in
+          VStack(alignment: .leading) {
+            TextField("wss://relay.example", text: $relay.url)
+              .textInputAutocapitalization(.never)
+              .keyboardType(.URL)
+            Picker("Access", selection: $relay.access) {
+              ForEach(RadrootsRelayAccessPreference.allCases) { access in
+                Text(access.label).tag(access)
+              }
+            }
+          }
+        }
+        .onDelete(perform: settingsStore.removeRelays)
+        Button("Add relay") { settingsStore.addRelay() }
+          .accessibilityIdentifier("radroots.settings.relays.add")
+      }
+      Section("Live relay status") {
         if snapshot.relay?.relays.isEmpty != false {
           Text("No relay is configured for this profile.")
             .foregroundStyle(.secondary)
@@ -342,7 +424,61 @@ struct RadrootsSettingsView: View {
         Button("Retry local network") { Task { await todayStore.reload() } }
           .accessibilityIdentifier("radroots.settings.retry.network")
       }
-      Section("Blossom photos") {
+      Section("Blossom preferences") {
+        Picker("Trust", selection: $settingsStore.blossomAuthority) {
+          ForEach(RadrootsBlossomAuthorityPreference.allCases) { authority in
+            Text(display(authority.rawValue)).tag(authority)
+          }
+        }
+        TextField("Primary HTTPS origin", text: $settingsStore.blossomPrimaryOrigin)
+          .textInputAutocapitalization(.never)
+          .keyboardType(.URL)
+          .accessibilityIdentifier("radroots.settings.blossom.primary")
+        TextField(
+          "Fallback HTTPS origins, one per line",
+          text: $settingsStore.blossomFallbackOrigins,
+          axis: .vertical
+        )
+        .lineLimit(2 ... 5)
+        .textInputAutocapitalization(.never)
+        .keyboardType(.URL)
+        Toggle("Cellular downloads", isOn: $settingsStore.allowCellularDownloads)
+        Toggle("Cellular uploads", isOn: $settingsStore.allowCellularUploads)
+        Toggle("Background transfers", isOn: $settingsStore.allowBackgroundTransfers)
+      }
+      Section("Local media storage") {
+        Stepper(
+          "Cache: \(settingsStore.mediaCacheMegabytes) MB",
+          value: $settingsStore.mediaCacheMegabytes,
+          in: 16 ... 2048,
+          step: 16
+        )
+        Stepper(
+          "Artifacts: \(settingsStore.mediaCacheArtifacts)",
+          value: $settingsStore.mediaCacheArtifacts,
+          in: 1 ... 10000,
+          step: 100
+        )
+        Button("Save network and storage settings") {
+          Task {
+            if await settingsStore.saveSettings() {
+              await appModel.applySettingsReconfiguration()
+            }
+          }
+        }
+        .disabled(settingsStore.isWorking)
+        .accessibilityIdentifier("radroots.settings.save")
+        if let message = settingsStore.message {
+          Text(message).foregroundStyle(.secondary)
+        }
+        if let failureCode = settingsStore.failureCode {
+          Text("Error code \(failureCode)")
+            .font(.caption.monospaced())
+            .foregroundStyle(.secondary)
+            .accessibilityIdentifier("radroots.settings.failure_code")
+        }
+      }
+      Section("Blossom service status") {
         if let configuration = addStore.blossomConfiguration {
           LabeledContent("Origin", value: configuration.primaryOrigin)
             .accessibilityIdentifier("radroots.settings.blossom.origin")
@@ -380,7 +516,9 @@ struct RadrootsSettingsView: View {
           }
         }
         LabeledContent(
-          "Photo library", value: addStore.mediaSupport.library ? "Ready" : "Unavailable")
+          "Photo library",
+          value: addStore.mediaSupport.library ? "Ready" : "Unavailable"
+        )
         LabeledContent("Camera", value: addStore.mediaSupport.camera ? "Ready" : "Unavailable")
         Button {
           Task { await addStore.checkPhotoService() }
@@ -418,6 +556,7 @@ struct RadrootsSettingsView: View {
       }
     }
     .navigationTitle("Settings")
+    .task { await settingsStore.load(profile: meStore.snapshot?.profile) }
     .radrootsDocumentExporter(preparedExport: $diagnosticsStore.preparedExport) { result in
       diagnosticsStore.completeExport(result)
     }
