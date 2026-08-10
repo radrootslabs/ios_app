@@ -78,9 +78,9 @@ final class RadrootsTodayStore: ObservableObject {
                 for await change in changes {
                     guard !Task.isCancelled else { break }
                     switch change.kind {
-                    case .today, .drafts, .media, .identity:
+                    case .today, .drafts, .media, .identity, .profile:
                         await self?.reload(refreshProjection: false)
-                    case .initial, .relay, .lifecycle:
+                    case .initial, .settings, .relay, .lifecycle:
                         continue
                     }
                 }

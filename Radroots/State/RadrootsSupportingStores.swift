@@ -139,9 +139,9 @@ final class RadrootsMeStore: ObservableObject {
                     for await change in changes {
                         guard !Task.isCancelled else { break }
                         switch change.kind {
-                        case .today, .identity, .media, .drafts:
+                        case .today, .identity, .profile, .media, .drafts:
                             await self?.reload()
-                        case .initial, .relay, .lifecycle:
+                        case .initial, .settings, .relay, .lifecycle:
                             continue
                         }
                     }

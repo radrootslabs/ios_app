@@ -589,6 +589,8 @@ private extension FfiRuntimeChangeKind {
         switch self {
         case .initial: .initial
         case .identity: .identity
+        case .settings: .settings
+        case .profile: .profile
         case .today: .today
         case .drafts: .drafts
         case .relay: .relay

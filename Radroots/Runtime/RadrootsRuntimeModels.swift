@@ -176,6 +176,8 @@ struct RadrootsRuntimeSnapshot: Sendable, Equatable {
 enum RadrootsRuntimeChangeKind: Sendable, Equatable {
     case initial
     case identity
+    case settings
+    case profile
     case today
     case drafts
     case relay

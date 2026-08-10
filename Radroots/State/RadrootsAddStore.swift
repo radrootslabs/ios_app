@@ -420,6 +420,9 @@ final class RadrootsAddStore: ObservableObject {
                     if change.kind == .media {
                         await self?.refreshBlossomSnapshot()
                     }
+                    if change.kind == .settings {
+                        await self?.refreshBlossomSnapshot()
+                    }
                 }
             } catch {
                 // Durable draft operations remain available without observation.
