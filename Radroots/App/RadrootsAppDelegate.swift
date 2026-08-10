@@ -30,10 +30,4 @@ public final class RadrootsAppDelegate: NSObject, UIApplicationDelegate {
             )
         }
     }
-
-    public func applicationWillTerminate(_: UIApplication) {
-        Task {
-            await RadrootsLifecycleBridge.shared.requestShutdown()
-        }
-    }
 }

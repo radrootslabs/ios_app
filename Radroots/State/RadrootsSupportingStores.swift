@@ -102,20 +102,26 @@ final class RadrootsSearchStore: ObservableObject {
 final class RadrootsMeStore: ObservableObject {
     @Published private(set) var snapshot: RadrootsMeSnapshot?
     @Published private(set) var state: RadrootsSupportingLoadState = .idle
+    @Published private(set) var observationState: RadrootsRuntimeObservationState = .inactive
 
     private let runtimeClient: RadrootsRuntimeClient
     private let now: @Sendable () -> UInt64
+    private let observationDelay: @Sendable (UInt32) async throws -> Void
     private var context: RadrootsLocalNetwork?
     private var generation: UInt64 = 0
     private var observationTask: Task<Void, Never>?
     private var isStarted = false
+    private var observationGeneration: UInt64 = 0
 
     init(
         runtimeClient: RadrootsRuntimeClient,
-        now: @escaping @Sendable () -> UInt64 = { UInt64(Date().timeIntervalSince1970) }
+        now: @escaping @Sendable () -> UInt64 = { UInt64(Date().timeIntervalSince1970) },
+        observationDelay: @escaping @Sendable (UInt32) async throws -> Void =
+            RadrootsRuntimeObservationBackoff.sleep
     ) {
         self.runtimeClient = runtimeClient
         self.now = now
+        self.observationDelay = observationDelay
     }
 
     deinit {
@@ -133,22 +139,10 @@ final class RadrootsMeStore: ObservableObject {
     func start() async {
         if !isStarted {
             isStarted = true
-            observationTask = Task { [weak self, runtimeClient] in
-                do {
-                    let changes = try await runtimeClient.changes(bufferCapacity: 8)
-                    for await change in changes {
-                        guard !Task.isCancelled else { break }
-                        switch change.kind {
-                        case .today, .identity, .profile, .media, .drafts:
-                            await self?.reload()
-                        case .initial, .settings, .relay, .lifecycle:
-                            continue
-                        }
-                    }
-                } catch {
-                    // Manual loading remains available from the durable projection.
-                }
-                self?.observationDidFinish()
+            observationGeneration &+= 1
+            let requestedGeneration = observationGeneration
+            observationTask = Task { [weak self] in
+                await self?.observe(generation: requestedGeneration)
             }
         }
         await reload()
@@ -182,13 +176,55 @@ final class RadrootsMeStore: ObservableObject {
     func stop() {
         generation &+= 1
         isStarted = false
+        observationGeneration &+= 1
         observationTask?.cancel()
         observationTask = nil
+        observationState = .stopped
     }
 
-    private func observationDidFinish() {
+    private func observe(generation: UInt64) async {
+        var attempt: UInt32 = 0
+        while isStarted, observationGeneration == generation, !Task.isCancelled {
+            observationState = .subscribing(attempt: attempt &+ 1)
+            var failureMessage = "Runtime observation ended unexpectedly."
+            do {
+                let changes = try await runtimeClient.changes(bufferCapacity: 8)
+                observationState = .active
+                for await change in changes {
+                    guard !Task.isCancelled else { break }
+                    attempt = 0
+                    switch change.kind {
+                    case .today, .identity, .profile, .media, .drafts:
+                        await reload()
+                    case .initial, .settings, .relay, .lifecycle:
+                        continue
+                    }
+                }
+            } catch {
+                failureMessage =
+                    (error as? LocalizedError)?.errorDescription
+                        ?? "Runtime observation is temporarily unavailable."
+            }
+            guard isStarted, observationGeneration == generation, !Task.isCancelled else { break }
+            attempt = attempt == .max ? .max : attempt + 1
+            observationState = .retrying(attempt: attempt, message: failureMessage)
+            do {
+                try await observationDelay(attempt)
+            } catch {
+                break
+            }
+        }
+        observationDidFinish(generation: generation)
+    }
+
+    private func observationDidFinish(generation: UInt64) {
+        guard observationGeneration == generation else { return }
         observationTask = nil
         isStarted = false
+        if case .retrying = observationState {
+            return
+        }
+        observationState = .stopped
     }
 
     private static func message(for error: Error) -> String {

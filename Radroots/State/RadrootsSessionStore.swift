@@ -72,9 +72,11 @@ actor RadrootsSessionStore {
             throw RadrootsConfigurationError.missing("bundle_identifier")
         }
         let qualification = try RadrootsRemoteQualificationEnvironment.current()
-        let servicePrefix = try qualification?.keychainServicePrefix ?? requiredString(
-            "RADROOTS_FIELD_IOS_KEYCHAIN_SERVICE_PREFIX", bundle: bundle
-        )
+        let servicePrefix =
+            try qualification?.keychainServicePrefix
+                ?? requiredString(
+                    "RADROOTS_FIELD_IOS_KEYCHAIN_SERVICE_PREFIX", bundle: bundle
+                )
         let bootstrap = try RadrootsConfigurationBootstrap(
             runtimeMode: qualification == nil
                 ? requiredString("RADROOTS_FIELD_IOS_RUNTIME_MODE", bundle: bundle)
@@ -87,7 +89,8 @@ actor RadrootsSessionStore {
             bundleIdentifier: bundleIdentifier,
             appMetadata: RadrootsRuntimeAppMetadata(
                 bundleIdentifier: bundleIdentifier,
-                version: bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0",
+                version: bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+                    ?? "0",
                 buildNumber: bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0",
                 buildSHA: normalizedOptional(
                     bundle.object(forInfoDictionaryKey: "GIT_SHA") as? String
@@ -126,6 +129,14 @@ actor RadrootsSessionStore {
 
     func applyConfigurationReconfiguration() async -> RadrootsSessionPhase {
         await start(acceptingReconfiguration: true)
+    }
+
+    func suspend() async {
+        generation &+= 1
+        await runtimeClient.suspend()
+        if case .starting = phase {
+            phase = .stopped
+        }
     }
 
     private func start(acceptingReconfiguration: Bool) async -> RadrootsSessionPhase {
@@ -273,21 +284,25 @@ actor RadrootsSessionStore {
         )
         let sourceGeneration = try await configurationStore.sourceGeneration()
         let signer = try await identityStore.signer(for: identity)
-        let snapshot = try await runtimeClient.start(
-            configuration: RadrootsRuntimeLaunchConfiguration(
-                applicationSupportDirectory: mobileStore.applicationSupportDirectory.path,
-                publicKeyHex: publicKeyHex,
-                sourceGenerationHex: sourceGeneration.generationHex,
-                sourceGenerationCreatedAtUnixMilliseconds: sourceGeneration.createdAtUnixMilliseconds,
-                protectedData: protectedData.isAvailable() ? .available : .unavailable,
-                networkProfile: configuration.profile.runtimeValue,
-                writableRelays: configuration.writableRelays,
-                blossom: configuration.blossom,
-                app: configuration.appMetadata,
-                signerGeneration: signerGeneration,
-                signer: signer
-            )
+        let launchConfiguration = RadrootsRuntimeLaunchConfiguration(
+            applicationSupportDirectory: mobileStore.applicationSupportDirectory.path,
+            publicKeyHex: publicKeyHex,
+            sourceGenerationHex: sourceGeneration.generationHex,
+            sourceGenerationCreatedAtUnixMilliseconds: sourceGeneration.createdAtUnixMilliseconds,
+            protectedData: protectedData.isAvailable() ? .available : .unavailable,
+            networkProfile: configuration.profile.runtimeValue,
+            writableRelays: configuration.writableRelays,
+            blossom: configuration.blossom,
+            app: configuration.appMetadata,
+            signerGeneration: signerGeneration,
+            signer: signer
         )
+        let snapshot =
+            if configuration.activationState == .reconfigurationRequired {
+                try await runtimeClient.reconfigure(configuration: launchConfiguration)
+            } else {
+                try await runtimeClient.start(configuration: launchConfiguration)
+            }
         guard generation == requestedGeneration else {
             _ = try? await runtimeClient.stop()
             throw RadrootsRuntimeClientError.superseded
@@ -310,8 +325,9 @@ actor RadrootsSessionStore {
 
     private func failIdentityOperation(_ error: Error) -> RadrootsSessionPhase {
         generation &+= 1
-        let message = (error as? LocalizedError)?.errorDescription
-            ?? "The local identity operation could not be completed."
+        let message =
+            (error as? LocalizedError)?.errorDescription
+                ?? "The local identity operation could not be completed."
         phase = .failed(
             .local(
                 operation: "identity.operation",

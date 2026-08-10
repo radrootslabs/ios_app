@@ -18,6 +18,7 @@ final class RadrootsAppModel: ObservableObject {
     private var generation: UInt64 = 0
     private var lifecycleRegistered = false
     private var sessionOperationsInFlight = 0
+    private var resumePending = false
     private let isShellUITest: Bool
 
     init(
@@ -25,11 +26,12 @@ final class RadrootsAppModel: ObservableObject {
         runtimeClient: RadrootsRuntimeClient? = nil,
         lifecycleCoordinator requestedLifecycleCoordinator: RadrootsLifecycleCoordinator? = nil
     ) {
-        let lifecycleCoordinator = requestedLifecycleCoordinator
-            ?? Bundle.main.bundleIdentifier.flatMap {
-                try? RadrootsLifecycleCoordinator.production(bundleIdentifier: $0)
-            }
-            ?? RadrootsLifecycleCoordinator.disabled()
+        let lifecycleCoordinator =
+            requestedLifecycleCoordinator
+                ?? Bundle.main.bundleIdentifier.flatMap {
+                    try? RadrootsLifecycleCoordinator.production(bundleIdentifier: $0)
+                }
+                ?? RadrootsLifecycleCoordinator.disabled()
         self.lifecycleCoordinator = lifecycleCoordinator
         diagnosticsStore = RadrootsDiagnosticsStore(coordinator: lifecycleCoordinator)
         #if DEBUG
@@ -137,9 +139,11 @@ final class RadrootsAppModel: ObservableObject {
     func resume() async {
         await ensureLifecycleRegistration()
         guard sessionOperationsInFlight == 0 else {
+            resumePending = true
             await lifecycleCoordinator.record("ios.lifecycle.resume_coalesced")
             return
         }
+        resumePending = false
         if case .running = phase {
             await todayStore?.start()
             await addStore?.start()
@@ -150,10 +154,13 @@ final class RadrootsAppModel: ObservableObject {
     }
 
     func suspend() async {
+        generation &+= 1
+        resumePending = false
         todayStore?.stop()
         addStore?.suspend()
         searchStore?.stop()
         meStore?.stop()
+        await sessionStore?.suspend()
         await lifecycleCoordinator.record("ios.lifecycle.background")
     }
 
@@ -185,7 +192,6 @@ final class RadrootsAppModel: ObservableObject {
     ) async {
         guard !isShellUITest else { return }
         sessionOperationsInFlight += 1
-        defer { sessionOperationsInFlight -= 1 }
         generation &+= 1
         let requestedGeneration = generation
         if showsStarting {
@@ -193,21 +199,26 @@ final class RadrootsAppModel: ObservableObject {
         }
         guard let sessionStore else {
             phase = .failed(
-                bootstrapFailure ?? .local(
-                    operation: "app.bootstrap",
-                    code: "ios.app.bootstrap_failed",
-                    safeMessage: "Radroots could not start."
-                )
+                bootstrapFailure
+                    ?? .local(
+                        operation: "app.bootstrap",
+                        code: "ios.app.bootstrap_failed",
+                        safeMessage: "Radroots could not start."
+                    )
             )
             await lifecycleCoordinator.record(
                 "ios.lifecycle.operation_failed",
                 level: .error,
                 fields: ["operation": name, "code": "bootstrap_failed"]
             )
+            await finishSessionOperation()
             return
         }
         let result = await operation(sessionStore)
-        guard generation == requestedGeneration else { return }
+        guard generation == requestedGeneration else {
+            await finishSessionOperation()
+            return
+        }
         if case let .running(snapshot) = result {
             todayStore?.configure(snapshot: snapshot)
             addStore?.configure(snapshot: snapshot)
@@ -218,6 +229,14 @@ final class RadrootsAppModel: ObservableObject {
             level: Self.isFailure(result) ? .warning : .info,
             fields: ["operation": name, "phase": Self.phaseCode(result)]
         )
+        await finishSessionOperation()
+    }
+
+    private func finishSessionOperation() async {
+        sessionOperationsInFlight -= 1
+        guard sessionOperationsInFlight == 0, resumePending else { return }
+        resumePending = false
+        await resume()
     }
 
     private func ensureLifecycleRegistration() async {
@@ -269,7 +288,7 @@ final class RadrootsAppModel: ObservableObject {
 }
 
 #if DEBUG
-    private extension RadrootsRuntimeSnapshot {
+    fileprivate extension RadrootsRuntimeSnapshot {
         static let shellUITest = RadrootsRuntimeSnapshot(
             identity: RadrootsRuntimeIdentity(
                 publicKeyHex: String(repeating: "ab", count: 32),

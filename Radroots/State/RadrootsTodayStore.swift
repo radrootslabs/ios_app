@@ -16,16 +16,19 @@ final class RadrootsTodayStore: ObservableObject {
     @Published private(set) var cards: [RadrootsTodayCard] = []
     @Published private(set) var state: RadrootsTodayLoadState = .idle
     @Published private(set) var isLoadingNextPage = false
+    @Published private(set) var observationState: RadrootsRuntimeObservationState = .inactive
 
     private let runtimeClient: RadrootsRuntimeClient
     private let pageSize: UInt16
     private let now: @Sendable () -> UInt64
+    private let observationDelay: @Sendable (UInt32) async throws -> Void
     private var frozenAsOfUnixSeconds: UInt64?
     private var nextCursor: String?
     private var requestGeneration: UInt64 = 0
     private var observationTask: Task<Void, Never>?
     private var reloadTask: Task<Void, Never>?
     private var isStarted = false
+    private var observationGeneration: UInt64 = 0
 
     init(
         runtimeClient: RadrootsRuntimeClient,
@@ -34,12 +37,15 @@ final class RadrootsTodayStore: ObservableObject {
         pageSize: UInt16 = 20,
         now: @escaping @Sendable () -> UInt64 = {
             UInt64(Date().timeIntervalSince1970)
-        }
+        },
+        observationDelay: @escaping @Sendable (UInt32) async throws -> Void =
+            RadrootsRuntimeObservationBackoff.sleep
     ) {
         self.runtimeClient = runtimeClient
         self.contexts = Self.unique(contexts)
         self.pageSize = min(max(pageSize, 1), 100)
         self.now = now
+        self.observationDelay = observationDelay
         if let selectedContextID,
            self.contexts.contains(where: { $0.id == selectedContextID })
         {
@@ -72,31 +78,21 @@ final class RadrootsTodayStore: ObservableObject {
     func start() async {
         guard !isStarted else { return }
         isStarted = true
-        observationTask = Task { [weak self, runtimeClient] in
-            do {
-                let changes = try await runtimeClient.changes(bufferCapacity: 16)
-                for await change in changes {
-                    guard !Task.isCancelled else { break }
-                    switch change.kind {
-                    case .today, .drafts, .media, .identity, .profile:
-                        await self?.reload(refreshProjection: false)
-                    case .initial, .settings, .relay, .lifecycle:
-                        continue
-                    }
-                }
-            } catch {
-                // Loading remains available from the durable local projection.
-            }
-            self?.observationDidFinish()
+        observationGeneration &+= 1
+        let generation = observationGeneration
+        observationTask = Task { [weak self] in
+            await self?.observe(generation: generation)
         }
         await reload()
     }
 
     func stop() {
         isStarted = false
+        observationGeneration &+= 1
         requestGeneration &+= 1
         observationTask?.cancel()
         observationTask = nil
+        observationState = .stopped
         reloadTask?.cancel()
         reloadTask = nil
         isLoadingNextPage = false
@@ -120,9 +116,10 @@ final class RadrootsTodayStore: ObservableObject {
         let updatedContexts = Self.unique(updatedContexts)
         guard !updatedContexts.isEmpty else { return }
         contexts = updatedContexts
-        selectedContextID = selectedID.flatMap { requested in
-            updatedContexts.contains(where: { $0.id == requested }) ? requested : nil
-        } ?? updatedContexts.first?.id
+        selectedContextID =
+            selectedID.flatMap { requested in
+                updatedContexts.contains(where: { $0.id == requested }) ? requested : nil
+            } ?? updatedContexts.first?.id
         requestGeneration &+= 1
         reloadTask?.cancel()
         reloadTask = Task { [weak self] in
@@ -226,9 +223,49 @@ final class RadrootsTodayStore: ObservableObject {
         return contexts.filter { identifiers.insert($0.id).inserted }
     }
 
-    private func observationDidFinish() {
+    private func observe(generation: UInt64) async {
+        var attempt: UInt32 = 0
+        while isStarted, observationGeneration == generation, !Task.isCancelled {
+            observationState = .subscribing(attempt: attempt &+ 1)
+            var failureMessage = "Runtime observation ended unexpectedly."
+            do {
+                let changes = try await runtimeClient.changes(bufferCapacity: 16)
+                observationState = .active
+                for await change in changes {
+                    guard !Task.isCancelled else { break }
+                    attempt = 0
+                    switch change.kind {
+                    case .today, .drafts, .media, .identity, .profile:
+                        await reload(refreshProjection: false)
+                    case .initial, .settings, .relay, .lifecycle:
+                        continue
+                    }
+                }
+            } catch {
+                failureMessage =
+                    (error as? LocalizedError)?.errorDescription
+                        ?? "Runtime observation is temporarily unavailable."
+            }
+            guard isStarted, observationGeneration == generation, !Task.isCancelled else { break }
+            attempt = attempt == .max ? .max : attempt + 1
+            observationState = .retrying(attempt: attempt, message: failureMessage)
+            do {
+                try await observationDelay(attempt)
+            } catch {
+                break
+            }
+        }
+        observationDidFinish(generation: generation)
+    }
+
+    private func observationDidFinish(generation: UInt64) {
+        guard observationGeneration == generation else { return }
         observationTask = nil
         isStarted = false
+        if case .retrying = observationState {
+            return
+        }
+        observationState = .stopped
     }
 
     private static func unique(_ cards: [RadrootsTodayCard]) -> [RadrootsTodayCard] {
@@ -237,13 +274,14 @@ final class RadrootsTodayStore: ObservableObject {
     }
 
     private static func failureState(_ error: Error) -> RadrootsTodayLoadState {
-        let failure: RadrootsRuntimeFailure? = if case let RadrootsRuntimeClientError.today(value) = error {
-            value
-        } else if case let RadrootsRuntimeClientError.status(value) = error {
-            value
-        } else {
-            error as? RadrootsRuntimeFailure
-        }
+        let failure: RadrootsRuntimeFailure? =
+            if case let RadrootsRuntimeClientError.today(value) = error {
+                value
+            } else if case let RadrootsRuntimeClientError.status(value) = error {
+                value
+            } else {
+                error as? RadrootsRuntimeFailure
+            }
         let message = failure?.safeMessage ?? "Today could not be loaded."
         guard let failure else { return .failed(message: message) }
         let category = failure.category.lowercased()

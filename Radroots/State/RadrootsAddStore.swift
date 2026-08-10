@@ -21,14 +21,17 @@ final class RadrootsAddStore: ObservableObject {
     @Published private(set) var isWorking = false
     @Published private(set) var message: String?
     @Published private(set) var lastFailureCode: String?
+    @Published private(set) var observationState: RadrootsRuntimeObservationState = .inactive
 
     private let runtimeClient: RadrootsRuntimeClient
     private let media: (any RadrootsAddMediaHandling)?
     private let now: @Sendable () -> UInt64
+    private let observationDelay: @Sendable (UInt32) async throws -> Void
     private var generation: UInt64 = 0
     private var operationGeneration: UInt64?
     private var observationTask: Task<Void, Never>?
     private var isStarted = false
+    private var observationGeneration: UInt64 = 0
 
     init(
         runtimeClient: RadrootsRuntimeClient,
@@ -36,11 +39,14 @@ final class RadrootsAddStore: ObservableObject {
         initialType: RadrootsAddCommandType = .createUpdate,
         now: @escaping @Sendable () -> UInt64 = {
             UInt64(Date().timeIntervalSince1970)
-        }
+        },
+        observationDelay: @escaping @Sendable (UInt32) async throws -> Void =
+            RadrootsRuntimeObservationBackoff.sleep
     ) {
         self.runtimeClient = runtimeClient
         self.media = media
         self.now = now
+        self.observationDelay = observationDelay
         form = .empty(initialType)
     }
 
@@ -101,15 +107,19 @@ final class RadrootsAddStore: ObservableObject {
     func stop() {
         generation &+= 1
         isStarted = false
+        observationGeneration &+= 1
         observationTask?.cancel()
         observationTask = nil
+        observationState = .stopped
         isWorking = false
     }
 
     func suspend() {
         isStarted = false
+        observationGeneration &+= 1
         observationTask?.cancel()
         observationTask = nil
+        observationState = .stopped
     }
 
     func selectType(_ type: RadrootsAddCommandType) {
@@ -209,11 +219,12 @@ final class RadrootsAddStore: ObservableObject {
 
     func submit() async {
         await perform {
-            var status: RadrootsDraftStatus = if let active = self.activeDraft, !active.state.isEditable {
-                active
-            } else {
-                try await self.saveCurrentForm()
-            }
+            var status: RadrootsDraftStatus =
+                if let active = self.activeDraft, !active.state.isEditable {
+                    active
+                } else {
+                    try await self.saveCurrentForm()
+                }
 
             if !status.media.isEmpty,
                status.media.contains(where: { $0.stage != .verified })
@@ -231,9 +242,10 @@ final class RadrootsAddStore: ObservableObject {
                 } catch {
                     if Self.failure(for: error)?.code == "writable_relay_unavailable" {
                         self.accept(status)
-                        self.message = status.media.isEmpty
-                            ? "Draft saved. Configure a writable relay to publish."
-                            : "Photo verified and draft saved. Configure a writable relay to publish."
+                        self.message =
+                            status.media.isEmpty
+                                ? "Draft saved. Configure a writable relay to publish."
+                                : "Photo verified and draft saved. Configure a writable relay to publish."
                         return
                     }
                     throw error
@@ -260,7 +272,9 @@ final class RadrootsAddStore: ObservableObject {
         guard let draft = draft ?? activeDraft else { return }
         await perform {
             var current = try await self.runtimeClient.draftStatus(id: draft.id)
-            if current.state == .draft || current.state == .mediaPreparing || current.state == .readyToSign {
+            if current.state == .draft || current.state == .mediaPreparing
+                || current.state == .readyToSign
+            {
                 self.activeDraft = current
                 if let form = current.form {
                     self.form = form
@@ -317,7 +331,8 @@ final class RadrootsAddStore: ObservableObject {
             }
             self.activeDraft = nil
             self.form = Self.revisedForm(card)
-            self.message = "Retraction: \(retraction.honestSummary). Review the separate revised copy before publishing."
+            self.message =
+                "Retraction: \(retraction.honestSummary). Review the separate revised copy before publishing."
         }
     }
 
@@ -340,7 +355,9 @@ final class RadrootsAddStore: ObservableObject {
         return status
     }
 
-    private func uploadPendingMedia(_ initial: RadrootsDraftStatus) async throws -> RadrootsDraftStatus {
+    private func uploadPendingMedia(_ initial: RadrootsDraftStatus) async throws
+        -> RadrootsDraftStatus
+    {
         var status = initial
         guard let form = status.form else { return status }
         let opened = try await openedMedia(form.media)
@@ -370,7 +387,9 @@ final class RadrootsAddStore: ObservableObject {
         return status
     }
 
-    private func openedMedia(_ values: [RadrootsPreparedMedia]? = nil) async throws -> RadrootsOpenedMedia {
+    private func openedMedia(_ values: [RadrootsPreparedMedia]? = nil) async throws
+        -> RadrootsOpenedMedia
+    {
         let values = values ?? form.media
         guard !values.isEmpty else { return RadrootsOpenedMedia(handles: [], files: []) }
         guard let media else {
@@ -409,25 +428,52 @@ final class RadrootsAddStore: ObservableObject {
     }
 
     private func startObservation() {
-        observationTask = Task { [weak self, runtimeClient] in
+        observationGeneration &+= 1
+        let requestedGeneration = observationGeneration
+        observationTask = Task { [weak self] in
+            await self?.observe(generation: requestedGeneration)
+        }
+    }
+
+    private func observe(generation: UInt64) async {
+        var attempt: UInt32 = 0
+        while isStarted, observationGeneration == generation, !Task.isCancelled {
+            observationState = .subscribing(attempt: attempt &+ 1)
+            var failureMessage = "Runtime observation ended unexpectedly."
             do {
                 let changes = try await runtimeClient.changes(bufferCapacity: 16)
+                observationState = .active
                 for await change in changes {
                     guard !Task.isCancelled else { break }
+                    attempt = 0
                     if change.kind == .drafts || change.kind == .media {
-                        await self?.reloadDrafts()
+                        await reloadDrafts()
                     }
-                    if change.kind == .media {
-                        await self?.refreshBlossomSnapshot()
-                    }
-                    if change.kind == .settings {
-                        await self?.refreshBlossomSnapshot()
+                    if change.kind == .media || change.kind == .settings {
+                        await refreshBlossomSnapshot()
                     }
                 }
             } catch {
-                // Durable draft operations remain available without observation.
+                failureMessage =
+                    (error as? LocalizedError)?.errorDescription
+                        ?? "Runtime observation is temporarily unavailable."
+            }
+            guard isStarted, observationGeneration == generation, !Task.isCancelled else { break }
+            attempt = attempt == .max ? .max : attempt + 1
+            observationState = .retrying(attempt: attempt, message: failureMessage)
+            do {
+                try await observationDelay(attempt)
+            } catch {
+                break
             }
         }
+        guard observationGeneration == generation else { return }
+        observationTask = nil
+        isStarted = false
+        if case .retrying = observationState {
+            return
+        }
+        observationState = .stopped
     }
 
     private func accept(_ status: RadrootsDraftStatus) {
@@ -488,7 +534,8 @@ final class RadrootsAddStore: ObservableObject {
         if let failure = failure(for: error) {
             return failure.safeMessage
         }
-        return (error as? LocalizedError)?.errorDescription ?? "The Add operation could not be completed."
+        return (error as? LocalizedError)?.errorDescription
+            ?? "The Add operation could not be completed."
     }
 
     private static func failure(for error: Error) -> RadrootsRuntimeFailure? {
@@ -500,11 +547,12 @@ final class RadrootsAddStore: ObservableObject {
 
     private static func retractionInput(_ card: RadrootsTodayCard) -> RadrootsRetractionDraftInput {
         let command = commandType(for: card.type)
-        let kind: UInt32 = switch card.type {
-        case .update, .photoUpdate, .ask: 1
-        case .event: card.contractID == "radroots.calendar.date_event.v1" ? 31922 : 31923
-        case .foodAvailability: 30402
-        }
+        let kind: UInt32 =
+            switch card.type {
+            case .update, .photoUpdate, .ask: 1
+            case .event: card.contractID == "radroots.calendar.date_event.v1" ? 31922 : 31923
+            case .foodAvailability: 30402
+            }
         return RadrootsRetractionDraftInput(
             commandType: command,
             targetCardID: card.id,
@@ -540,7 +588,8 @@ final class RadrootsAddStore: ObservableObject {
             }
         } else if command == .createFoodAvailability {
             form.summary = card.foodSummary ?? card.content
-            form.foodPublishedAtUnixSeconds = card.foodPublishedAtUnixSeconds ?? card.effectiveAtUnixSeconds
+            form.foodPublishedAtUnixSeconds =
+                card.foodPublishedAtUnixSeconds ?? card.effectiveAtUnixSeconds
             form.foodStatus = card.foodStatus ?? card.lifecycle.rawValue
         }
         return form

@@ -112,7 +112,9 @@ extension RadrootsRuntimeBackend {
         throw addUnsupported()
     }
 
-    func uploadAddMediaIntent(input _: RadrootsBlossomUploadIntent) async throws -> RadrootsDraftStatus {
+    func uploadAddMediaIntent(input _: RadrootsBlossomUploadIntent) async throws
+        -> RadrootsDraftStatus
+    {
         throw addUnsupported()
     }
 
@@ -153,20 +155,177 @@ struct RadrootsRuntimeBackendStart: Sendable {
     let snapshot: RadrootsRuntimeSnapshot
 }
 
-typealias RadrootsRuntimeBackendFactory = @Sendable (
-    RadrootsRuntimeLaunchConfiguration
-) async throws -> RadrootsRuntimeBackendStart
+typealias RadrootsRuntimeBackendFactory =
+    @Sendable (
+        RadrootsRuntimeLaunchConfiguration
+    ) async throws -> RadrootsRuntimeBackendStart
+
+private enum RadrootsRuntimeBoundedOutcome<Value: Sendable>: Sendable {
+    case completed(Result<Value, RadrootsRuntimeFailure>)
+    case timedOut
+    case cancelled
+}
+
+private final class RadrootsRuntimeBoundedTask<Value: Sendable>: @unchecked Sendable {
+    typealias Outcome = RadrootsRuntimeBoundedOutcome<Value>
+
+    private final class State: @unchecked Sendable {
+        private let lock = NSLock()
+        private var outcome: Outcome?
+        private var continuations: [UUID: CheckedContinuation<Outcome, Never>] = [:]
+        private var cancelledWaiters: Set<UUID> = []
+        private var operationTask: Task<Void, Never>?
+        private var timeoutTask: Task<Void, Never>?
+
+        func install(operationTask: Task<Void, Never>, timeoutTask: Task<Void, Never>) {
+            let shouldCancel = lock.withLock { () -> Bool in
+                guard outcome == nil else { return true }
+                self.operationTask = operationTask
+                self.timeoutTask = timeoutTask
+                return false
+            }
+            if shouldCancel {
+                timeoutTask.cancel()
+            }
+        }
+
+        func value(cancelsOperationWhenWaiterCancelled: Bool) async -> Outcome {
+            let waiterID = UUID()
+            return await withTaskCancellationHandler {
+                await withCheckedContinuation { requestedContinuation in
+                    let immediate = lock.withLock { () -> Outcome? in
+                        if let outcome {
+                            return outcome
+                        }
+                        if cancelledWaiters.remove(waiterID) != nil {
+                            return .cancelled
+                        }
+                        continuations[waiterID] = requestedContinuation
+                        return nil
+                    }
+                    if let immediate {
+                        requestedContinuation.resume(returning: immediate)
+                    }
+                }
+            } onCancel: {
+                if cancelsOperationWhenWaiterCancelled {
+                    cancel()
+                } else {
+                    cancelWaiter(waiterID)
+                }
+            }
+        }
+
+        func cancel() {
+            guard resolve(.cancelled) else { return }
+            let tasks = lock.withLock { (operationTask, timeoutTask) }
+            tasks.0?.cancel()
+            tasks.1?.cancel()
+        }
+
+        func expire() {
+            guard resolve(.timedOut) else { return }
+            let taskToCancel: Task<Void, Never>? = lock.withLock { self.operationTask }
+            taskToCancel?.cancel()
+        }
+
+        func finishOperation() {
+            lock.withLock { operationTask = nil }
+        }
+
+        private func cancelWaiter(_ waiterID: UUID) {
+            let continuation = lock.withLock { () -> CheckedContinuation<Outcome, Never>? in
+                guard outcome == nil else { return nil }
+                guard let continuation = continuations.removeValue(forKey: waiterID) else {
+                    cancelledWaiters.insert(waiterID)
+                    return nil
+                }
+                return continuation
+            }
+            continuation?.resume(returning: .cancelled)
+        }
+
+        @discardableResult
+        func resolve(_ requestedOutcome: Outcome) -> Bool {
+            var pendingContinuations: [CheckedContinuation<Outcome, Never>] = []
+            var timeoutToCancel: Task<Void, Never>?
+            let accepted = lock.withLock { () -> Bool in
+                guard outcome == nil else { return false }
+                outcome = requestedOutcome
+                pendingContinuations = Array(continuations.values)
+                continuations.removeAll(keepingCapacity: false)
+                cancelledWaiters.removeAll(keepingCapacity: false)
+                timeoutToCancel = timeoutTask
+                return true
+            }
+            if accepted {
+                timeoutToCancel?.cancel()
+                for continuation in pendingContinuations {
+                    continuation.resume(returning: requestedOutcome)
+                }
+            }
+            return accepted
+        }
+    }
+
+    private let state: State
+
+    init(
+        deadlineNanoseconds: UInt64,
+        operation: @escaping @Sendable () async -> Result<Value, RadrootsRuntimeFailure>,
+        onAbandonedResult:
+        @escaping @Sendable (
+            Result<Value, RadrootsRuntimeFailure>
+        ) async -> Void = { _ in }
+    ) {
+        let state = State()
+        self.state = state
+        let operationTask = Task { [state] in
+            let result = await operation()
+            if !state.resolve(.completed(result)) {
+                await onAbandonedResult(result)
+            }
+            state.finishOperation()
+        }
+
+        let timeoutTask = Task { [state] in
+            do {
+                try await Task.sleep(nanoseconds: deadlineNanoseconds)
+            } catch {
+                return
+            }
+            state.expire()
+        }
+        state.install(operationTask: operationTask, timeoutTask: timeoutTask)
+    }
+
+    func value(cancelsOperationWhenWaiterCancelled: Bool = true) async -> Outcome {
+        await state.value(
+            cancelsOperationWhenWaiterCancelled: cancelsOperationWhenWaiterCancelled
+        )
+    }
+
+    func cancel() {
+        state.cancel()
+    }
+}
 
 actor RadrootsRuntimeClient {
     private struct StartupOperation: Sendable {
-        let generation: UInt64
+        let identity: RadrootsRuntimeOperationIdentity
         let configuration: RadrootsRuntimeLaunchConfiguration
-        let task: Task<Result<RadrootsRuntimeBackendStart, RadrootsRuntimeFailure>, Never>
+        let task: RadrootsRuntimeBoundedTask<RadrootsRuntimeBackendStart>
     }
 
     private struct ShutdownOperation: Sendable {
-        let generation: UInt64
-        let task: Task<Result<RadrootsRuntimeShutdownReceipt, RadrootsRuntimeFailure>, Never>
+        let identity: RadrootsRuntimeOperationIdentity
+        let backend: (any RadrootsRuntimeBackend)?
+        let task: RadrootsRuntimeBoundedTask<RadrootsRuntimeShutdownReceipt>
+    }
+
+    private struct ActiveOperation: Sendable {
+        let identity: RadrootsRuntimeOperationIdentity
+        let cancel: @Sendable () -> Void
     }
 
     private struct Subscription {
@@ -176,16 +335,25 @@ actor RadrootsRuntimeClient {
     }
 
     private let factory: RadrootsRuntimeBackendFactory
+    private let deadlines: RadrootsRuntimeDeadlinePolicy
     private var generation: UInt64 = 0
+    private var operationSequence: UInt64 = 0
     private var lifecycleState: RadrootsRuntimeLifecycle = .stopped
     private var configuration: RadrootsRuntimeLaunchConfiguration?
     private var backend: (any RadrootsRuntimeBackend)?
+    private var quarantinedBackend: (any RadrootsRuntimeBackend)?
     private var startupOperation: StartupOperation?
     private var shutdownOperation: ShutdownOperation?
+    private var activeOperations: [UInt64: ActiveOperation] = [:]
     private var subscriptions: [UUID: Subscription] = [:]
+    private var lateShutdownSuccesses: Set<RadrootsRuntimeOperationIdentity> = []
 
-    init(factory: @escaping RadrootsRuntimeBackendFactory) {
+    init(
+        factory: @escaping RadrootsRuntimeBackendFactory,
+        deadlines: RadrootsRuntimeDeadlinePolicy = .production
+    ) {
         self.factory = factory
+        self.deadlines = deadlines
     }
 
     func lifecycle() -> RadrootsRuntimeLifecycle {
@@ -195,15 +363,32 @@ actor RadrootsRuntimeClient {
     func start(
         configuration requestedConfiguration: RadrootsRuntimeLaunchConfiguration
     ) async throws -> RadrootsRuntimeSnapshot {
+        try await start(configuration: requestedConfiguration, kind: .startup)
+    }
+
+    func reconfigure(
+        configuration requestedConfiguration: RadrootsRuntimeLaunchConfiguration
+    ) async throws -> RadrootsRuntimeSnapshot {
+        try await start(configuration: requestedConfiguration, kind: .reconfiguration)
+    }
+
+    private func start(
+        configuration requestedConfiguration: RadrootsRuntimeLaunchConfiguration,
+        kind: RadrootsRuntimeOperationKind
+    ) async throws -> RadrootsRuntimeSnapshot {
         if let shutdownOperation {
             _ = try await finishShutdown(shutdownOperation)
         }
 
-        if let backend,
+        if quarantinedBackend != nil {
+            _ = try await finishShutdown(beginShutdown())
+        }
+
+        if backend != nil,
            configuration == requestedConfiguration,
            case .running = lifecycleState
         {
-            return try await backendSnapshot(backend)
+            return try await snapshot()
         }
 
         if let startupOperation,
@@ -221,16 +406,37 @@ actor RadrootsRuntimeClient {
         let operationGeneration = generation
         lifecycleState = .starting(generation: operationGeneration)
 
+        let identity = nextIdentity(kind: kind)
         let factory = factory
-        let task = Task<Result<RadrootsRuntimeBackendStart, RadrootsRuntimeFailure>, Never> {
-            do {
-                return try await .success(factory(requestedConfiguration))
-            } catch {
-                return .failure(Self.failure(from: error, operation: "runtime.start"))
+        let cleanupDeadline = deadlines.shutdownNanoseconds
+        let task = RadrootsRuntimeBoundedTask<RadrootsRuntimeBackendStart>(
+            deadlineNanoseconds: deadlines.startupNanoseconds,
+            operation: {
+                do {
+                    return try await .success(factory(requestedConfiguration))
+                } catch {
+                    return .failure(Self.failure(from: error, operation: identity.rawValue))
+                }
+            },
+            onAbandonedResult: { result in
+                guard case let .success(started) = result else { return }
+                let cleanup = RadrootsRuntimeBoundedTask<RadrootsRuntimeShutdownReceipt>(
+                    deadlineNanoseconds: cleanupDeadline,
+                    operation: {
+                        do {
+                            return try await .success(started.backend.shutdown())
+                        } catch {
+                            return .failure(
+                                Self.failure(from: error, operation: "runtime.abandoned_startup")
+                            )
+                        }
+                    }
+                )
+                _ = await cleanup.value()
             }
-        }
+        )
         let operation = StartupOperation(
-            generation: operationGeneration,
+            identity: identity,
             configuration: requestedConfiguration,
             task: task
         )
@@ -246,18 +452,26 @@ actor RadrootsRuntimeClient {
     }
 
     func snapshot() async throws -> RadrootsRuntimeSnapshot {
-        guard let backend, case .running = lifecycleState else {
-            throw RadrootsRuntimeClientError.notRunning
+        do {
+            return try await runtimeOperation("runtime.status") { backend in
+                try await backend.snapshot()
+            }
+        } catch let error as RadrootsRuntimeClientError {
+            throw error
+        } catch {
+            throw RadrootsRuntimeClientError.status(
+                Self.failure(from: error, operation: "runtime.status")
+            )
         }
-        return try await backendSnapshot(backend)
     }
 
     func todayPage(request: RadrootsTodayPageRequest) async throws -> RadrootsTodayPage {
-        guard let backend, case .running = lifecycleState else {
-            throw RadrootsRuntimeClientError.notRunning
-        }
         do {
-            return try await backend.todayPage(request: request)
+            return try await runtimeOperation("runtime.today.page") { backend in
+                try await backend.todayPage(request: request)
+            }
+        } catch let error as RadrootsRuntimeClientError {
+            throw error
         } catch {
             throw RadrootsRuntimeClientError.today(
                 Self.failure(from: error, operation: "runtime.today.page")
@@ -270,15 +484,16 @@ actor RadrootsRuntimeClient {
         nowUnixSeconds: UInt64,
         update: RadrootsTodayProjectionUpdate = .incremental
     ) async throws -> RadrootsTodayRefreshReceipt {
-        guard let backend, case .running = lifecycleState else {
-            throw RadrootsRuntimeClientError.notRunning
-        }
         do {
-            return try await backend.refreshToday(
-                context: context,
-                nowUnixSeconds: nowUnixSeconds,
-                update: update
-            )
+            return try await runtimeOperation("runtime.today.refresh") { backend in
+                try await backend.refreshToday(
+                    context: context,
+                    nowUnixSeconds: nowUnixSeconds,
+                    update: update
+                )
+            }
+        } catch let error as RadrootsRuntimeClientError {
+            throw error
         } catch {
             throw RadrootsRuntimeClientError.today(
                 Self.failure(from: error, operation: "runtime.today.refresh")
@@ -417,6 +632,7 @@ actor RadrootsRuntimeClient {
 
         let id = UUID()
         let subscriptionGeneration = generation
+        let identity = nextIdentity(kind: .subscription)
         let pair = AsyncStream.makeStream(
             of: RadrootsRuntimeChange.self,
             bufferingPolicy: .bufferingNewest(bufferCapacity)
@@ -432,32 +648,96 @@ actor RadrootsRuntimeClient {
             token: nil
         )
 
-        do {
-            let token = try await backend.subscribe(bufferCapacity: bufferCapacity) { [weak self] change in
-                await self?.receive(
-                    change,
-                    subscriptionID: id,
-                    generation: subscriptionGeneration
+        let subscriptionDeadline = deadlines.subscriptionNanoseconds
+        let task = RadrootsRuntimeBoundedTask<any RadrootsRuntimeSubscriptionToken>(
+            deadlineNanoseconds: subscriptionDeadline,
+            operation: {
+                do {
+                    return try await .success(
+                        backend.subscribe(bufferCapacity: bufferCapacity) { [weak self] change in
+                            await self?.receive(
+                                change,
+                                subscriptionID: id,
+                                generation: subscriptionGeneration
+                            )
+                        }
+                    )
+                } catch {
+                    return .failure(Self.failure(from: error, operation: identity.rawValue))
+                }
+            },
+            onAbandonedResult: { result in
+                guard case let .success(token) = result else { return }
+                let cancellation = RadrootsRuntimeBoundedTask<Void>(
+                    deadlineNanoseconds: subscriptionDeadline,
+                    operation: {
+                        await token.cancel()
+                        return .success(())
+                    }
                 )
+                _ = await cancellation.value()
             }
-            guard generation == subscriptionGeneration,
-                  var subscription = subscriptions[id]
-            else {
-                await token.cancel()
-                pair.continuation.finish()
-                throw RadrootsRuntimeClientError.superseded
+        )
+        activeOperations[identity.sequence] = ActiveOperation(
+            identity: identity,
+            cancel: { task.cancel() }
+        )
+        let outcome = await task.value()
+        removeActiveOperation(identity)
+
+        guard generation == subscriptionGeneration,
+              case .running = lifecycleState,
+              var subscription = subscriptions[id]
+        else {
+            subscriptions.removeValue(forKey: id)?.continuation.finish()
+            if case let .completed(.success(token)) = outcome {
+                cancelTokenDetached(token)
             }
+            throw RadrootsRuntimeClientError.superseded
+        }
+
+        switch outcome {
+        case let .completed(.success(token)):
             subscription.token = token
             subscriptions[id] = subscription
             return pair.stream
-        } catch let error as RadrootsRuntimeClientError {
+        case let .completed(.failure(failure)):
             subscriptions.removeValue(forKey: id)?.continuation.finish()
-            throw error
-        } catch {
+            throw RadrootsRuntimeClientError.subscription(failure)
+        case .timedOut:
             subscriptions.removeValue(forKey: id)?.continuation.finish()
             throw RadrootsRuntimeClientError.subscription(
-                Self.failure(from: error, operation: "runtime.subscribe")
+                Self.deadlineFailure(identity: identity)
             )
+        case .cancelled:
+            subscriptions.removeValue(forKey: id)?.continuation.finish()
+            throw RadrootsRuntimeClientError.subscription(
+                Self.cancellationFailure(identity: identity)
+            )
+        }
+    }
+
+    func suspend() {
+        for operation in activeOperations.values {
+            operation.cancel()
+        }
+        activeOperations.removeAll()
+
+        let activeSubscriptions = Array(subscriptions.values)
+        subscriptions.removeAll()
+        for subscription in activeSubscriptions {
+            subscription.continuation.finish()
+            if let token = subscription.token {
+                cancelTokenDetached(token)
+            }
+        }
+
+        if let startupOperation {
+            generation &+= 1
+            startupOperation.task.cancel()
+            self.startupOperation = nil
+            configuration = nil
+            lifecycleState = .stopped
         }
     }
 
@@ -465,7 +745,10 @@ actor RadrootsRuntimeClient {
         if let shutdownOperation {
             return try await finishShutdown(shutdownOperation)
         }
-        guard startupOperation != nil || backend != nil || !subscriptions.isEmpty else {
+        guard
+            startupOperation != nil || backend != nil || quarantinedBackend != nil
+            || !subscriptions.isEmpty || !activeOperations.isEmpty
+        else {
             lifecycleState = .stopped
             return .alreadyStopped
         }
@@ -475,32 +758,46 @@ actor RadrootsRuntimeClient {
     private func finishStartup(
         _ operation: StartupOperation
     ) async throws -> RadrootsRuntimeSnapshot {
-        let result = await operation.task.value
-        guard generation == operation.generation else {
+        let outcome = await operation.task.value(cancelsOperationWhenWaiterCancelled: false)
+        guard generation == operation.identity.generation else {
             throw RadrootsRuntimeClientError.superseded
         }
 
-        if let active = startupOperation,
-           active.generation == operation.generation
+        if case .cancelled = outcome,
+           startupOperation?.identity == operation.identity
         {
+            throw RadrootsRuntimeClientError.startup(
+                Self.cancellationFailure(identity: operation.identity)
+            )
+        }
+
+        if startupOperation?.identity == operation.identity {
             startupOperation = nil
-        } else if let backend,
+        } else if case let .completed(.success(started)) = outcome,
                   configuration == operation.configuration,
                   case .running = lifecycleState
         {
-            return try await backendSnapshot(backend)
+            return started.snapshot
         } else {
             throw RadrootsRuntimeClientError.superseded
         }
 
-        switch result {
-        case let .success(started):
+        switch outcome {
+        case let .completed(.success(started)):
             backend = started.backend
             configuration = operation.configuration
-            lifecycleState = .running(generation: operation.generation)
+            lifecycleState = .running(generation: operation.identity.generation)
             return started.snapshot
-        case let .failure(failure):
-            lifecycleState = .failed(generation: operation.generation, failure: failure)
+        case let .completed(.failure(failure)):
+            lifecycleState = .failed(generation: operation.identity.generation, failure: failure)
+            throw RadrootsRuntimeClientError.startup(failure)
+        case .timedOut:
+            let failure = Self.deadlineFailure(identity: operation.identity)
+            lifecycleState = .failed(generation: operation.identity.generation, failure: failure)
+            throw RadrootsRuntimeClientError.startup(failure)
+        case .cancelled:
+            let failure = Self.cancellationFailure(identity: operation.identity)
+            lifecycleState = .failed(generation: operation.identity.generation, failure: failure)
             throw RadrootsRuntimeClientError.startup(failure)
         }
     }
@@ -509,45 +806,58 @@ actor RadrootsRuntimeClient {
         generation &+= 1
         let operationGeneration = generation
         let pendingStartup = startupOperation
-        let activeBackend = backend
+        let activeBackend = backend ?? quarantinedBackend
         let activeSubscriptions = Array(subscriptions.values)
+        let activeRuntimeOperations = Array(activeOperations.values)
 
         startupOperation = nil
         backend = nil
+        quarantinedBackend = nil
         configuration = nil
         subscriptions.removeAll()
+        activeOperations.removeAll()
         lifecycleState = .stopping(generation: operationGeneration)
 
-        let task = Task<Result<RadrootsRuntimeShutdownReceipt, RadrootsRuntimeFailure>, Never> {
-            for subscription in activeSubscriptions {
-                subscription.continuation.finish()
-                await subscription.token?.cancel()
-            }
-
-            let backendToClose: (any RadrootsRuntimeBackend)?
-            if let activeBackend {
-                backendToClose = activeBackend
-            } else if let pendingStartup {
-                switch await pendingStartup.task.value {
-                case let .success(started):
-                    backendToClose = started.backend
-                case let .failure(failure):
-                    return .failure(failure)
-                }
-            } else {
-                backendToClose = nil
-            }
-
-            guard let backendToClose else {
-                return .success(.alreadyStopped)
-            }
-            do {
-                return try await .success(backendToClose.shutdown())
-            } catch {
-                return .failure(Self.failure(from: error, operation: "runtime.shutdown"))
-            }
+        pendingStartup?.task.cancel()
+        for operation in activeRuntimeOperations {
+            operation.cancel()
         }
-        let operation = ShutdownOperation(generation: operationGeneration, task: task)
+        for subscription in activeSubscriptions {
+            subscription.continuation.finish()
+        }
+
+        let identity = nextIdentity(kind: .shutdown)
+        let cancellationDeadline = deadlines.subscriptionNanoseconds
+        let task = RadrootsRuntimeBoundedTask<RadrootsRuntimeShutdownReceipt>(
+            deadlineNanoseconds: deadlines.shutdownNanoseconds,
+            operation: {
+                let cancellations = activeSubscriptions.compactMap(\.token).map { token in
+                    RadrootsRuntimeBoundedTask<Void>(
+                        deadlineNanoseconds: cancellationDeadline,
+                        operation: {
+                            await token.cancel()
+                            return .success(())
+                        }
+                    )
+                }
+                for cancellation in cancellations {
+                    _ = await cancellation.value()
+                }
+
+                guard let activeBackend else {
+                    return .success(.alreadyStopped)
+                }
+                do {
+                    return try await .success(activeBackend.shutdown())
+                } catch {
+                    return .failure(Self.failure(from: error, operation: identity.rawValue))
+                }
+            },
+            onAbandonedResult: { [weak self] result in
+                await self?.settleLateShutdown(identity: identity, result: result)
+            }
+        )
+        let operation = ShutdownOperation(identity: identity, backend: activeBackend, task: task)
         shutdownOperation = operation
         return operation
     }
@@ -555,46 +865,101 @@ actor RadrootsRuntimeClient {
     private func finishShutdown(
         _ operation: ShutdownOperation
     ) async throws -> RadrootsRuntimeShutdownReceipt {
-        let result = await operation.task.value
-        if shutdownOperation?.generation == operation.generation {
+        let outcome = await operation.task.value(cancelsOperationWhenWaiterCancelled: false)
+        if case .cancelled = outcome,
+           shutdownOperation?.identity == operation.identity,
+           generation == operation.identity.generation
+        {
+            throw RadrootsRuntimeClientError.shutdown(
+                Self.cancellationFailure(identity: operation.identity)
+            )
+        }
+        if shutdownOperation?.identity == operation.identity {
             shutdownOperation = nil
-            switch result {
-            case .success:
-                lifecycleState = .stopped
-            case let .failure(failure):
-                lifecycleState = .failed(generation: operation.generation, failure: failure)
-            }
         }
 
-        switch result {
-        case let .success(receipt):
+        let lateSucceeded = lateShutdownSuccesses.remove(operation.identity) != nil
+        guard generation == operation.identity.generation else {
+            throw RadrootsRuntimeClientError.superseded
+        }
+
+        switch outcome {
+        case let .completed(.success(receipt)):
+            quarantinedBackend = nil
+            lifecycleState = .stopped
             return receipt
-        case let .failure(failure):
+        case let .completed(.failure(failure)):
+            quarantinedBackend = operation.backend
+            lifecycleState = .failed(generation: operation.identity.generation, failure: failure)
+            throw RadrootsRuntimeClientError.shutdown(failure)
+        case .timedOut:
+            let failure = Self.deadlineFailure(identity: operation.identity)
+            quarantinedBackend = lateSucceeded ? nil : operation.backend
+            lifecycleState =
+                lateSucceeded
+                    ? .stopped
+                    : .failed(generation: operation.identity.generation, failure: failure)
+            throw RadrootsRuntimeClientError.shutdown(failure)
+        case .cancelled:
+            let failure = Self.cancellationFailure(identity: operation.identity)
+            quarantinedBackend = lateSucceeded ? nil : operation.backend
+            lifecycleState =
+                lateSucceeded
+                    ? .stopped
+                    : .failed(generation: operation.identity.generation, failure: failure)
             throw RadrootsRuntimeClientError.shutdown(failure)
         }
     }
 
-    private func backendSnapshot(
-        _ backend: any RadrootsRuntimeBackend
-    ) async throws -> RadrootsRuntimeSnapshot {
-        do {
-            return try await backend.snapshot()
-        } catch {
-            throw RadrootsRuntimeClientError.status(
-                Self.failure(from: error, operation: "runtime.status")
-            )
+    private func runtimeOperation<T: Sendable>(
+        _ operation: String,
+        _ body: @escaping @Sendable (any RadrootsRuntimeBackend) async throws -> T
+    ) async throws -> T {
+        guard let backend, case .running = lifecycleState else {
+            throw RadrootsRuntimeClientError.notRunning
+        }
+        let operationGeneration = generation
+        let identity = nextIdentity(kind: .operation)
+        let task = RadrootsRuntimeBoundedTask<T>(
+            deadlineNanoseconds: deadlines.operationNanoseconds,
+            operation: {
+                do {
+                    return try await .success(body(backend))
+                } catch {
+                    return .failure(Self.failure(from: error, operation: operation))
+                }
+            }
+        )
+        activeOperations[identity.sequence] = ActiveOperation(
+            identity: identity,
+            cancel: { task.cancel() }
+        )
+        let outcome = await task.value()
+        removeActiveOperation(identity)
+
+        guard generation == operationGeneration, case .running = lifecycleState else {
+            throw RadrootsRuntimeClientError.superseded
+        }
+        switch outcome {
+        case let .completed(.success(value)):
+            return value
+        case let .completed(.failure(failure)):
+            throw failure
+        case .timedOut:
+            throw Self.deadlineFailure(identity: identity)
+        case .cancelled:
+            throw Self.cancellationFailure(identity: identity)
         }
     }
 
     private func addOperation<T: Sendable>(
         _ operation: String,
-        _ body: @Sendable (any RadrootsRuntimeBackend) async throws -> T
+        _ body: @escaping @Sendable (any RadrootsRuntimeBackend) async throws -> T
     ) async throws -> T {
-        guard let backend, case .running = lifecycleState else {
-            throw RadrootsRuntimeClientError.notRunning
-        }
         do {
-            return try await body(backend)
+            return try await runtimeOperation(operation, body)
+        } catch let error as RadrootsRuntimeClientError {
+            throw error
         } catch {
             throw RadrootsRuntimeClientError.add(
                 Self.failure(from: error, operation: operation)
@@ -604,13 +969,12 @@ actor RadrootsRuntimeClient {
 
     private func supportOperation<T: Sendable>(
         _ operation: String,
-        _ body: @Sendable (any RadrootsRuntimeBackend) async throws -> T
+        _ body: @escaping @Sendable (any RadrootsRuntimeBackend) async throws -> T
     ) async throws -> T {
-        guard let backend, case .running = lifecycleState else {
-            throw RadrootsRuntimeClientError.notRunning
-        }
         do {
-            return try await body(backend)
+            return try await runtimeOperation(operation, body)
+        } catch let error as RadrootsRuntimeClientError {
+            throw error
         } catch {
             throw RadrootsRuntimeClientError.support(
                 Self.failure(from: error, operation: operation)
@@ -624,6 +988,7 @@ actor RadrootsRuntimeClient {
         generation subscriptionGeneration: UInt64
     ) {
         guard generation == subscriptionGeneration,
+              case .running = lifecycleState,
               let subscription = subscriptions[subscriptionID],
               subscription.generation == subscriptionGeneration
         else {
@@ -632,7 +997,7 @@ actor RadrootsRuntimeClient {
         subscription.continuation.yield(change)
     }
 
-    private func cancelSubscription(id: UUID, generation subscriptionGeneration: UInt64) async {
+    private func cancelSubscription(id: UUID, generation subscriptionGeneration: UInt64) {
         guard let subscription = subscriptions[id],
               subscription.generation == subscriptionGeneration
         else {
@@ -640,12 +1005,85 @@ actor RadrootsRuntimeClient {
         }
         subscriptions.removeValue(forKey: id)
         subscription.continuation.finish()
-        await subscription.token?.cancel()
+        if let token = subscription.token {
+            cancelTokenDetached(token)
+        }
+    }
+
+    private func cancelTokenDetached(_ token: any RadrootsRuntimeSubscriptionToken) {
+        let deadline = deadlines.subscriptionNanoseconds
+        Task {
+            let cancellation = RadrootsRuntimeBoundedTask<Void>(
+                deadlineNanoseconds: deadline,
+                operation: {
+                    await token.cancel()
+                    return .success(())
+                }
+            )
+            _ = await cancellation.value()
+        }
+    }
+
+    private func settleLateShutdown(
+        identity: RadrootsRuntimeOperationIdentity,
+        result: Result<RadrootsRuntimeShutdownReceipt, RadrootsRuntimeFailure>
+    ) {
+        guard generation == identity.generation else { return }
+        guard case .success = result else { return }
+        if shutdownOperation?.identity == identity {
+            lateShutdownSuccesses.insert(identity)
+        } else {
+            quarantinedBackend = nil
+            lifecycleState = .stopped
+        }
+    }
+
+    private func nextIdentity(
+        kind: RadrootsRuntimeOperationKind
+    ) -> RadrootsRuntimeOperationIdentity {
+        operationSequence &+= 1
+        return RadrootsRuntimeOperationIdentity(
+            generation: generation,
+            sequence: operationSequence,
+            kind: kind
+        )
+    }
+
+    private func removeActiveOperation(_ identity: RadrootsRuntimeOperationIdentity) {
+        guard activeOperations[identity.sequence]?.identity == identity else { return }
+        activeOperations.removeValue(forKey: identity.sequence)
+    }
+
+    private static func deadlineFailure(
+        identity: RadrootsRuntimeOperationIdentity
+    ) -> RadrootsRuntimeFailure {
+        .local(
+            operation: identity.rawValue,
+            code: "ios.runtime.deadline_exceeded",
+            safeMessage: "The Radroots runtime operation did not finish in time."
+        )
+    }
+
+    private static func cancellationFailure(
+        identity: RadrootsRuntimeOperationIdentity
+    ) -> RadrootsRuntimeFailure {
+        .local(
+            operation: identity.rawValue,
+            code: "ios.runtime.cancelled",
+            safeMessage: "The Radroots runtime operation was cancelled."
+        )
     }
 
     private static func failure(from error: Error, operation: String) -> RadrootsRuntimeFailure {
         if let failure = error as? RadrootsRuntimeFailure {
             return failure
+        }
+        if error is CancellationError {
+            return .local(
+                operation: operation,
+                code: "ios.runtime.cancelled",
+                safeMessage: "The Radroots runtime operation was cancelled."
+            )
         }
         if case let RadrootsRuntimeClientError.startup(failure) = error {
             return failure

@@ -199,6 +199,71 @@ struct RadrootsRuntimeShutdownReceipt: Sendable, Equatable {
     static let alreadyStopped = Self(state: "closed", alreadyClosed: true)
 }
 
+enum RadrootsRuntimeOperationKind: String, Sendable, Equatable, Hashable {
+    case startup
+    case operation
+    case reconfiguration
+    case subscription
+    case shutdown
+}
+
+struct RadrootsRuntimeOperationIdentity: Sendable, Equatable, Hashable {
+    let generation: UInt64
+    let sequence: UInt64
+    let kind: RadrootsRuntimeOperationKind
+
+    var rawValue: String {
+        "ios-runtime-\(generation)-\(sequence)-\(kind.rawValue)"
+    }
+}
+
+struct RadrootsRuntimeDeadlinePolicy: Sendable, Equatable {
+    let startupNanoseconds: UInt64
+    let operationNanoseconds: UInt64
+    let subscriptionNanoseconds: UInt64
+    let shutdownNanoseconds: UInt64
+
+    init(
+        startupNanoseconds: UInt64 = 30_000_000_000,
+        operationNanoseconds: UInt64 = 30_000_000_000,
+        subscriptionNanoseconds: UInt64 = 10_000_000_000,
+        shutdownNanoseconds: UInt64 = 10_000_000_000
+    ) {
+        precondition(startupNanoseconds > 0 && startupNanoseconds <= 120_000_000_000)
+        precondition(operationNanoseconds > 0 && operationNanoseconds <= 120_000_000_000)
+        precondition(subscriptionNanoseconds > 0 && subscriptionNanoseconds <= 60_000_000_000)
+        precondition(shutdownNanoseconds > 0 && shutdownNanoseconds <= 60_000_000_000)
+        self.startupNanoseconds = startupNanoseconds
+        self.operationNanoseconds = operationNanoseconds
+        self.subscriptionNanoseconds = subscriptionNanoseconds
+        self.shutdownNanoseconds = shutdownNanoseconds
+    }
+
+    static let production = Self()
+}
+
+enum RadrootsRuntimeObservationState: Sendable, Equatable {
+    case inactive
+    case subscribing(attempt: UInt32)
+    case active
+    case retrying(attempt: UInt32, message: String)
+    case stopped
+}
+
+enum RadrootsRuntimeObservationBackoff {
+    static func sleep(attempt: UInt32) async throws {
+        let exponent = min(attempt.saturatingSubtractingOne, 7)
+        let delay = min(UInt64(250_000_000) << exponent, 30_000_000_000)
+        try await Task.sleep(nanoseconds: delay)
+    }
+}
+
+private extension UInt32 {
+    var saturatingSubtractingOne: UInt32 {
+        self == 0 ? 0 : self - 1
+    }
+}
+
 struct RadrootsRuntimeFailure: Error, Sendable, Equatable {
     let schemaVersion: UInt16
     let code: String
@@ -413,17 +478,18 @@ struct RadrootsTodayCard: Sendable, Equatable, Hashable, Identifiable {
     let localOperationState: String?
 
     var authorName: String {
-        authorProfile?.preferredName ?? RadrootsProfileSummary(
-            authorPublicKey: authorPublicKey,
-            name: nil,
-            displayName: nil,
-            about: nil,
-            picture: nil,
-            banner: nil,
-            nip05: nil,
-            website: nil,
-            lightningAddress: nil
-        ).preferredName
+        authorProfile?.preferredName
+            ?? RadrootsProfileSummary(
+                authorPublicKey: authorPublicKey,
+                name: nil,
+                displayName: nil,
+                about: nil,
+                picture: nil,
+                banner: nil,
+                nip05: nil,
+                website: nil,
+                lightningAddress: nil
+            ).preferredName
     }
 
     var priceSummary: String? {
