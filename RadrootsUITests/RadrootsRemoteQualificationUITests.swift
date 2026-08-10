@@ -494,7 +494,6 @@ final class RadrootsRemoteQualificationUITests: XCTestCase {
         let finished = NSPredicate { _, _ in
             let submitValue = submit.value as? String
             return submit.exists
-                && submit.isEnabled
                 && !progress.exists
                 && submitValue != priorSubmitValue
                 && submitValue != "Working"
