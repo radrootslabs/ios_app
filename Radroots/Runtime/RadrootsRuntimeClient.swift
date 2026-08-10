@@ -23,12 +23,10 @@ protocol RadrootsRuntimeBackend: Sendable {
         asOfUnixSeconds: UInt64
     ) async throws -> RadrootsMeSnapshot
     func addSchemas() async throws -> [RadrootsAddSchema]
-    func saveDraft(
-        id: String,
+    func saveAddIntent(
         input: RadrootsAddRuntimeInput,
-        authoredAtUnixSeconds: UInt64,
-        expectedRevision: UInt64?,
-        persistedAtUnixMilliseconds: UInt64
+        existingDraftID: String?,
+        expectedRevision: UInt64?
     ) async throws -> RadrootsDraftStatus
     func saveRetractionDraft(
         id: String,
@@ -38,20 +36,17 @@ protocol RadrootsRuntimeBackend: Sendable {
     ) async throws -> RadrootsDraftStatus
     func draftStatus(id: String) async throws -> RadrootsDraftStatus
     func draftHeads(limit: UInt16) async throws -> [RadrootsDraftStatus]
-    func queueDraft(
+    func queueAddIntent(
         id: String,
-        expectedRevision: UInt64,
-        policy: RadrootsQueuePolicy,
-        queuedAtUnixMilliseconds: UInt64
+        expectedRevision: UInt64
     ) async throws -> RadrootsDraftStatus
-    func recoverDraftQueue(id: String, recoveredAtUnixMilliseconds: UInt64) async throws -> RadrootsDraftStatus
-    func uploadDraftMedia(input: RadrootsBlossomUploadInput) async throws -> RadrootsDraftStatus
+    func recoverAddIntent(id: String) async throws -> RadrootsDraftStatus
+    func uploadAddMediaIntent(input: RadrootsBlossomUploadIntent) async throws -> RadrootsDraftStatus
     func probeBlossom() async throws -> RadrootsBlossomEvidence
     func advanceDraft(id: String, expectedRevision: UInt64) async throws -> RadrootsDraftStatus
-    func cancelDraft(
+    func cancelAddIntent(
         id: String,
-        expectedRevision: UInt64,
-        cancelledAtUnixMilliseconds: UInt64
+        expectedRevision: UInt64
     ) async throws -> RadrootsDraftStatus
     func subscribe(
         bufferCapacity: Int,
@@ -81,12 +76,10 @@ extension RadrootsRuntimeBackend {
         throw addUnsupported()
     }
 
-    func saveDraft(
-        id _: String,
+    func saveAddIntent(
         input _: RadrootsAddRuntimeInput,
-        authoredAtUnixSeconds _: UInt64,
-        expectedRevision _: UInt64?,
-        persistedAtUnixMilliseconds _: UInt64
+        existingDraftID _: String?,
+        expectedRevision _: UInt64?
     ) async throws -> RadrootsDraftStatus {
         throw addUnsupported()
     }
@@ -108,23 +101,18 @@ extension RadrootsRuntimeBackend {
         throw addUnsupported()
     }
 
-    func queueDraft(
+    func queueAddIntent(
         id _: String,
-        expectedRevision _: UInt64,
-        policy _: RadrootsQueuePolicy,
-        queuedAtUnixMilliseconds _: UInt64
+        expectedRevision _: UInt64
     ) async throws -> RadrootsDraftStatus {
         throw addUnsupported()
     }
 
-    func recoverDraftQueue(
-        id _: String,
-        recoveredAtUnixMilliseconds _: UInt64
-    ) async throws -> RadrootsDraftStatus {
+    func recoverAddIntent(id _: String) async throws -> RadrootsDraftStatus {
         throw addUnsupported()
     }
 
-    func uploadDraftMedia(input _: RadrootsBlossomUploadInput) async throws -> RadrootsDraftStatus {
+    func uploadAddMediaIntent(input _: RadrootsBlossomUploadIntent) async throws -> RadrootsDraftStatus {
         throw addUnsupported()
     }
 
@@ -136,10 +124,9 @@ extension RadrootsRuntimeBackend {
         throw addUnsupported()
     }
 
-    func cancelDraft(
+    func cancelAddIntent(
         id _: String,
-        expectedRevision _: UInt64,
-        cancelledAtUnixMilliseconds _: UInt64
+        expectedRevision _: UInt64
     ) async throws -> RadrootsDraftStatus {
         throw addUnsupported()
     }
@@ -330,20 +317,16 @@ actor RadrootsRuntimeClient {
         }
     }
 
-    func saveDraft(
-        id: String,
+    func saveAddIntent(
         input: RadrootsAddRuntimeInput,
-        authoredAtUnixSeconds: UInt64,
-        expectedRevision: UInt64?,
-        persistedAtUnixMilliseconds: UInt64
+        existingDraftID: String?,
+        expectedRevision: UInt64?
     ) async throws -> RadrootsDraftStatus {
         try await addOperation("runtime.add.save") { backend in
-            try await backend.saveDraft(
-                id: id,
+            try await backend.saveAddIntent(
                 input: input,
-                authoredAtUnixSeconds: authoredAtUnixSeconds,
-                expectedRevision: expectedRevision,
-                persistedAtUnixMilliseconds: persistedAtUnixMilliseconds
+                existingDraftID: existingDraftID,
+                expectedRevision: expectedRevision
             )
         }
     }
@@ -376,34 +359,27 @@ actor RadrootsRuntimeClient {
         }
     }
 
-    func queueDraft(
+    func queueAddIntent(
         id: String,
-        expectedRevision: UInt64,
-        policy: RadrootsQueuePolicy,
-        queuedAtUnixMilliseconds: UInt64
+        expectedRevision: UInt64
     ) async throws -> RadrootsDraftStatus {
         try await addOperation("runtime.add.queue") { backend in
-            try await backend.queueDraft(
+            try await backend.queueAddIntent(
                 id: id,
-                expectedRevision: expectedRevision,
-                policy: policy,
-                queuedAtUnixMilliseconds: queuedAtUnixMilliseconds
+                expectedRevision: expectedRevision
             )
         }
     }
 
-    func recoverDraftQueue(id: String, recoveredAtUnixMilliseconds: UInt64) async throws -> RadrootsDraftStatus {
+    func recoverAddIntent(id: String) async throws -> RadrootsDraftStatus {
         try await addOperation("runtime.add.recover") { backend in
-            try await backend.recoverDraftQueue(
-                id: id,
-                recoveredAtUnixMilliseconds: recoveredAtUnixMilliseconds
-            )
+            try await backend.recoverAddIntent(id: id)
         }
     }
 
-    func uploadDraftMedia(input: RadrootsBlossomUploadInput) async throws -> RadrootsDraftStatus {
+    func uploadAddMediaIntent(input: RadrootsBlossomUploadIntent) async throws -> RadrootsDraftStatus {
         try await addOperation("runtime.add.media") { backend in
-            try await backend.uploadDraftMedia(input: input)
+            try await backend.uploadAddMediaIntent(input: input)
         }
     }
 
@@ -419,16 +395,14 @@ actor RadrootsRuntimeClient {
         }
     }
 
-    func cancelDraft(
+    func cancelAddIntent(
         id: String,
-        expectedRevision: UInt64,
-        cancelledAtUnixMilliseconds: UInt64
+        expectedRevision: UInt64
     ) async throws -> RadrootsDraftStatus {
         try await addOperation("runtime.add.cancel") { backend in
-            try await backend.cancelDraft(
+            try await backend.cancelAddIntent(
                 id: id,
-                expectedRevision: expectedRevision,
-                cancelledAtUnixMilliseconds: cancelledAtUnixMilliseconds
+                expectedRevision: expectedRevision
             )
         }
     }

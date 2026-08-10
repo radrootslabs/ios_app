@@ -242,20 +242,16 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
         runtime.phase1AddSchemas().map(\.appValue)
     }
 
-    func saveDraft(
-        id: String,
+    func saveAddIntent(
         input: RadrootsAddRuntimeInput,
-        authoredAtUnixSeconds: UInt64,
-        expectedRevision: UInt64?,
-        persistedAtUnixMilliseconds: UInt64
+        existingDraftID: String?,
+        expectedRevision: UInt64?
     ) async throws -> RadrootsDraftStatus {
         do {
-            return try await runtime.phase1SaveDraft(
-                draftId: id,
+            return try await runtime.phase1SaveAddIntent(
                 input: input.generatedValue,
-                authoredAtUnixS: authoredAtUnixSeconds,
-                expectedRevision: expectedRevision,
-                persistedAtUnixMs: persistedAtUnixMilliseconds
+                existingDraftId: existingDraftID,
+                expectedRevision: expectedRevision
             ).appValue
         } catch {
             throw Self.failure(from: error)
@@ -296,41 +292,31 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
         }
     }
 
-    func queueDraft(
+    func queueAddIntent(
         id: String,
-        expectedRevision: UInt64,
-        policy: RadrootsQueuePolicy,
-        queuedAtUnixMilliseconds: UInt64
+        expectedRevision: UInt64
     ) async throws -> RadrootsDraftStatus {
         do {
-            return try await runtime.phase1QueueDraft(
+            return try await runtime.phase1QueueAddIntent(
                 draftId: id,
-                expectedRevision: expectedRevision,
-                policy: policy.generatedValue,
-                queuedAtUnixMs: queuedAtUnixMilliseconds
+                expectedRevision: expectedRevision
             ).appValue
         } catch {
             throw Self.failure(from: error)
         }
     }
 
-    func recoverDraftQueue(
-        id: String,
-        recoveredAtUnixMilliseconds: UInt64
-    ) async throws -> RadrootsDraftStatus {
+    func recoverAddIntent(id: String) async throws -> RadrootsDraftStatus {
         do {
-            return try await runtime.phase1RecoverDraftQueue(
-                draftId: id,
-                recoveredAtUnixMs: recoveredAtUnixMilliseconds
-            ).appValue
+            return try await runtime.phase1RecoverAddIntent(draftId: id).appValue
         } catch {
             throw Self.failure(from: error)
         }
     }
 
-    func uploadDraftMedia(input: RadrootsBlossomUploadInput) async throws -> RadrootsDraftStatus {
+    func uploadAddMediaIntent(input: RadrootsBlossomUploadIntent) async throws -> RadrootsDraftStatus {
         do {
-            return try await runtime.phase1UploadDraftMedia(input: input.generatedValue).appValue
+            return try await runtime.phase1UploadAddMediaIntent(input: input.generatedValue).appValue
         } catch {
             throw Self.failure(from: error)
         }
@@ -355,16 +341,14 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
         }
     }
 
-    func cancelDraft(
+    func cancelAddIntent(
         id: String,
-        expectedRevision: UInt64,
-        cancelledAtUnixMilliseconds: UInt64
+        expectedRevision: UInt64
     ) async throws -> RadrootsDraftStatus {
         do {
-            return try await runtime.phase1CancelDraft(
+            return try await runtime.phase1CancelAddIntent(
                 draftId: id,
-                expectedRevision: expectedRevision,
-                cancelledAtUnixMs: cancelledAtUnixMilliseconds
+                expectedRevision: expectedRevision
             ).appValue
         } catch {
             throw Self.failure(from: error)
@@ -1092,38 +1076,6 @@ private extension FfiOperationSettlementRecord {
     }
 }
 
-private extension RadrootsQueuePolicy {
-    var generatedValue: FfiQueuePolicyRecord {
-        FfiQueuePolicyRecord(
-            schemaVersion: 1,
-            relayUrls: relayURLs,
-            satisfaction: satisfaction.generatedValue,
-            deliveryDeadlineUnixMs: deliveryDeadlineUnixMilliseconds,
-            cancellation: cancellation.generatedValue
-        )
-    }
-}
-
-private extension RadrootsRelaySatisfaction {
-    var generatedValue: FfiRelaySatisfaction {
-        switch self {
-        case .anyAccepted: .anyAccepted
-        case .allAccepted: .allAccepted
-        case .anyDelivered: .anyDelivered
-        case .allDelivered: .allDelivered
-        }
-    }
-}
-
-private extension RadrootsCancellationPolicy {
-    var generatedValue: FfiCancellationPolicy {
-        switch self {
-        case .preservePublishedRequest: .preservePublishedRequest
-        case .localCooperative: .localCooperative
-        }
-    }
-}
-
 private extension RadrootsRetractionDraftInput {
     var generatedValue: FfiRetractionDraftInput {
         FfiRetractionDraftInput(
@@ -1138,22 +1090,13 @@ private extension RadrootsRetractionDraftInput {
     }
 }
 
-private extension RadrootsBlossomUploadInput {
-    var generatedValue: FfiBlossomUploadInput {
-        FfiBlossomUploadInput(
+private extension RadrootsBlossomUploadIntent {
+    var generatedValue: FfiBlossomUploadIntent {
+        FfiBlossomUploadIntent(
             schemaVersion: 1,
             draftId: draftID,
             expectedRevision: expectedRevision,
-            media: media.generatedValue,
-            authorizationContent: authorizationContent,
-            authorizationCreatedAtUnixS: authorizationCreatedAtUnixSeconds,
-            authorizationLifetimeSeconds: authorizationLifetimeSeconds,
-            operationId: operationID,
-            artifactId: artifactID,
-            signingDeadlineUnixMs: signingDeadlineUnixMilliseconds,
-            signingCancellation: signingCancellation.generatedValue,
-            verifiedAtUnixMs: verifiedAtUnixMilliseconds,
-            updatedAtUnixMs: updatedAtUnixMilliseconds
+            media: media.generatedValue
         )
     }
 }

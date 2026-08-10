@@ -9,8 +9,6 @@ enum RadrootsAddLoadState: Sendable, Equatable {
 
 @MainActor
 final class RadrootsAddStore: ObservableObject {
-    private static let blossomAuthorizationBackdateSeconds: UInt64 = 5
-
     @Published private(set) var schemas: [RadrootsAddSchema] = []
     @Published private(set) var drafts: [RadrootsDraftStatus] = []
     @Published private(set) var activeDraft: RadrootsDraftStatus?
@@ -27,7 +25,6 @@ final class RadrootsAddStore: ObservableObject {
     private let runtimeClient: RadrootsRuntimeClient
     private let media: (any RadrootsAddMediaHandling)?
     private let now: @Sendable () -> UInt64
-    private var writableRelays: [String] = []
     private var generation: UInt64 = 0
     private var operationGeneration: UInt64?
     private var observationTask: Task<Void, Never>?
@@ -68,9 +65,6 @@ final class RadrootsAddStore: ObservableObject {
     }
 
     func configure(snapshot: RadrootsRuntimeSnapshot) {
-        writableRelays = snapshot.relay?.relays
-            .filter { $0.access != "read_only" }
-            .map(\.url) ?? []
         blossomConfiguration = snapshot.blossomConfiguration
         blossomEvidence = snapshot.blossomEvidence
     }
@@ -227,22 +221,23 @@ final class RadrootsAddStore: ObservableObject {
                 status = try await self.uploadPendingMedia(status)
             }
 
-            guard !self.writableRelays.isEmpty else {
-                self.accept(status)
-                self.message = status.media.isEmpty
-                    ? "Draft saved. Configure a writable relay to publish."
-                    : "Photo verified and draft saved. Configure a writable relay to publish."
-                return
-            }
-
             if status.state.isEditable || status.state == .readyToSign {
-                status = try await self.runtimeClient.queueDraft(
-                    id: status.id,
-                    expectedRevision: status.revision,
-                    policy: self.queuePolicy(),
-                    queuedAtUnixMilliseconds: self.nowMilliseconds()
-                )
-                self.accept(status)
+                do {
+                    status = try await self.runtimeClient.queueAddIntent(
+                        id: status.id,
+                        expectedRevision: status.revision
+                    )
+                    self.accept(status)
+                } catch {
+                    if Self.failure(for: error)?.code == "writable_relay_unavailable" {
+                        self.accept(status)
+                        self.message = status.media.isEmpty
+                            ? "Draft saved. Configure a writable relay to publish."
+                            : "Photo verified and draft saved. Configure a writable relay to publish."
+                        return
+                    }
+                    throw error
+                }
             }
 
             do {
@@ -288,10 +283,9 @@ final class RadrootsAddStore: ObservableObject {
         guard let draft = draft ?? activeDraft, draft.state.canCancel else { return }
         await perform {
             let current = try await self.runtimeClient.draftStatus(id: draft.id)
-            let cancelled = try await self.runtimeClient.cancelDraft(
+            let cancelled = try await self.runtimeClient.cancelAddIntent(
                 id: current.id,
-                expectedRevision: current.revision,
-                cancelledAtUnixMilliseconds: self.nowMilliseconds()
+                expectedRevision: current.revision
             )
             self.accept(cancelled)
             self.message = "Local work was cancelled. Any already-published relay effect is preserved."
@@ -307,11 +301,9 @@ final class RadrootsAddStore: ObservableObject {
                 authoredAtUnixSeconds: self.now(),
                 persistedAtUnixMilliseconds: self.nowMilliseconds()
             )
-            retraction = try await self.runtimeClient.queueDraft(
+            retraction = try await self.runtimeClient.queueAddIntent(
                 id: retraction.id,
-                expectedRevision: retraction.revision,
-                policy: self.queuePolicy(),
-                queuedAtUnixMilliseconds: self.nowMilliseconds()
+                expectedRevision: retraction.revision
             )
             self.accept(retraction)
             do {
@@ -337,15 +329,12 @@ final class RadrootsAddStore: ObservableObject {
                 safeMessage: "Submitted drafts cannot be changed. Create a revised copy instead."
             )
         }
-        let id = activeDraft?.id ?? Self.draftID()
         let opened = try await openedMedia()
         defer { opened.close() }
-        let status = try await runtimeClient.saveDraft(
-            id: id,
+        let status = try await runtimeClient.saveAddIntent(
             input: RadrootsAddRuntimeInput(form: form, media: opened.handles),
-            authoredAtUnixSeconds: now(),
-            expectedRevision: activeDraft?.revision,
-            persistedAtUnixMilliseconds: nowMilliseconds()
+            existingDraftID: activeDraft?.id,
+            expectedRevision: activeDraft?.revision
         )
         accept(status)
         return status
@@ -368,25 +357,11 @@ final class RadrootsAddStore: ObservableObject {
                     safeMessage: "A prepared photo is unavailable."
                 )
             }
-            let currentSeconds = now()
-            let authorizationCreatedAt = currentSeconds
-                > Self.blossomAuthorizationBackdateSeconds
-                ? currentSeconds - Self.blossomAuthorizationBackdateSeconds
-                : 0
-            status = try await runtimeClient.uploadDraftMedia(
-                input: RadrootsBlossomUploadInput(
+            status = try await runtimeClient.uploadAddMediaIntent(
+                input: RadrootsBlossomUploadIntent(
                     draftID: status.id,
                     expectedRevision: status.revision,
-                    media: handle,
-                    authorizationContent: "Upload exact Radroots image",
-                    authorizationCreatedAtUnixSeconds: authorizationCreatedAt,
-                    authorizationLifetimeSeconds: 300,
-                    operationID: Self.draftID(),
-                    artifactID: Self.draftID(),
-                    signingDeadlineUnixMilliseconds: nowMilliseconds() + 60000,
-                    signingCancellation: .localCooperative,
-                    verifiedAtUnixMilliseconds: nowMilliseconds(),
-                    updatedAtUnixMilliseconds: nowMilliseconds()
+                    media: handle
                 )
             )
             accept(status)
@@ -406,15 +381,6 @@ final class RadrootsAddStore: ObservableObject {
             )
         }
         return try await media.open(values)
-    }
-
-    private func queuePolicy() -> RadrootsQueuePolicy {
-        RadrootsQueuePolicy(
-            relayURLs: writableRelays,
-            satisfaction: .allAccepted,
-            deliveryDeadlineUnixMilliseconds: nowMilliseconds() + 24 * 60 * 60 * 1000,
-            cancellation: .localCooperative
-        )
     }
 
     private func reloadDrafts() async {

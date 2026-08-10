@@ -31,8 +31,8 @@ final class RadrootsAddStoreTests: XCTestCase {
                     store.form.media.first?.remoteURL,
                     "http://127.0.0.1:3000/\(String(repeating: "0", count: 64)).png"
                 )
-                let authorizationCreatedAt = await backend.lastUploadAuthorizationCreatedAt()
-                XCTAssertEqual(authorizationCreatedAt, 1_799_999_995)
+                let didUpload = await backend.didUploadMedia()
+                XCTAssertTrue(didUpload)
             }
         }
 
@@ -340,7 +340,7 @@ private actor AddBackend: RadrootsRuntimeBackend {
     private let saveFailure: RadrootsRuntimeFailure?
     private let includeWritableRelay: Bool
     private var values: [String: RadrootsDraftStatus] = [:]
-    private var uploadAuthorizationCreatedAt: UInt64?
+    private var uploadedMedia = false
     private var closed = false
 
     init(
@@ -412,12 +412,10 @@ private actor AddBackend: RadrootsRuntimeBackend {
         }
     }
 
-    func saveDraft(
-        id: String,
+    func saveAddIntent(
         input: RadrootsAddRuntimeInput,
-        authoredAtUnixSeconds _: UInt64,
-        expectedRevision: UInt64?,
-        persistedAtUnixMilliseconds: UInt64
+        existingDraftID: String?,
+        expectedRevision: UInt64?
     ) async throws -> RadrootsDraftStatus {
         if let saveFailure {
             throw saveFailure
@@ -425,6 +423,7 @@ private actor AddBackend: RadrootsRuntimeBackend {
         if saveDelayNanoseconds > 0 {
             try await Task.sleep(nanoseconds: saveDelayNanoseconds)
         }
+        let id = existingDraftID ?? String(format: "%032x", values.count + 1)
         let savedMedia = input.form.media.map {
             RadrootsPreparedMedia(
                 opaqueReference: $0.opaqueReference,
@@ -447,7 +446,7 @@ private actor AddBackend: RadrootsRuntimeBackend {
             commandType: input.form.commandType,
             form: storedForm,
             state: savedMedia.isEmpty ? .draft : .mediaPreparing,
-            updatedAt: persistedAtUnixMilliseconds,
+            updatedAt: 1_800_000_000_000 + UInt64(values.count),
             media: savedMedia.map {
                 RadrootsDraftMediaStatus(
                     url: $0.remoteURL!,
@@ -512,35 +511,45 @@ private actor AddBackend: RadrootsRuntimeBackend {
         Array(values.values.prefix(Int(limit)))
     }
 
-    func queueDraft(
+    func queueAddIntent(
         id: String,
-        expectedRevision: UInt64,
-        policy _: RadrootsQueuePolicy,
-        queuedAtUnixMilliseconds: UInt64
+        expectedRevision: UInt64
     ) throws -> RadrootsDraftStatus {
+        guard includeWritableRelay else {
+            throw RadrootsRuntimeFailure(
+                schemaVersion: 1,
+                code: "writable_relay_unavailable",
+                category: "relay",
+                retryable: true,
+                recoveryActions: ["configure_relay", "retry"],
+                operationID: id,
+                capabilityID: "nostr_sink",
+                safeMessage: "No writable relay is configured."
+            )
+        }
         let current = try draftStatus(id: id)
         guard current.revision == expectedRevision else { throw unsupported() }
-        let value = replacing(current, revision: current.revision + 1, state: .queued, updatedAt: queuedAtUnixMilliseconds)
+        let value = replacing(current, revision: current.revision + 1, state: .queued, updatedAt: current.updatedAtUnixMilliseconds + 1)
         values[id] = value
         return value
     }
 
-    func recoverDraftQueue(id: String, recoveredAtUnixMilliseconds: UInt64) throws -> RadrootsDraftStatus {
+    func recoverAddIntent(id: String) throws -> RadrootsDraftStatus {
         let current = try draftStatus(id: id)
-        let value = replacing(current, revision: current.revision + 1, state: .queued, updatedAt: recoveredAtUnixMilliseconds)
+        let value = replacing(current, revision: current.revision + 1, state: .queued, updatedAt: current.updatedAtUnixMilliseconds + 1)
         values[id] = value
         return value
     }
 
-    func uploadDraftMedia(input: RadrootsBlossomUploadInput) throws -> RadrootsDraftStatus {
-        uploadAuthorizationCreatedAt = input.authorizationCreatedAtUnixSeconds
+    func uploadAddMediaIntent(input: RadrootsBlossomUploadIntent) throws -> RadrootsDraftStatus {
+        uploadedMedia = true
         let current = try draftStatus(id: input.draftID)
         let verified = current.media.map {
             RadrootsDraftMediaStatus(
                 url: $0.url,
                 stage: .verified,
                 uploadAttempts: $0.uploadAttempts + 1,
-                verifiedAtUnixMilliseconds: input.verifiedAtUnixMilliseconds,
+                verifiedAtUnixMilliseconds: current.updatedAtUnixMilliseconds + 1,
                 possibleOrphan: false,
                 orphanReasonCode: nil,
                 orphanRecordedAtUnixMilliseconds: nil
@@ -550,15 +559,15 @@ private actor AddBackend: RadrootsRuntimeBackend {
             current,
             revision: current.revision + 1,
             state: .readyToSign,
-            updatedAt: input.updatedAtUnixMilliseconds,
+            updatedAt: current.updatedAtUnixMilliseconds + 1,
             media: verified
         )
         values[current.id] = value
         return value
     }
 
-    func lastUploadAuthorizationCreatedAt() -> UInt64? {
-        uploadAuthorizationCreatedAt
+    func didUploadMedia() -> Bool {
+        uploadedMedia
     }
 
     func advanceDraft(id: String, expectedRevision: UInt64) throws -> RadrootsDraftStatus {
@@ -580,13 +589,12 @@ private actor AddBackend: RadrootsRuntimeBackend {
         return value
     }
 
-    func cancelDraft(
+    func cancelAddIntent(
         id: String,
-        expectedRevision _: UInt64,
-        cancelledAtUnixMilliseconds: UInt64
+        expectedRevision _: UInt64
     ) throws -> RadrootsDraftStatus {
         let current = try draftStatus(id: id)
-        let value = replacing(current, revision: current.revision + 1, state: .cancelled, updatedAt: cancelledAtUnixMilliseconds)
+        let value = replacing(current, revision: current.revision + 1, state: .cancelled, updatedAt: current.updatedAtUnixMilliseconds + 1)
         values[id] = value
         return value
     }

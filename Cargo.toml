@@ -23,4 +23,4 @@ todo = "deny"
 unimplemented = "deny"
 
 [workspace.dependencies]
-radroots_mobile_ffi = { git = "https://github.com/radrootslabs/lib", rev = "2f88cbabf924d45f48afda26bdc5625938bc480f", version = "=0.1.0-alpha" }
+radroots_mobile_ffi = { git = "https://github.com/radrootslabs/lib", rev = "d5baa12725cec1737b800f1cf9cf9357c08713e5", version = "=0.1.0-alpha" }

@@ -638,12 +638,8 @@ struct RadrootsAddForm: Sendable, Equatable, Hashable {
     static func empty(_ type: RadrootsAddCommandType = .createUpdate) -> Self {
         var form = Self(commandType: type)
         if type == .createEvent {
-            form.identifier = UUID().uuidString.lowercased()
             form.eventTiming = .timed
             form.eventTimezone = TimeZone.current.identifier
-        } else if type == .createFoodAvailability {
-            form.identifier = UUID().uuidString.lowercased()
-            form.foodStatus = "active"
         }
         return form
     }
@@ -772,25 +768,6 @@ struct RadrootsDraftStatus: Sendable, Equatable, Hashable, Identifiable {
     }
 }
 
-enum RadrootsRelaySatisfaction: Sendable, Equatable, Hashable {
-    case anyAccepted
-    case allAccepted
-    case anyDelivered
-    case allDelivered
-}
-
-enum RadrootsCancellationPolicy: Sendable, Equatable, Hashable {
-    case preservePublishedRequest
-    case localCooperative
-}
-
-struct RadrootsQueuePolicy: Sendable, Equatable, Hashable {
-    let relayURLs: [String]
-    let satisfaction: RadrootsRelaySatisfaction
-    let deliveryDeadlineUnixMilliseconds: UInt64
-    let cancellation: RadrootsCancellationPolicy
-}
-
 struct RadrootsRetractionDraftInput: Sendable, Equatable, Hashable {
     let commandType: RadrootsAddCommandType
     let targetCardID: String
@@ -800,19 +777,10 @@ struct RadrootsRetractionDraftInput: Sendable, Equatable, Hashable {
     let reason: String
 }
 
-struct RadrootsBlossomUploadInput: Sendable, Equatable {
+struct RadrootsBlossomUploadIntent: Sendable, Equatable {
     let draftID: String
     let expectedRevision: UInt64
     let media: RadrootsPreparedMediaHandle
-    let authorizationContent: String
-    let authorizationCreatedAtUnixSeconds: UInt64
-    let authorizationLifetimeSeconds: UInt64
-    let operationID: String
-    let artifactID: String
-    let signingDeadlineUnixMilliseconds: UInt64
-    let signingCancellation: RadrootsCancellationPolicy
-    let verifiedAtUnixMilliseconds: UInt64
-    let updatedAtUnixMilliseconds: UInt64
 }
 
 enum RadrootsRuntimeLifecycle: Sendable, Equatable {
