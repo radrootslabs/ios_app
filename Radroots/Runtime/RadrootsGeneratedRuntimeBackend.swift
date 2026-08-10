@@ -29,7 +29,7 @@ private final class RadrootsGeneratedHostSigner: RadrootsHostSigner, @unchecked 
     )
     #if DEBUG
       if request.purpose == .blossomUpload,
-        let signatureHex = outcome.signatureHex
+         let signatureHex = outcome.signatureHex
       {
         try? RadrootsRemoteQualificationEvidence.recordBlossomAuthorization(
           request: request,
@@ -233,6 +233,64 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
         context: context.generatedValue,
         asOfUnixS: asOfUnixSeconds
       ).appValue
+    } catch {
+      throw Self.failure(from: error)
+    }
+  }
+
+  func retrieveMedia(
+    context: RadrootsLocalNetwork,
+    reference: RadrootsMediaReference
+  ) async throws -> RadrootsVerifiedMediaArtifact {
+    do {
+      let operation = try FfiMediaOperation()
+      let record = try await withTaskCancellationHandler {
+        try await runtime.phase1RetrieveMedia(
+          context: context.generatedValue,
+          referenceFingerprint: reference.referenceFingerprint,
+          operation: operation
+        )
+      } onCancel: {
+        operation.cancel()
+      }
+      return try Self.verifiedMediaArtifact(
+        record,
+        expectedArtifactID: reference.sha256,
+        requiresOperationID: true
+      )
+    } catch {
+      throw Self.failure(from: error)
+    }
+  }
+
+  func verifiedMediaArtifact(
+    context: RadrootsLocalNetwork,
+    artifactID: String
+  ) async throws -> RadrootsVerifiedMediaArtifact? {
+    do {
+      guard let record = try await runtime.phase1VerifiedMediaArtifact(
+        context: context.generatedValue,
+        artifactId: artifactID
+      ) else { return nil }
+      return try Self.verifiedMediaArtifact(
+        record,
+        expectedArtifactID: artifactID,
+        requiresOperationID: false
+      )
+    } catch {
+      throw Self.failure(from: error)
+    }
+  }
+
+  func invalidateMediaArtifact(
+    context: RadrootsLocalNetwork,
+    artifactID: String
+  ) async throws -> Bool {
+    do {
+      return try await runtime.phase1InvalidateMediaArtifact(
+        context: context.generatedValue,
+        artifactId: artifactID
+      )
     } catch {
       throw Self.failure(from: error)
     }
@@ -601,10 +659,36 @@ private final class RadrootsGeneratedRuntimeBackend: RadrootsRuntimeBackend, @un
       safeMessage: "The Radroots runtime could not complete the operation."
     )
   }
+
+  private static func verifiedMediaArtifact(
+    _ record: FfiVerifiedMediaArtifactRecord,
+    expectedArtifactID: String?,
+    requiresOperationID: Bool
+  ) throws -> RadrootsVerifiedMediaArtifact {
+    guard record.schemaVersion == 1,
+          !requiresOperationID || record.operationId?.isEmpty == false,
+          expectedArtifactID == nil || expectedArtifactID == record.artifactId,
+          let artifact = RadrootsVerifiedMediaArtifact(
+            artifactID: record.artifactId,
+            bytes: record.bytes,
+            byteSize: record.byteSize,
+            mediaType: record.mediaType,
+            width: record.width,
+            height: record.height
+          )
+    else {
+      throw RadrootsRuntimeFailure.local(
+        operation: "runtime.media.artifact",
+        code: "ios.media.artifact_invalid",
+        safeMessage: "The verified photo artifact is invalid."
+      )
+    }
+    return artifact
+  }
 }
 
-private extension RadrootsRuntimeLaunchConfiguration {
-  func bootstrapSettingsReplacement(
+extension RadrootsRuntimeLaunchConfiguration {
+  fileprivate func bootstrapSettingsReplacement(
     current: RadrootsMobileSettings
   ) -> RadrootsReplaceSettings {
     let environment = networkProfile.settingsValue
@@ -612,7 +696,7 @@ private extension RadrootsRuntimeLaunchConfiguration {
       RadrootsRelayPreference(url: $0, access: .readWrite)
     }
     if networkProfile != .simulator,
-      !relays.contains(where: { $0.url == RadrootsNetworkValidator.canonicalRelay })
+       !relays.contains(where: { $0.url == RadrootsNetworkValidator.canonicalRelay })
     {
       relays.insert(
         RadrootsRelayPreference(
@@ -642,8 +726,8 @@ private extension RadrootsRuntimeLaunchConfiguration {
   }
 }
 
-private extension RadrootsRuntimeNetworkProfile {
-  var settingsValue: RadrootsSettingsNetworkEnvironment {
+extension RadrootsRuntimeNetworkProfile {
+  fileprivate var settingsValue: RadrootsSettingsNetworkEnvironment {
     switch self {
     case .publicNetwork: .publicNetwork
     case .simulator: .simulator
@@ -652,8 +736,8 @@ private extension RadrootsRuntimeNetworkProfile {
   }
 }
 
-private extension RadrootsBlossomEndpointAuthority {
-  var settingsValue: RadrootsBlossomAuthorityPreference {
+extension RadrootsBlossomEndpointAuthority {
+  fileprivate var settingsValue: RadrootsBlossomAuthorityPreference {
     switch self {
     case .publicWebPKI: .publicWebPKI
     case .loopbackDevelopment: .loopbackDevelopment
@@ -898,6 +982,7 @@ extension FfiTodayCardType {
 extension FfiMediaReferenceRecord {
   fileprivate var appValue: RadrootsMediaReference {
     RadrootsMediaReference(
+      referenceFingerprint: referenceFingerprint,
       url: url,
       sha256: sha256,
       mediaType: mediaType,

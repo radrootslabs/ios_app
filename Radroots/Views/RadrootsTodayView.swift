@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct RadrootsTodayView: View {
   let snapshot: RadrootsRuntimeSnapshot
@@ -7,6 +8,7 @@ struct RadrootsTodayView: View {
   @ObservedObject var meStore: RadrootsMeStore
   @ObservedObject var addStore: RadrootsAddStore
   @ObservedObject var settingsStore: RadrootsSettingsStore
+  @ObservedObject var mediaStore: RadrootsMediaStore
   let revise: (RadrootsTodayCard) -> Void
   @State private var showsAccount = false
   @State private var showsContextPicker = false
@@ -16,7 +18,7 @@ struct RadrootsTodayView: View {
     Group {
       switch store.state {
       case .idle where store.cards.isEmpty,
-        .loading where store.cards.isEmpty:
+           .loading where store.cards.isEmpty:
         ProgressView("Loading Today…")
           .accessibilityIdentifier("radroots.today.loading")
       case .empty:
@@ -59,6 +61,7 @@ struct RadrootsTodayView: View {
         todayStore: store,
         addStore: addStore,
         settingsStore: settingsStore,
+        mediaStore: mediaStore,
         revise: revise
       )
     }
@@ -67,6 +70,7 @@ struct RadrootsTodayView: View {
         snapshot: snapshot,
         context: store.selectedContext,
         store: searchStore,
+        mediaStore: mediaStore,
         revise: revise
       )
     }
@@ -84,7 +88,11 @@ struct RadrootsTodayView: View {
 
       ForEach(store.cards) { card in
         NavigationLink(value: card) {
-          RadrootsTodayCardView(card: card)
+          RadrootsTodayCardView(
+            card: card,
+            context: store.selectedContext,
+            mediaStore: mediaStore
+          )
         }
         .accessibilityIdentifier("radroots.today.card.\(card.id)")
         .onAppear {
@@ -107,6 +115,8 @@ struct RadrootsTodayView: View {
     .navigationDestination(for: RadrootsTodayCard.self) { card in
       RadrootsTodayDetailView(
         card: card,
+        context: store.selectedContext,
+        mediaStore: mediaStore,
         canRevise: card.authorPublicKey == snapshot.identity.publicKeyHex
           && card.localOperationID != nil,
         revise: revise
@@ -213,6 +223,8 @@ private struct RadrootsContextPicker: View {
 
 struct RadrootsTodayCardView: View {
   let card: RadrootsTodayCard
+  let context: RadrootsLocalNetwork?
+  @ObservedObject var mediaStore: RadrootsMediaStore
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -244,19 +256,21 @@ struct RadrootsTodayCardView: View {
       }
 
       ForEach(card.media) { media in
-        RadrootsTrustedMediaView(media: media)
+        RadrootsTrustedMediaView(media: media, context: context, store: mediaStore)
       }
 
       HStack(spacing: 12) {
         Text(
-          Date(timeIntervalSince1970: TimeInterval(card.authoredAtUnixSeconds)), style: .relative)
+          Date(timeIntervalSince1970: TimeInterval(card.authoredAtUnixSeconds)), style: .relative
+        )
         if card.lifecycle != .active {
           Label(card.lifecycle.rawValue.capitalized, systemImage: "clock")
         }
         if let operationState = card.localOperationState {
           Label(
             operationState.replacingOccurrences(of: "_", with: " ").capitalized,
-            systemImage: "arrow.triangle.2.circlepath")
+            systemImage: "arrow.triangle.2.circlepath"
+          )
         }
       }
       .font(.caption)
@@ -272,7 +286,8 @@ struct RadrootsTodayCardView: View {
       if let start = card.eventStartUnixSeconds {
         Label(
           Date(timeIntervalSince1970: TimeInterval(start)).formatted(
-            date: .abbreviated, time: .shortened),
+            date: .abbreviated, time: .shortened
+          ),
           systemImage: "calendar"
         )
       }
@@ -301,56 +316,93 @@ struct RadrootsTodayCardView: View {
 
 struct RadrootsTrustedMediaView: View {
   let media: RadrootsMediaReference
+  let context: RadrootsLocalNetwork?
+  @ObservedObject var store: RadrootsMediaStore
 
   var body: some View {
+    RadrootsLocalMediaContent(media: media, context: context, store: store)
+      .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 260)
+      .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+      .clipShape(RoundedRectangle(cornerRadius: 12))
+  }
+}
+
+struct RadrootsLocalMediaContent: View {
+  let media: RadrootsMediaReference
+  let context: RadrootsLocalNetwork?
+  @ObservedObject var store: RadrootsMediaStore
+
+  var body: some View {
+    let state = store.state(for: media, context: context)
     Group {
-      if let url = media.trustedURL {
-        AsyncImage(url: url) { phase in
-          switch phase {
-          case .success(let image):
-            image.resizable().scaledToFill()
-          case .failure:
-            mediaState("Media could not be loaded", systemImage: "photo.badge.exclamationmark")
-          case .empty:
-            ProgressView()
-          @unknown default:
-            mediaState("Media unavailable", systemImage: "photo")
-          }
+      switch state {
+      case .ready(let artifact):
+        if let image = UIImage(data: artifact.bytes) {
+          Image(uiImage: image)
+            .resizable()
+            .scaledToFill()
+        } else {
+          mediaState("Saved photo is corrupt", systemImage: "shield.slash", retries: true)
         }
-      } else {
-        switch media.verification {
-        case .pending:
-          mediaState("Verifying media", systemImage: "hourglass")
-        case .failed:
-          mediaState("Media failed verification", systemImage: "shield.slash")
-        case .unavailable:
-          mediaState("Media not verified", systemImage: "shield.lefthalf.filled")
-        case .verified:
-          mediaState("Media URL is not trusted", systemImage: "lock.trianglebadge.exclamationmark")
-        }
+      case .pending:
+        mediaState("Verifying photo", systemImage: "hourglass", retries: false)
+      case .loading:
+        ProgressView("Loading verified photo…")
+      case .unavailable:
+        mediaState("Photo is not available locally", systemImage: "photo", retries: true)
+      case .offline:
+        mediaState("Photo unavailable offline", systemImage: "wifi.slash", retries: true)
+      case .corrupt:
+        mediaState("Saved photo failed verification", systemImage: "shield.slash", retries: true)
+      case .failed:
+        mediaState(
+          "Photo could not be loaded",
+          systemImage: "photo.badge.exclamationmark",
+          retries: true
+        )
       }
     }
-    .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 260)
-    .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
-    .clipShape(RoundedRectangle(cornerRadius: 12))
-    .accessibilityLabel(media.alt ?? media.verification.rawValue.capitalized)
+    .task(id: media.id) {
+      store.load(media: media, context: context)
+    }
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel(accessibilityLabel(for: state))
   }
 
-  private func mediaState(_ message: String, systemImage: String) -> some View {
-    ContentUnavailableView(message, systemImage: systemImage)
-      .font(.caption)
+  private func mediaState(
+    _ message: String,
+    systemImage: String,
+    retries: Bool
+  ) -> some View {
+    VStack(spacing: 8) {
+      Label(message, systemImage: systemImage)
+      if retries, context != nil {
+        Button("Retry photo") {
+          store.retry(media: media, context: context)
+        }
+        .buttonStyle(.bordered)
+      }
+    }
+    .font(.caption)
+  }
+
+  private func accessibilityLabel(for state: RadrootsMediaPresentationState) -> String {
+    guard let alt = media.alt, !alt.isEmpty else { return state.accessibilityLabel }
+    return "\(alt). \(state.accessibilityLabel)"
   }
 }
 
 struct RadrootsTodayDetailView: View {
   let card: RadrootsTodayCard
+  let context: RadrootsLocalNetwork?
+  @ObservedObject var mediaStore: RadrootsMediaStore
   let canRevise: Bool
   let revise: (RadrootsTodayCard) -> Void
 
   var body: some View {
     List {
       Section {
-        RadrootsTodayCardView(card: card)
+        RadrootsTodayCardView(card: card, context: context, mediaStore: mediaStore)
       }
       if !card.thread.isEmpty {
         Section("Conversation") {

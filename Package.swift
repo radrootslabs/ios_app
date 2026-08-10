@@ -59,6 +59,7 @@ let package = Package(
                 "State/RadrootsAddStore.swift",
                 "State/RadrootsConfigurationStore.swift",
                 "State/RadrootsIdentityStore.swift",
+                "State/RadrootsMediaStore.swift",
                 "State/RadrootsSessionStore.swift",
                 "State/RadrootsSupportingStores.swift",
                 "State/RadrootsTodayStore.swift",

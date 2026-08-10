@@ -5,6 +5,7 @@ struct RadrootsSearchSheet: View {
   let snapshot: RadrootsRuntimeSnapshot
   let context: RadrootsLocalNetwork?
   @ObservedObject var store: RadrootsSearchStore
+  @ObservedObject var mediaStore: RadrootsMediaStore
   let revise: (RadrootsTodayCard) -> Void
   @Environment(\.dismiss) private var dismiss
 
@@ -54,19 +55,21 @@ struct RadrootsSearchSheet: View {
         NavigationLink {
           RadrootsTodayDetailView(
             card: card,
+            context: context,
+            mediaStore: mediaStore,
             canRevise: card.authorPublicKey == snapshot.identity.publicKeyHex
               && card.localOperationID != nil,
             revise: revise
           )
         } label: {
-          RadrootsTodayCardView(card: card)
+          RadrootsTodayCardView(card: card, context: context, mediaStore: mediaStore)
         }
         .accessibilityIdentifier("radroots.search.card.\(result.id)")
       case (_, let profile?):
         NavigationLink {
-          RadrootsProfileView(profile: profile)
+          RadrootsProfileView(profile: profile, context: context, mediaStore: mediaStore)
         } label: {
-          RadrootsProfileRow(profile: profile)
+          RadrootsProfileRow(profile: profile, context: context, mediaStore: mediaStore)
         }
         .accessibilityIdentifier("radroots.search.profile.\(result.id)")
       default:
@@ -92,6 +95,7 @@ struct RadrootsMeSheet: View {
   @ObservedObject var todayStore: RadrootsTodayStore
   @ObservedObject var addStore: RadrootsAddStore
   @ObservedObject var settingsStore: RadrootsSettingsStore
+  @ObservedObject var mediaStore: RadrootsMediaStore
   let revise: (RadrootsTodayCard) -> Void
   @Environment(\.dismiss) private var dismiss
   @State private var showsDrafts = false
@@ -137,9 +141,9 @@ struct RadrootsMeSheet: View {
       Section {
         if let profile = store.snapshot?.profile {
           NavigationLink {
-            RadrootsProfileView(profile: profile)
+            RadrootsProfileView(profile: profile, context: context, mediaStore: mediaStore)
           } label: {
-            RadrootsProfileRow(profile: profile)
+            RadrootsProfileRow(profile: profile, context: context, mediaStore: mediaStore)
           }
         } else {
           RadrootsProfileRow(
@@ -153,7 +157,9 @@ struct RadrootsMeSheet: View {
               nip05: nil,
               website: nil,
               lightningAddress: nil
-            )
+            ),
+            context: context,
+            mediaStore: mediaStore
           )
         }
       }
@@ -177,11 +183,13 @@ struct RadrootsMeSheet: View {
           NavigationLink {
             RadrootsTodayDetailView(
               card: card,
+              context: context,
+              mediaStore: mediaStore,
               canRevise: card.localOperationID != nil,
               revise: revise
             )
           } label: {
-            RadrootsTodayCardView(card: card)
+            RadrootsTodayCardView(card: card, context: context, mediaStore: mediaStore)
           }
         }
       }
@@ -205,10 +213,17 @@ struct RadrootsMeSheet: View {
 
 struct RadrootsProfileRow: View {
   let profile: RadrootsProfileSummary
+  let context: RadrootsLocalNetwork?
+  @ObservedObject var mediaStore: RadrootsMediaStore
 
   var body: some View {
     HStack(spacing: 12) {
-      RadrootsStableAvatarView(profile: profile, size: 48)
+      RadrootsStableAvatarView(
+        profile: profile,
+        context: context,
+        mediaStore: mediaStore,
+        size: 48
+      )
       VStack(alignment: .leading, spacing: 3) {
         Text(profile.preferredName)
           .font(.headline)
@@ -235,12 +250,25 @@ struct RadrootsProfileRow: View {
 
 struct RadrootsProfileView: View {
   let profile: RadrootsProfileSummary
+  let context: RadrootsLocalNetwork?
+  @ObservedObject var mediaStore: RadrootsMediaStore
 
   var body: some View {
     List {
       Section {
         VStack(spacing: 12) {
-          RadrootsStableAvatarView(profile: profile, size: 88)
+          if let banner = profile.banner {
+            RadrootsLocalMediaContent(media: banner, context: context, store: mediaStore)
+              .frame(maxWidth: .infinity, minHeight: 100, maxHeight: 160)
+              .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+              .clipShape(RoundedRectangle(cornerRadius: 12))
+          }
+          RadrootsStableAvatarView(
+            profile: profile,
+            context: context,
+            mediaStore: mediaStore,
+            size: 88
+          )
           Text(profile.preferredName)
             .font(.title2.weight(.semibold))
           Text(abbreviatedPublicKey)
@@ -279,11 +307,11 @@ struct RadrootsProfileView: View {
 
   private func safeHTTPS(_ value: String?) -> URL? {
     guard let value,
-      let url = URL(string: value),
-      url.scheme?.lowercased() == "https",
-      url.host != nil,
-      url.user == nil,
-      url.password == nil
+          let url = URL(string: value),
+          url.scheme?.lowercased() == "https",
+          url.host != nil,
+          url.user == nil,
+          url.password == nil
     else {
       return nil
     }
@@ -293,17 +321,31 @@ struct RadrootsProfileView: View {
 
 struct RadrootsStableAvatarView: View {
   let profile: RadrootsProfileSummary
+  let context: RadrootsLocalNetwork?
+  @ObservedObject var mediaStore: RadrootsMediaStore
   let size: CGFloat
 
   var body: some View {
+    Group {
+      if let picture = profile.picture {
+        RadrootsLocalMediaContent(media: picture, context: context, store: mediaStore)
+      } else {
+        fallback
+      }
+    }
+    .frame(width: size, height: size)
+    .background(.quaternary)
+    .clipShape(Circle())
+  }
+
+  private var fallback: some View {
     let identity = RadrootsStableVisualIdentity(publicKeyHex: profile.authorPublicKey)
-    ZStack {
+    return ZStack {
       Circle().fill(Self.palette[identity.paletteIndex])
       Text(String(profile.preferredName.prefix(1)).uppercased())
         .font(.system(size: size * 0.4, weight: .semibold, design: .rounded))
         .foregroundStyle(.white)
     }
-    .frame(width: size, height: size)
     .accessibilityHidden(true)
   }
 

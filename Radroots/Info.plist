@@ -22,8 +22,6 @@
 	<string>1</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Radroots uses the camera only when you choose to add a farm photo.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Radroots accesses only the photos you choose for a farm update, ask, event, or food post.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Radroots uses Face ID only to unlock the local Nostr identity or approve a post or media upload you choose to sign.</string>
 	<key>UIApplicationSceneManifest</key>

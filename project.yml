@@ -48,6 +48,7 @@ targets:
       - path: RadrootsTests/RadrootsRootShellTests.swift
       - path: RadrootsTests/RadrootsStateMigrationTests.swift
       - path: RadrootsTests/RadrootsTodayStoreTests.swift
+      - path: RadrootsTests/RadrootsMediaStoreTests.swift
       - path: RadrootsTests/RadrootsAddStoreTests.swift
       - path: RadrootsTests/RadrootsSupportingStoreTests.swift
       - path: RadrootsTests/RadrootsLifecycleTests.swift

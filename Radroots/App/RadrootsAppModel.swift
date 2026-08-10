@@ -11,6 +11,7 @@ final class RadrootsAppModel: ObservableObject {
   private(set) var searchStore: RadrootsSearchStore?
   private(set) var meStore: RadrootsMeStore?
   private(set) var settingsStore: RadrootsSettingsStore?
+  private(set) var mediaStore: RadrootsMediaStore?
   let diagnosticsStore: RadrootsDiagnosticsStore
 
   private let sessionStore: RadrootsSessionStore?
@@ -32,11 +33,11 @@ final class RadrootsAppModel: ObservableObject {
     }
     let lifecycleCoordinator =
       requestedLifecycleCoordinator
-      ?? productionServices?.coordinator
-      ?? RadrootsLifecycleCoordinator.disabled()
+        ?? productionServices?.coordinator
+        ?? RadrootsLifecycleCoordinator.disabled()
     let backgroundTransfer =
       requestedLifecycleCoordinator == nil
-      ? productionServices?.backgroundTransfer : nil
+        ? productionServices?.backgroundTransfer : nil
     self.lifecycleCoordinator = lifecycleCoordinator
     diagnosticsStore = RadrootsDiagnosticsStore(coordinator: lifecycleCoordinator)
     #if DEBUG
@@ -47,6 +48,7 @@ final class RadrootsAppModel: ObservableObject {
         searchStore = nil
         meStore = nil
         settingsStore = nil
+        mediaStore = nil
         bootstrapFailure = nil
         isShellUITest = true
         phase = .running(.shellUITest)
@@ -61,6 +63,7 @@ final class RadrootsAppModel: ObservableObject {
       searchStore = runtimeClient.map { RadrootsSearchStore(runtimeClient: $0) }
       meStore = runtimeClient.map { RadrootsMeStore(runtimeClient: $0) }
       settingsStore = runtimeClient.map { RadrootsSettingsStore(runtimeClient: $0) }
+      mediaStore = runtimeClient.map { RadrootsMediaStore(runtimeClient: $0) }
       bootstrapFailure = nil
     } else {
       do {
@@ -80,6 +83,7 @@ final class RadrootsAppModel: ObservableObject {
         searchStore = RadrootsSearchStore(runtimeClient: runtimeClient)
         meStore = RadrootsMeStore(runtimeClient: runtimeClient)
         settingsStore = RadrootsSettingsStore(runtimeClient: runtimeClient)
+        mediaStore = RadrootsMediaStore(runtimeClient: runtimeClient)
         bootstrapFailure = nil
       } catch let error as LocalizedError {
         self.sessionStore = nil
@@ -88,6 +92,7 @@ final class RadrootsAppModel: ObservableObject {
         searchStore = nil
         meStore = nil
         settingsStore = nil
+        mediaStore = nil
         bootstrapFailure = .local(
           operation: "app.bootstrap",
           code: "ios.app.configuration_invalid",
@@ -100,6 +105,7 @@ final class RadrootsAppModel: ObservableObject {
         searchStore = nil
         meStore = nil
         settingsStore = nil
+        mediaStore = nil
         bootstrapFailure = .local(
           operation: "app.bootstrap",
           code: "ios.app.configuration_invalid",
@@ -191,6 +197,7 @@ final class RadrootsAppModel: ObservableObject {
     searchStore?.stop()
     meStore?.stop()
     settingsStore?.stop()
+    mediaStore?.reset()
     await sessionStore?.suspend()
     await lifecycleCoordinator.record("ios.lifecycle.background")
   }
@@ -284,6 +291,7 @@ final class RadrootsAppModel: ObservableObject {
     addStore?.stop()
     searchStore?.stop()
     meStore?.stop()
+    mediaStore?.reset()
   }
 
   private static func isFailure(_ phase: Phase) -> Bool {

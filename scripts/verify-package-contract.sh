@@ -31,6 +31,32 @@ grep -Fq "NSPrivacyAccessedAPICategoryUserDefaults" \
     "$repo_root/Radroots/Resources/PrivacyInfo.xcprivacy"
 grep -Fq "CA92.1" "$repo_root/Radroots/Resources/PrivacyInfo.xcprivacy"
 plutil -lint "$repo_root/Radroots/Resources/PrivacyInfo.xcprivacy" >/dev/null
+plutil -lint "$repo_root/Radroots/Info.plist" >/dev/null
+
+grep -Fq '<key>NSCameraUsageDescription</key>' "$repo_root/Radroots/Info.plist"
+grep -Fq '<key>NSFaceIDUsageDescription</key>' "$repo_root/Radroots/Info.plist"
+if grep -Fq '<key>NSPhotoLibraryUsageDescription</key>' "$repo_root/Radroots/Info.plist"; then
+    echo "error: PHPicker must not claim broad photo-library access" >&2
+    exit 1
+fi
+
+grep -Fq 'RADROOTS_FIELD_IOS_NOSTR_RELAY_URLS = ws:$(SLASH)$(SLASH)127.0.0.1:21000' \
+    "$repo_root/Radroots/Config/Debug.xcconfig"
+grep -Fq 'RADROOTS_FIELD_IOS_BLOSSOM_ORIGINS = http:$(SLASH)$(SLASH)127.0.0.1:21100' \
+    "$repo_root/Radroots/Config/Debug.xcconfig"
+grep -Fq 'RADROOTS_FIELD_IOS_NOSTR_RELAY_URLS = wss:$(SLASH)$(SLASH)radroots.org$(SLASH)' \
+    "$repo_root/Radroots/Config/Base.xcconfig"
+grep -Fq 'RADROOTS_FIELD_IOS_BLOSSOM_ORIGINS = https:$(SLASH)$(SLASH)blossom.radroots.org' \
+    "$repo_root/Radroots/Config/Base.xcconfig"
+
+if rg -n \
+    'AsyncImage|URLSession\.shared|Data\(contentsOf:[[:space:]]*URL' \
+    "$repo_root/Radroots" \
+    --glob '*.swift'
+then
+    echo "error: production Swift source contains an ungoverned media/network access path" >&2
+    exit 1
+fi
 
 for resolved in \
     "$repo_root/Package.resolved" \

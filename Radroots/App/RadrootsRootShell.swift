@@ -30,6 +30,7 @@ struct RadrootsRootShell: View {
     let searchStore: RadrootsSearchStore?
     let meStore: RadrootsMeStore?
     let settingsStore: RadrootsSettingsStore?
+    let mediaStore: RadrootsMediaStore?
     @SceneStorage("radroots.selected_root_tab") private var storedSelection = RadrootsRootTab.today.rawValue
 
     init(
@@ -38,7 +39,8 @@ struct RadrootsRootShell: View {
         addStore: RadrootsAddStore? = nil,
         searchStore: RadrootsSearchStore? = nil,
         meStore: RadrootsMeStore? = nil,
-        settingsStore: RadrootsSettingsStore? = nil
+        settingsStore: RadrootsSettingsStore? = nil,
+        mediaStore: RadrootsMediaStore? = nil
     ) {
         self.snapshot = snapshot
         self.todayStore = todayStore
@@ -46,12 +48,15 @@ struct RadrootsRootShell: View {
         self.searchStore = searchStore
         self.meStore = meStore
         self.settingsStore = settingsStore
+        self.mediaStore = mediaStore
     }
 
     var body: some View {
         TabView(selection: selection) {
             NavigationStack {
-                if let todayStore, let addStore, let searchStore, let meStore, let settingsStore {
+                if let todayStore, let addStore, let searchStore, let meStore, let settingsStore,
+                   let mediaStore
+                {
                     RadrootsTodayView(
                         snapshot: snapshot,
                         store: todayStore,
@@ -59,6 +64,7 @@ struct RadrootsRootShell: View {
                         meStore: meStore,
                         addStore: addStore,
                         settingsStore: settingsStore,
+                        mediaStore: mediaStore,
                         revise: { card in
                             Task {
                                 await addStore.retractAndRevise(card)

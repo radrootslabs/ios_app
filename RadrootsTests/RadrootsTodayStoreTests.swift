@@ -93,6 +93,7 @@ final class RadrootsTodayStoreTests: XCTestCase {
             lightningAddress: nil
         )
         let failedMedia = RadrootsMediaReference(
+            referenceFingerprint: String(repeating: "d", count: 64),
             url: "https://blossom.example/\(String(repeating: "b", count: 64))",
             sha256: String(repeating: "b", count: 64),
             mediaType: "image/jpeg",
@@ -124,7 +125,7 @@ final class RadrootsTodayStoreTests: XCTestCase {
         }
 
         XCTAssertEqual(cards.map(\.type), RadrootsTodayCardType.allCases)
-        XCTAssertEqual(cards[1].media.first?.trustedURL, nil)
+        XCTAssertEqual(cards[1].media.first?.verifiedArtifactID, nil)
         XCTAssertEqual(cards[2].thread.first?.type, .reply)
         XCTAssertEqual(cards[4].priceSummary, "3 CAD/lb")
         XCTAssertEqual(cards[4].quantity, "12")

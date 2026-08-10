@@ -130,7 +130,7 @@ extension RadrootsRuntimeLaunchConfiguration: Equatable {
       && lhs.publicKeyHex == rhs.publicKeyHex
       && lhs.sourceGenerationHex == rhs.sourceGenerationHex
       && lhs.sourceGenerationCreatedAtUnixMilliseconds
-        == rhs.sourceGenerationCreatedAtUnixMilliseconds
+      == rhs.sourceGenerationCreatedAtUnixMilliseconds
       && lhs.protectedData == rhs.protectedData
       && lhs.networkProfile == rhs.networkProfile
       && lhs.writableRelays == rhs.writableRelays
@@ -468,12 +468,12 @@ extension RadrootsRuntimeClientError: LocalizedError {
     case .superseded:
       "A newer runtime lifecycle request replaced this request."
     case .startup(let failure),
-      .subscription(let failure),
-      .status(let failure),
-      .today(let failure),
-      .add(let failure),
-      .support(let failure),
-      .shutdown(let failure):
+         .subscription(let failure),
+         .status(let failure),
+         .today(let failure),
+         .add(let failure),
+         .support(let failure),
+         .shutdown(let failure):
       failure.safeMessage
     }
   }
@@ -527,6 +527,7 @@ enum RadrootsMediaVerificationState: String, Sendable, Equatable, Hashable {
 }
 
 struct RadrootsMediaReference: Sendable, Equatable, Hashable, Identifiable {
+  let referenceFingerprint: String
   let url: String
   let sha256: String?
   let mediaType: String?
@@ -537,17 +538,49 @@ struct RadrootsMediaReference: Sendable, Equatable, Hashable, Identifiable {
   let verification: RadrootsMediaVerificationState
 
   var id: String {
-    sha256 ?? url
+    referenceFingerprint
   }
 
-  var trustedURL: URL? {
+  var verifiedArtifactID: String? {
     guard verification == .verified,
-      let candidate = URL(string: url),
-      candidate.scheme?.lowercased() == "https"
-    else {
-      return nil
-    }
-    return candidate
+          let sha256,
+          sha256.count == 64,
+          sha256.allSatisfy({ $0.isHexDigit && !$0.isUppercase })
+    else { return nil }
+    return sha256
+  }
+}
+
+struct RadrootsVerifiedMediaArtifact: Sendable, Equatable {
+  let artifactID: String
+  let bytes: Data
+  let byteSize: UInt64
+  let mediaType: String
+  let width: UInt32
+  let height: UInt32
+
+  init?(
+    artifactID: String,
+    bytes: Data,
+    byteSize: UInt64,
+    mediaType: String,
+    width: UInt32,
+    height: UInt32
+  ) {
+    guard artifactID.count == 64,
+          artifactID.allSatisfy({ $0.isHexDigit && !$0.isUppercase }),
+          !bytes.isEmpty,
+          UInt64(bytes.count) == byteSize,
+          ["image/gif", "image/jpeg", "image/png", "image/webp"].contains(mediaType),
+          width > 0,
+          height > 0
+    else { return nil }
+    self.artifactID = artifactID
+    self.bytes = bytes
+    self.byteSize = byteSize
+    self.mediaType = mediaType
+    self.width = width
+    self.height = height
   }
 }
 

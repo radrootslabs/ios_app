@@ -22,6 +22,18 @@ protocol RadrootsRuntimeBackend: Sendable {
     context: RadrootsLocalNetwork,
     asOfUnixSeconds: UInt64
   ) async throws -> RadrootsMeSnapshot
+  func retrieveMedia(
+    context: RadrootsLocalNetwork,
+    reference: RadrootsMediaReference
+  ) async throws -> RadrootsVerifiedMediaArtifact
+  func verifiedMediaArtifact(
+    context: RadrootsLocalNetwork,
+    artifactID: String
+  ) async throws -> RadrootsVerifiedMediaArtifact?
+  func invalidateMediaArtifact(
+    context: RadrootsLocalNetwork,
+    artifactID: String
+  ) async throws -> Bool
   func addSchemas() async throws -> [RadrootsAddSchema]
   func saveAddIntent(
     input: RadrootsAddRuntimeInput,
@@ -243,6 +255,27 @@ extension RadrootsRuntimeBackend {
   ) async throws -> RadrootsMeSnapshot {
     throw supportUnsupported()
   }
+
+  func retrieveMedia(
+    context _: RadrootsLocalNetwork,
+    reference _: RadrootsMediaReference
+  ) async throws -> RadrootsVerifiedMediaArtifact {
+    throw supportUnsupported()
+  }
+
+  func verifiedMediaArtifact(
+    context _: RadrootsLocalNetwork,
+    artifactID _: String
+  ) async throws -> RadrootsVerifiedMediaArtifact? {
+    throw supportUnsupported()
+  }
+
+  func invalidateMediaArtifact(
+    context _: RadrootsLocalNetwork,
+    artifactID _: String
+  ) async throws -> Bool {
+    throw supportUnsupported()
+  }
 }
 
 struct RadrootsRuntimeBackendStart: Sendable {
@@ -369,9 +402,9 @@ private final class RadrootsRuntimeBoundedTask<Value: Sendable>: @unchecked Send
     deadlineNanoseconds: UInt64,
     operation: @escaping @Sendable () async -> Result<Value, RadrootsRuntimeFailure>,
     onAbandonedResult:
-      @escaping @Sendable (
-        Result<Value, RadrootsRuntimeFailure>
-      ) async -> Void = { _ in }
+    @escaping @Sendable (
+      Result<Value, RadrootsRuntimeFailure>
+    ) async -> Void = { _ in }
   ) {
     let state = State()
     self.state = state
@@ -480,14 +513,14 @@ actor RadrootsRuntimeClient {
     }
 
     if backend != nil,
-      configuration == requestedConfiguration,
-      case .running = lifecycleState
+       configuration == requestedConfiguration,
+       case .running = lifecycleState
     {
       return try await snapshot()
     }
 
     if let startupOperation,
-      startupOperation.configuration == requestedConfiguration
+       startupOperation.configuration == requestedConfiguration
     {
       return try await finishStartup(startupOperation)
     }
@@ -618,6 +651,33 @@ actor RadrootsRuntimeClient {
   ) async throws -> RadrootsMeSnapshot {
     try await supportOperation("runtime.support.me") { backend in
       try await backend.me(context: context, asOfUnixSeconds: asOfUnixSeconds)
+    }
+  }
+
+  func retrieveMedia(
+    context: RadrootsLocalNetwork,
+    reference: RadrootsMediaReference
+  ) async throws -> RadrootsVerifiedMediaArtifact {
+    try await supportOperation("runtime.media.retrieve") { backend in
+      try await backend.retrieveMedia(context: context, reference: reference)
+    }
+  }
+
+  func verifiedMediaArtifact(
+    context: RadrootsLocalNetwork,
+    artifactID: String
+  ) async throws -> RadrootsVerifiedMediaArtifact? {
+    try await supportOperation("runtime.media.verified_artifact") { backend in
+      try await backend.verifiedMediaArtifact(context: context, artifactID: artifactID)
+    }
+  }
+
+  func invalidateMediaArtifact(
+    context: RadrootsLocalNetwork,
+    artifactID: String
+  ) async throws -> Bool {
+    try await supportOperation("runtime.media.invalidate") { backend in
+      try await backend.invalidateMediaArtifact(context: context, artifactID: artifactID)
     }
   }
 
@@ -882,8 +942,8 @@ actor RadrootsRuntimeClient {
     removeActiveOperation(identity)
 
     guard generation == subscriptionGeneration,
-      case .running = lifecycleState,
-      var subscription = subscriptions[id]
+          case .running = lifecycleState,
+          var subscription = subscriptions[id]
     else {
       subscriptions.removeValue(forKey: id)?.continuation.finish()
       if case .completed(.success(let token)) = outcome {
@@ -943,7 +1003,7 @@ actor RadrootsRuntimeClient {
     }
     guard
       startupOperation != nil || backend != nil || quarantinedBackend != nil
-        || !subscriptions.isEmpty || !activeOperations.isEmpty
+      || !subscriptions.isEmpty || !activeOperations.isEmpty
     else {
       lifecycleState = .stopped
       return .alreadyStopped
@@ -960,7 +1020,7 @@ actor RadrootsRuntimeClient {
     }
 
     if case .cancelled = outcome,
-      startupOperation?.identity == operation.identity
+       startupOperation?.identity == operation.identity
     {
       throw RadrootsRuntimeClientError.startup(
         Self.cancellationFailure(identity: operation.identity)
@@ -970,8 +1030,8 @@ actor RadrootsRuntimeClient {
     if startupOperation?.identity == operation.identity {
       startupOperation = nil
     } else if case .completed(.success(let started)) = outcome,
-      configuration == operation.configuration,
-      case .running = lifecycleState
+              configuration == operation.configuration,
+              case .running = lifecycleState
     {
       return started.snapshot
     } else {
@@ -1063,8 +1123,8 @@ actor RadrootsRuntimeClient {
   ) async throws -> RadrootsRuntimeShutdownReceipt {
     let outcome = await operation.task.value(cancelsOperationWhenWaiterCancelled: false)
     if case .cancelled = outcome,
-      shutdownOperation?.identity == operation.identity,
-      generation == operation.identity.generation
+       shutdownOperation?.identity == operation.identity,
+       generation == operation.identity.generation
     {
       throw RadrootsRuntimeClientError.shutdown(
         Self.cancellationFailure(identity: operation.identity)
@@ -1093,16 +1153,16 @@ actor RadrootsRuntimeClient {
       quarantinedBackend = lateSucceeded ? nil : operation.backend
       lifecycleState =
         lateSucceeded
-        ? .stopped
-        : .failed(generation: operation.identity.generation, failure: failure)
+          ? .stopped
+          : .failed(generation: operation.identity.generation, failure: failure)
       throw RadrootsRuntimeClientError.shutdown(failure)
     case .cancelled:
       let failure = Self.cancellationFailure(identity: operation.identity)
       quarantinedBackend = lateSucceeded ? nil : operation.backend
       lifecycleState =
         lateSucceeded
-        ? .stopped
-        : .failed(generation: operation.identity.generation, failure: failure)
+          ? .stopped
+          : .failed(generation: operation.identity.generation, failure: failure)
       throw RadrootsRuntimeClientError.shutdown(failure)
     }
   }
@@ -1184,9 +1244,9 @@ actor RadrootsRuntimeClient {
     generation subscriptionGeneration: UInt64
   ) {
     guard generation == subscriptionGeneration,
-      case .running = lifecycleState,
-      let subscription = subscriptions[subscriptionID],
-      subscription.generation == subscriptionGeneration
+          case .running = lifecycleState,
+          let subscription = subscriptions[subscriptionID],
+          subscription.generation == subscriptionGeneration
     else {
       return
     }
@@ -1195,7 +1255,7 @@ actor RadrootsRuntimeClient {
 
   private func cancelSubscription(id: UUID, generation subscriptionGeneration: UInt64) {
     guard let subscription = subscriptions[id],
-      subscription.generation == subscriptionGeneration
+          subscription.generation == subscriptionGeneration
     else {
       return
     }
