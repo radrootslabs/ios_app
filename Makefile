@@ -7,26 +7,29 @@ SIMULATOR_DESTINATION := platform=iOS Simulator,name=$(SIMULATOR_NAME)
 
 .NOTPARALLEL:
 
-.PHONY: all bootstrap ffi-bootstrap artifact-check package-contract-check \
+.PHONY: all doctor bootstrap ffi-bootstrap artifact-check package-contract-check \
 	package-resolve package-build package-test project xcodegen xcode-resolve \
 	xcode-build-debug xcode-build-release unit-test ui-test api-snapshot-write \
 	api-snapshot-check verify clean distclean
 
 all: verify
 
-ffi-bootstrap:
+doctor:
+	cargo extbuild doctor
+
+ffi-bootstrap: doctor
 	cargo extbuild run -- $(MAKE) -C $(FFI_ROOT) verify
 
-artifact-check:
+artifact-check: doctor
 	cargo extbuild run -- $(FFI_ROOT)/scripts/verify-installed-artifacts.sh
 
-package-contract-check:
+package-contract-check: doctor
 	cargo extbuild run -- scripts/verify-package-contract.sh
 
 package-resolve: artifact-check package-contract-check
 	cargo extbuild run -- scripts/swift-package.sh resolve
 
-project xcodegen:
+project xcodegen: doctor
 	cargo extbuild run -- scripts/generate-project.sh
 
 xcode-resolve: artifact-check project
@@ -61,8 +64,8 @@ api-snapshot-check: package-build
 verify: artifact-check package-contract-check package-build package-test \
 	xcode-build-debug xcode-build-release unit-test ui-test api-snapshot-check
 
-clean:
+clean: doctor
 	cargo extbuild run -- $(MAKE) -C $(FFI_ROOT) clean
 
-distclean:
+distclean: doctor
 	cargo extbuild run -- $(MAKE) -C $(FFI_ROOT) distclean
