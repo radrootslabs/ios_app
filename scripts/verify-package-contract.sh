@@ -6,6 +6,14 @@ package="$repo_root/Package.swift"
 source_lock="$repo_root/RadrootsFFI/source.lock"
 consumer_lock="$repo_root/radroots.lib.source-lock.v1.toml"
 
+for forbidden_root in docs .github .act
+do
+    if [ -e "$repo_root/$forbidden_root" ] || [ -L "$repo_root/$forbidden_root" ]; then
+        echo "error: forbidden public repository root exists: $forbidden_root" >&2
+        exit 1
+    fi
+done
+
 make_value() {
     key=$1
     awk -v key="$key" '$2 == key && $3 == ":=" { print $4 }' "$source_lock"
