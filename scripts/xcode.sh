@@ -78,6 +78,60 @@ case "$operation" in
             "-only-testing:$test_target" \
             test
         ;;
+    physical-app-build)
+        destination=${2:?physical app build requires a device destination}
+        xcconfig=${3:?physical app build requires an xcconfig}
+        physical_automation=${RADROOTS_IOS_PHYSICAL_AUTOMATION:-}
+        development_team=${RADROOTS_IOS_DEVELOPMENT_TEAM:?RADROOTS_IOS_DEVELOPMENT_TEAM is required}
+        if [[ "$physical_automation" != "1" ]]; then
+            echo "error: physical app build requires RADROOTS_IOS_PHYSICAL_AUTOMATION=1" >&2
+            exit 64
+        fi
+        if [[ ! "$destination" =~ ^id=[A-Fa-f0-9-]+$ ]]; then
+            echo "error: physical app build destination must be one exact device id" >&2
+            exit 64
+        fi
+        if [[ ! "$development_team" =~ ^[A-Z0-9]{10}$ ]]; then
+            echo "error: physical app build development team is invalid" >&2
+            exit 64
+        fi
+        if [[ "$xcconfig" != "$XCODE_DERIVED_DATA"/* || ! -f "$xcconfig" ]]; then
+            echo "error: physical app build xcconfig must be a regular file under XCODE_DERIVED_DATA" >&2
+            exit 64
+        fi
+        device_id=${destination#id=}
+        lock_state_file=$(mktemp "${TMPDIR:-/tmp}/radroots-ios-lock-state.XXXXXX")
+        trap 'unlink "$lock_state_file"' EXIT
+        if ! xcrun devicectl device info lockState \
+            --device "$device_id" \
+            --quiet \
+            --timeout 10 \
+            --json-output "$lock_state_file"
+        then
+            echo "error: physical app build device lock state is unavailable" >&2
+            exit 1
+        fi
+        passcode_required=$(/usr/bin/plutil \
+            -extract result.passcodeRequired raw -o - "$lock_state_file")
+        unlocked_since_boot=$(/usr/bin/plutil \
+            -extract result.unlockedSinceBoot raw -o - "$lock_state_file")
+        if [[ "$passcode_required" != "false" || "$unlocked_since_boot" != "true" ]]; then
+            echo "error: physical app build device is locked; refusing to invoke Xcode" >&2
+            exit 1
+        fi
+        exec xcodebuild \
+            -project Radroots.xcodeproj \
+            -scheme Radroots \
+            -configuration Debug \
+            -destination "$destination" \
+            -xcconfig "$xcconfig" \
+            "${output_args[@]}" \
+            "${offline_args[@]}" \
+            "DEVELOPMENT_TEAM=$development_team" \
+            CODE_SIGN_STYLE=Automatic \
+            "CODE_SIGN_IDENTITY=Apple Development" \
+            build
+        ;;
     remote-ui-test)
         destination=${2:?remote-ui-test requires a simulator destination}
         test_selector=${3:?remote-ui-test requires a RadrootsUITests selector}
@@ -204,7 +258,7 @@ case "$operation" in
             test-without-building
         ;;
     *)
-        echo "usage: $0 {resolve|package-build|package-test|project-build|project-test|remote-ui-test|physical-ui-build|physical-ui-test}" >&2
+        echo "usage: $0 {resolve|package-build|package-test|project-build|project-test|physical-app-build|remote-ui-test|physical-ui-build|physical-ui-test}" >&2
         exit 64
         ;;
 esac

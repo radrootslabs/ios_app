@@ -43,6 +43,11 @@ This file applies to the complete standalone iOS app repository. A closer
 - Services-hardening generated changes must adopt the approved four coverage
   states and three outcomes across Swift and FFI together. Do not retain
   prototype evidence, receipt, outcome, or compatibility aliases.
+- Physical-device development must use one exact UDID, an explicitly supplied
+  development team, a Debug `iphoneos` build, and verified TLS endpoints.
+  Never select the first device, disable signing or certificate verification,
+  rewrite the checked-in Debug defaults, or treat local-device evidence as
+  approved remote qualification.
 
 ## Generated and project files
 

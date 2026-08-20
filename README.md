@@ -13,6 +13,24 @@ The current public release is `0.1.0-alpha`.
 - Rust `1.97.1-aarch64-apple-darwin` with the iOS device and simulator targets
 - `cargo-extbuild` configured for the checkout
 
+Physical-device development additionally requires one exact paired, connected,
+unlocked iPhone with Developer Mode enabled, an Apple development team, and a
+generated xcconfig below the extbuild-owned DerivedData root. The governed
+parent workspace supplies those machine inputs. The standalone script refuses
+name-only destinations, unsigned builds, non-Debug physical builds, and
+xcconfig files outside the managed output root:
+
+```sh
+RADROOTS_IOS_PHYSICAL_AUTOMATION=1 \
+RADROOTS_IOS_DEVELOPMENT_TEAM=ABCDEFGHIJ \
+cargo extbuild run -- scripts/xcode.sh physical-app-build \
+  id=00000000-0000000000000000 \
+  "$XCODE_DERIVED_DATA/radroots-ios-device/config/device.xcconfig"
+```
+
+The values above are placeholders. Device identities, teams, endpoints, and
+certificate material are never checked into this public repository.
+
 ## Bootstrap and verify
 
 The first bootstrap requires network access. It checks out the exact Rust
